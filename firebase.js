@@ -1,7 +1,8 @@
-window._callups=[];window._players=[];window._fbCallupsFlag=false;window._fbPlayersFlag=false;
+window._callups=[];window._players=[];window._refdates=[];window._fbCallupsFlag=false;window._fbPlayersFlag=false;window._fbRefDatesFlag=false;
 
 function _fbNotify(which){
   if(which==="callups"){window._fbCallupsFlag=true;if(typeof window._onCallupsLoaded==="function")window._onCallupsLoaded();}
+  else if(which==="refdates"){window._fbRefDatesFlag=true;if(typeof window._onRefDatesLoaded==="function")window._onRefDatesLoaded();}
   else{window._fbPlayersFlag=true;if(typeof window._onPlayersLoaded==="function")window._onPlayersLoaded();}
 }
 function _loadScript(src,cb){
@@ -11,7 +12,7 @@ function _loadScript(src,cb){
 }
 function _initFirebase(){
   try{
-    if(typeof firebase==="undefined"){console.warn("Firebase SDK no disponible. Modo sin conexión.");_fbNotify("callups");_fbNotify("players");return;}
+    if(typeof firebase==="undefined"){console.warn("Firebase SDK no disponible. Modo sin conexión.");_fbNotify("callups");_fbNotify("players");_fbNotify("refdates");return;}
     firebase.initializeApp({apiKey:"AIzaSyBP3EtZNGNscSUxh6XxZ1viiFN6SNIBA7s",authDomain:"seleciones-8ee75.firebaseapp.com",projectId:"seleciones-8ee75",storageBucket:"seleciones-8ee75.firebasestorage.app",messagingSenderId:"859013254646",appId:"1:859013254646:web:84c239598e300097024bd7"});
     var db=firebase.firestore(),auth=firebase.auth();
     window._db=db;window._auth=auth;
@@ -35,9 +36,13 @@ function _initFirebase(){
       .then(function(s){window._players=[];s.forEach(function(d){window._players.push(Object.assign({id:d.id},d.data()));});})
       .catch(function(e){console.error("players:",e);})
       .finally(function(){_fbNotify("players");});
+    db.collection("refdates").get()
+      .then(function(s){window._refdates=[];s.forEach(function(d){window._refdates.push(Object.assign({id:d.id},d.data()));});})
+      .catch(function(e){console.error("refdates:",e);})
+      .finally(function(){_fbNotify("refdates");});
   }catch(e){
     console.error("Firebase error:",e);
-    _fbNotify("callups");_fbNotify("players");
+    _fbNotify("callups");_fbNotify("players");_fbNotify("refdates");
   }
 }
 _loadScript("https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js",function(){
