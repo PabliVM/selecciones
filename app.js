@@ -1280,6 +1280,7 @@ function renderJugadores(){
     '<input class="fi" id="jug-search" type="text" placeholder="🔍 Buscar jugador..." value="'+esc(S.jugSearch||"")+'" style="margin-bottom:8px" autocomplete="off"/>'+
     teamPills+
     '<button class="btn btn-gold" id="btn-add-player" style="width:100%;margin-bottom:8px;margin-top:10px">+ Añadir jugador</button>'+
+    '<button class="btn btn-ghost" id="btn-add-player-bulk" style="width:100%;margin-bottom:8px">+ Añadir en lista</button>'+
     '<button class="btn btn-ghost" id="btn-new-season" style="width:100%;margin-bottom:12px">📅 Nueva temporada '+nextSea(S.season)+'</button>';
   h+=sortedTeams.map(function(team){
     var ps=byTeam[team];
@@ -1300,6 +1301,7 @@ function renderJugadores(){
   document.querySelectorAll("[data-jt]").forEach(function(btn){btn.addEventListener("click",function(){S.jugTeam=btn.dataset.jt;S.jugSearch="";renderJugadores();});});
   document.querySelectorAll(".jug-edit-btn").forEach(function(btn){btn.addEventListener("click",function(e){e.stopPropagation();openPlayerEdit(btn.dataset.pid);});});
   var addBtn=$("btn-add-player");if(addBtn)addBtn.addEventListener("click",openPlayerAdd);
+  var addBulkBtn=$("btn-add-player-bulk");if(addBulkBtn)addBulkBtn.addEventListener("click",openPlayerAddBulk);
   var nsBtn=$("btn-new-season");if(nsBtn)nsBtn.addEventListener("click",function(){openNewSeasonWizard(S.season,nextSea(S.season));});
 }
 
@@ -1360,6 +1362,60 @@ function openPlayerAdd(){
     if(!window._players)window._players=[];
     window._players.push(newP);
     toast("✅ "+name+" añadido");closeMo();renderJugadores();
+  });
+}
+
+function openPlayerAddBulk(){
+  var teamOpts=TEAMS.map(function(t){return'<option value="'+t.id+'">'+esc(t.name)+"</option>";}).join("");
+  var mo=document.createElement("div");mo.className="mo";
+  mo.innerHTML='<div class="modal"><button class="mcl" id="pab-close">×</button>'+
+    '<div class="mtitle">Añadir jugadores en lista</div>'+
+    '<p class="msub">Un nombre por línea.</p>'+
+    '<div class="fg"><label class="fl">Equipo</label><select class="fsel" id="pab-team">'+teamOpts+"</select></div>"+
+    '<div class="fg"><label class="fl">Jugadores</label><textarea class="fi" id="pab-list" rows="8" placeholder="Nombre Apellido\nNombre Apellido\n..." style="resize:vertical;font-family:inherit"></textarea></div>'+
+    '<div id="pab-err" class="ferr" style="display:none"></div>'+
+    '<div style="display:flex;gap:8px;margin-top:8px">'+
+    '<button class="btn btn-ghost btn-sm" id="pab-cancel" style="flex:1">Cancelar</button>'+
+    '<button class="btn btn-primary btn-sm" id="pab-save" style="flex:1">Añadir</button>'+
+    '</div></div>';
+  document.body.appendChild(mo);
+  setTimeout(function(){var n=$("pab-list");if(n)n.focus();},100);
+  function closeMo(){if(mo.parentNode)mo.parentNode.removeChild(mo);}
+  $("pab-close").addEventListener("click",closeMo);$("pab-cancel").addEventListener("click",closeMo);
+  mo.addEventListener("click",function(e){if(e.target===mo)closeMo();});
+  $("pab-save").addEventListener("click",function(){
+    var teamId=$("pab-team").value;
+    var team=null;for(var i=0;i<TEAMS.length;i++){if(TEAMS[i].id===teamId){team=TEAMS[i];break;}}
+    var raw=($("pab-list").value||"");
+    var names=raw.split("\n").map(function(s){return s.trim();}).filter(function(s){return s.length>0;});
+    if(!names.length){$("pab-err").style.display="block";$("pab-err").textContent="Pega al menos un nombre.";return;}
+    var existing=getPlayers_raw().filter(function(p){var t=teamInSeason(p,S.season)||teamNow(p);return t&&t.teamId===team.id;}).map(function(p){return p.fullName.trim().toLowerCase();});
+    var seen={};var toAdd=[];var skipped=[];
+    names.forEach(function(n){
+      var key=n.toLowerCase();
+      if(existing.indexOf(key)!==-1||seen[key]){skipped.push(n);return;}
+      seen[key]=true;toAdd.push(n);
+    });
+    if(!toAdd.length){$("pab-err").style.display="block";$("pab-err").textContent="Todos esos nombres ya están en "+team.name+".";return;}
+    var saveBtn=$("pab-save");saveBtn.disabled=true;saveBtn.textContent="Añadiendo...";
+    var done=0,total=toAdd.length;
+    toAdd.forEach(function(name){
+      var newP={fullName:name,active:true,teamHistory:[{teamId:team.id,teamName:team.name,season:S.season,from:new Date().toISOString().slice(0,10),to:null}]};
+      if(window._db&&window._fbUser){
+        var fns=window._fbFns;
+        fns.addDoc(fns.collection(window._db,"players"),newP).then(function(ref){
+          newP.id=ref.id;if(!window._players)window._players=[];window._players.push(newP);
+        }).catch(function(e){console.error(e);}).finally(function(){done++;if(done===total)finish();});
+      } else {
+        newP.id=gid();if(!window._players)window._players=[];window._players.push(newP);
+        done++;if(done===total)finish();
+      }
+    });
+    function finish(){
+      var msg="✅ "+toAdd.length+" jugador"+(toAdd.length>1?"es":"")+" añadido"+(toAdd.length>1?"s":"");
+      if(skipped.length)msg+=" ("+skipped.length+" ya existían, omitidos)";
+      toast(msg);closeMo();renderJugadores();
+    }
   });
 }
 
