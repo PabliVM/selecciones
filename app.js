@@ -6,9 +6,43 @@ function toggleDark(){
 
 function getCallups_raw(){ return window._callups || []; }
 function getPlayers_raw(){ return window._players || []; }
+function getRefDates_raw(){ return window._refdates || []; }
+
+function addRefDate(data,cb){
+  var obj=Object.assign({},data);
+  if(window._db&&window._fbUser){
+    var fns=window._fbFns;
+    fns.addDoc(fns.collection(window._db,"refdates"),obj).then(function(ref){
+      obj.id=ref.id;if(!window._refdates)window._refdates=[];window._refdates.push(obj);if(cb)cb();
+    }).catch(function(e){console.error(e);if(cb)cb();});
+  } else {
+    obj.id=gid();if(!window._refdates)window._refdates=[];window._refdates.push(obj);if(cb)cb();
+  }
+}
+function deleteRefDate(id,cb){
+  if(window._db&&window._fbUser){
+    var fns=window._fbFns;
+    fns.deleteDoc(fns.doc(window._db,"refdates",id)).then(function(){
+      window._refdates=getRefDates_raw().filter(function(r){return r.id!==id;});if(cb)cb();
+    }).catch(function(e){console.error(e);});
+  } else {
+    window._refdates=getRefDates_raw().filter(function(r){return r.id!==id;});if(cb)cb();
+  }
+}
+function fifaBadge(c){
+  if(!c.startDate)return"";
+  var end=c.endDate||c.startDate;
+  var hit=getRefDates_raw().some(function(r){
+    return r.tipo&&r.tipo.toLowerCase().indexOf("fifa")!==-1&&r.startDate<=end&&(r.endDate||r.startDate)>=c.startDate;
+  });
+  return hit?'<span class="badge" style="background:#111827;color:#fff" title="Coincide con ventana FIFA">🌍 FIFA</span>':"";
+}
 
 var _seasons = ["2025-26"];
 var _refEvents = [];
+function refDatesAsEvents(){
+  return getRefDates_raw().map(function(r){return Object.assign({},r,{title:r.title||r.tipo||"Fecha"});});
+}
 
 var SELS = {};
 SELS["madrilena"] = {
@@ -205,7 +239,7 @@ function callupCard(c){
     '<span style="font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:'+(c.convType==="definitiva"?"#34D399":(c.convType==="descartada"?"#EF4444":"#FBBF24"))+'">'+(c.convType==="definitiva"?"Definitiva":(c.convType==="descartada"?"No seleccionados":"Provisional"))+'</span>'+
     provAlertBadge(c)+
     '</div>'+
-    '<div class="cc-hdr"><div class="cc-badges">'+selBadge(c.selectionType,c.selectionCategory,c.pais)+statusBadge(c.status)+"</div></div>"+
+    '<div class="cc-hdr"><div class="cc-badges">'+selBadge(c.selectionType,c.selectionCategory,c.pais)+statusBadge(c.status)+fifaBadge(c)+"</div></div>"+
     '<h3 class="cc-title">'+esc(c.title)+"</h3>"+
     '<div class="cc-meta">'+
     '<div class="cc-mi"><span class="mi">📅</span><span>'+fmtRange(c.startDate,c.endDate)+"</span></div>"+
@@ -324,7 +358,7 @@ function callupDetail(c){
 
   return'<div class="dp-hdr">'+
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'+
-    '<div class="dp-badges">'+selBadge(c.selectionType,c.selectionCategory,c.pais)+statusBadge(c.status)+convTypeBadge(c.convType||"provisional")+provAlertBadge(c)+"</div>"+
+    '<div class="dp-badges">'+selBadge(c.selectionType,c.selectionCategory,c.pais)+statusBadge(c.status)+convTypeBadge(c.convType||"provisional")+provAlertBadge(c)+fifaBadge(c)+"</div>"+
     '<span style="font-size:32px;line-height:1">'+getSelFlag(c.selectionType,c.pais)+"</span></div>"+
     '<h2 class="dp-title">'+esc(c.title)+"</h2>"+
     '<p class="dp-sea">Temporada '+c.season+"</p></div>"+
@@ -392,7 +426,7 @@ function callupDetail(c){
 }
 
 // ── STATE ──
-var S={view:"agenda",season:"2025-26",filterType:null,agendaView:"fichas",finOpen:false,editingId:null,planView:"bloques",intlPais:null,statsSearch:"",statsPlayer:null,jugTeam:"",jugSearch:"",calPlanTab:"calendario"};
+var S={view:"agenda",season:"2025-26",filterType:null,agendaView:"fichas",finOpen:false,editingId:null,planView:"bloques",intlPais:null,statsSearch:"",statsPlayer:null,jugTeam:"",jugSearch:"",calPlanTab:"calendario",fechaTipo:""};
 
 function renderSeasonSel(){
   var opts=_seasons.slice().reverse().map(function(s){return'<option value="'+s+'"'+(s===S.season?" selected":"")+">"+s+"</option>";}).join("");
@@ -1566,18 +1600,18 @@ function renderPlayerDetail(pid){
 function renderCalendarioPlan(){
   var h='<div style="display:flex;background:var(--surface-alt,var(--off-white-3));border-radius:8px;padding:3px;gap:2px;border:1px solid var(--border);margin-bottom:16px">'+
     '<button class="plan-tbtn'+(S.calPlanTab==="calendario"?" on":"")+'" id="cpt-cal">📅 Calendario</button>'+
-    '<button class="plan-tbtn'+(S.calPlanTab==="planificacion"?" on":"")+'" id="cpt-plan">📊 Planificación</button>'+
+    '<button class="plan-tbtn'+(S.calPlanTab==="fechas"?" on":"")+'" id="cpt-plan">🗓️ Fechas</button>'+
     '</div><div id="cpt-content"></div>';
   $("main").innerHTML=h;
   $("cpt-cal").addEventListener("click",function(){S.calPlanTab="calendario";$("cpt-cal").classList.add("on");$("cpt-plan").classList.remove("on");renderCalendario();});
-  $("cpt-plan").addEventListener("click",function(){S.calPlanTab="planificacion";$("cpt-plan").classList.add("on");$("cpt-cal").classList.remove("on");renderPlanificacion();});
-  if(S.calPlanTab==="planificacion")renderPlanificacion();else renderCalendario();
+  $("cpt-plan").addEventListener("click",function(){S.calPlanTab="fechas";$("cpt-plan").classList.add("on");$("cpt-cal").classList.remove("on");renderFechas();});
+  if(S.calPlanTab==="fechas")renderFechas();else renderCalendario();
 }
 
 function renderCalendario(){
   var season=S.season;var startYear=parseInt(season.split("-")[0]);
   var rmCallups=getCallups({season:season});
-  var allEvs=rmCallups.concat(_refEvents.filter(function(e){return e.startDate>=(startYear)+"-07-01";}));
+  var allEvs=rmCallups.concat(refDatesAsEvents().filter(function(e){return e.startDate>=(startYear)+"-07-01";}));
   var today=new Date();var ty=today.getFullYear(),tm=today.getMonth(),td=today.getDate();
   var monthNames=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
   var months=[];
@@ -1708,6 +1742,120 @@ function renderPlanificacion(){
   });
 }
 
+// ── FECHAS (FIFA, RFFM, etc.) ──
+function renderFechas(){
+  var all=getRefDates_raw().slice().sort(function(a,b){return(a.startDate||"").localeCompare(b.startDate||"");});
+  var tipos=[];var seen={};
+  all.forEach(function(r){var k=(r.tipo||"").trim();if(k&&!seen[k]){seen[k]=true;tipos.push(k);}});
+  tipos.sort(function(a,b){return a.localeCompare(b);});
+  var filtro=S.fechaTipo||"";
+  var list=filtro?all.filter(function(r){return(r.tipo||"").trim()===filtro;}):all;
+  var editable=canEdit();
+  var h='<div class="vh"><h1 class="vt">Fechas</h1><span class="vs">'+list.length+' registradas</span></div>';
+  h+='<div class="fb">'+
+    '<button class="fbtn'+(filtro===""?" on":"")+'" data-ft="">Todas</button>'+
+    tipos.map(function(t){return'<button class="fbtn'+(filtro===t?" on":"")+'" data-ft="'+esc(t)+'">'+esc(t)+"</button>";}).join("")+
+    "</div>";
+  if(editable){
+    h+='<button class="btn btn-gold" id="btn-add-fecha" style="width:100%;margin-bottom:8px;margin-top:4px">+ Añadir fecha</button>'+
+      '<button class="btn btn-ghost" id="btn-add-fecha-bulk" style="width:100%;margin-bottom:12px">+ Añadir en lista</button>';
+  }
+  if(!list.length){
+    h+=emptyState("Sin fechas"+(filtro?' de "'+filtro+'"':""),"🗓️");
+  } else {
+    h+='<div class="cl">'+list.map(function(r){
+      return'<article class="cc" style="--ca:#5a6170;cursor:default">'+
+        '<div class="cc-hdr"><div class="cc-badges"><span class="badge" style="background:#5a6170;color:#fff">'+esc(r.tipo||"—")+"</span></div>"+
+        (editable?'<button class="jug-edit-btn fecha-del-btn" data-id="'+r.id+'" title="Eliminar">🗑</button>':"")+
+        "</div>"+
+        '<h3 class="cc-title">'+esc(r.title||r.tipo||"")+"</h3>"+
+        '<div class="cc-mi"><span class="mi">📅</span><span>'+fmtRange(r.startDate,r.endDate)+"</span></div>"+
+        "</article>";
+    }).join("")+"</div>";
+  }
+  var target=$("cpt-content");if(!target)return;
+  target.innerHTML=h;
+  target.querySelectorAll("[data-ft]").forEach(function(b){b.addEventListener("click",function(){S.fechaTipo=b.dataset.ft;renderFechas();});});
+  var addBtn=$("btn-add-fecha");if(addBtn)addBtn.addEventListener("click",function(){openFechaAdd(tipos);});
+  var addBulkBtn=$("btn-add-fecha-bulk");if(addBulkBtn)addBulkBtn.addEventListener("click",function(){openFechaAddBulk(tipos);});
+  target.querySelectorAll(".fecha-del-btn").forEach(function(b){b.addEventListener("click",function(e){
+    e.stopPropagation();
+    if(!confirm("¿Eliminar esta fecha?"))return;
+    deleteRefDate(b.dataset.id,renderFechas);
+  });});
+}
+
+function openFechaAdd(tipos){
+  var dl='<datalist id="fecha-tipos-dl">'+tipos.map(function(t){return'<option value="'+esc(t)+'">';}).join("")+"</datalist>";
+  var mo=document.createElement("div");mo.className="mo";
+  mo.innerHTML='<div class="modal"><button class="mcl" id="fa-close">×</button>'+
+    '<div class="mtitle">Nueva fecha</div>'+
+    '<div class="fg"><label class="fl">Tipo</label><input class="fi" id="fa-tipo" list="fecha-tipos-dl" type="text" placeholder="FIFA, RFFM sub14..." autocomplete="off"/>'+dl+"</div>"+
+    '<div class="fg"><label class="fl">Título (opcional)</label><input class="fi" id="fa-title" type="text" placeholder="Ventana marzo"/></div>'+
+    '<div class="fg"><label class="fl">Desde</label><input class="fi" id="fa-start" type="date"/></div>'+
+    '<div class="fg"><label class="fl">Hasta</label><input class="fi" id="fa-end" type="date"/></div>'+
+    '<div id="fa-err" class="ferr" style="display:none"></div>'+
+    '<div style="display:flex;gap:8px;margin-top:8px">'+
+    '<button class="btn btn-ghost btn-sm" id="fa-cancel" style="flex:1">Cancelar</button>'+
+    '<button class="btn btn-primary btn-sm" id="fa-save" style="flex:1">Añadir</button>'+
+    "</div></div>";
+  document.body.appendChild(mo);
+  setTimeout(function(){var n=$("fa-tipo");if(n)n.focus();},100);
+  function closeMo(){if(mo.parentNode)mo.parentNode.removeChild(mo);}
+  $("fa-close").addEventListener("click",closeMo);$("fa-cancel").addEventListener("click",closeMo);
+  mo.addEventListener("click",function(e){if(e.target===mo)closeMo();});
+  $("fa-save").addEventListener("click",function(){
+    var tipo=($("fa-tipo").value||"").trim();
+    var title=($("fa-title").value||"").trim();
+    var start=$("fa-start").value;var end=$("fa-end").value||start;
+    if(!tipo||!start){$("fa-err").style.display="block";$("fa-err").textContent="Tipo y fecha de inicio son obligatorios.";return;}
+    addRefDate({tipo:tipo,title:title,startDate:start,endDate:end},function(){toast("✅ Fecha añadida");closeMo();renderFechas();});
+  });
+}
+
+function openFechaAddBulk(tipos){
+  var dl='<datalist id="fecha-tipos-dl2">'+tipos.map(function(t){return'<option value="'+esc(t)+'">';}).join("")+"</datalist>";
+  var mo=document.createElement("div");mo.className="mo";
+  mo.innerHTML='<div class="modal"><button class="mcl" id="fab-close">×</button>'+
+    '<div class="mtitle">Añadir fechas en lista</div>'+
+    '<p class="msub">Una por línea: AAAA-MM-DD,AAAA-MM-DD,Título opcional</p>'+
+    '<div class="fg"><label class="fl">Tipo (aplica a toda la lista)</label><input class="fi" id="fab-tipo" list="fecha-tipos-dl2" type="text" placeholder="FIFA" autocomplete="off"/>'+dl+"</div>"+
+    '<div class="fg"><label class="fl">Fechas</label><textarea class="fi" id="fab-list" rows="8" placeholder="2026-03-16,2026-03-24,Ventana marzo\n2026-06-01,2026-06-09" style="resize:vertical;font-family:inherit"></textarea></div>'+
+    '<div id="fab-err" class="ferr" style="display:none"></div>'+
+    '<div style="display:flex;gap:8px;margin-top:8px">'+
+    '<button class="btn btn-ghost btn-sm" id="fab-cancel" style="flex:1">Cancelar</button>'+
+    '<button class="btn btn-primary btn-sm" id="fab-save" style="flex:1">Añadir</button>'+
+    "</div></div>";
+  document.body.appendChild(mo);
+  setTimeout(function(){var n=$("fab-tipo");if(n)n.focus();},100);
+  function closeMo(){if(mo.parentNode)mo.parentNode.removeChild(mo);}
+  $("fab-close").addEventListener("click",closeMo);$("fab-cancel").addEventListener("click",closeMo);
+  mo.addEventListener("click",function(e){if(e.target===mo)closeMo();});
+  $("fab-save").addEventListener("click",function(){
+    var tipo=($("fab-tipo").value||"").trim();
+    if(!tipo){$("fab-err").style.display="block";$("fab-err").textContent="Indica un tipo.";return;}
+    var lines=($("fab-list").value||"").split("\n").map(function(s){return s.trim();}).filter(function(s){return s.length>0;});
+    if(!lines.length){$("fab-err").style.display="block";$("fab-err").textContent="Pega al menos una fecha.";return;}
+    var dateRe=/^\d{4}-\d{2}-\d{2}$/;
+    var toAdd=[];var bad=[];
+    lines.forEach(function(line){
+      var parts=line.split(",").map(function(s){return s.trim();});
+      var start=parts[0],end=parts[1]||parts[0],title=parts[2]||"";
+      if(!dateRe.test(start)||!dateRe.test(end)){bad.push(line);return;}
+      toAdd.push({tipo:tipo,title:title,startDate:start,endDate:end});
+    });
+    if(!toAdd.length){$("fab-err").style.display="block";$("fab-err").textContent="Ningún formato válido. Usa AAAA-MM-DD,AAAA-MM-DD.";return;}
+    var saveBtn=$("fab-save");saveBtn.disabled=true;saveBtn.textContent="Añadiendo...";
+    var done=0,total=toAdd.length;
+    toAdd.forEach(function(item){addRefDate(item,function(){done++;if(done===total)finish();});});
+    function finish(){
+      var msg="✅ "+toAdd.length+" fecha"+(toAdd.length>1?"s":"")+" añadida"+(toAdd.length>1?"s":"");
+      if(bad.length)msg+=" ("+bad.length+" con formato incorrecto, omitidas)";
+      toast(msg);closeMo();renderFechas();
+    }
+  });
+}
+
 // ── LOGIN ──
 function bindLoginBtn(){
   var btn=$("hdr-login-btn");if(!btn)return;
@@ -1755,6 +1903,7 @@ window._onAuthChange = function(user){
 
 window._callups = window._callups || [];
 window._players = window._players || [];
+window._refdates = window._refdates || [];
 
 window._onCallupsLoaded = function(){
   window._fbCallupsFlag = true;
@@ -1765,6 +1914,10 @@ window._onPlayersLoaded = function(){
   window._fbPlayersFlag = true;
   route(S.view || "agenda");
 };
+window._onRefDatesLoaded = function(){
+  window._fbRefDatesFlag = true;
+  route(S.view || "agenda");
+};
 
 renderSeasonSel();
 bindLoginBtn();
@@ -1772,3 +1925,4 @@ route(S.view || "agenda");
 
 if(window._fbCallupsFlag) { renderSeasonSel(); route(S.view || "agenda"); }
 if(window._fbPlayersFlag) { route(S.view || "agenda"); }
+if(window._fbRefDatesFlag) { route(S.view || "agenda"); }
