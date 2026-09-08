@@ -177,7 +177,7 @@ function selBadge(type,cat,pais){
   var k=selKey(type);var s=SELS[k];if(!s)return"";
   if(!cat)cat="abs";
   var c=(s.colors&&s.colors[cat])?s.colors[cat]:{badge:"#666"};
-  var flag=k==="madrilena"?'<img src="https://raw.githubusercontent.com/PabliVM/Convocatorias/main/MADRID.png" style="width:16px;height:12px;object-fit:cover;border-radius:2px;vertical-align:middle"/>':k==="espanola"?'<img src="https://raw.githubusercontent.com/PabliVM/Convocatorias/main/Espa%C3%B1a.png" style="width:16px;height:12px;object-fit:cover;border-radius:2px;vertical-align:middle"/>':(pais?getFlag(pais):"🌍");
+  var flag=k==="madrilena"?'<img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/MADRID.png" style="width:16px;height:12px;object-fit:cover;border-radius:2px;vertical-align:middle"/>':k==="espanola"?'<img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/Espa%C3%B1a.png" style="width:16px;height:12px;object-fit:cover;border-radius:2px;vertical-align:middle"/>':(pais?getFlag(pais):"🌍");
   var label=k==="internacional"&&pais?(CAT[cat]||cat)+" "+paisAdj(pais):(CAT[cat]||cat)+" "+s.short;
   return'<span class="badge" style="background:'+c.badge+';color:#fff">'+flag+" "+label+"</span>";
 }
@@ -725,8 +725,8 @@ function renderAgenda(viewMode){
     '</div></div></div>'+
     '<div class="fb">'+
     '<button class="fbtn'+(!S.filterType?" on":"")+'" data-f="">Todas</button>'+
-    '<button class="fbtn fbtn-mad'+(S.filterType==="madrilena"?" on":"")+'" data-f="madrilena"><img src="https://raw.githubusercontent.com/PabliVM/Convocatorias/main/MADRID.png" style="width:14px;height:10px;object-fit:cover;border-radius:1px;vertical-align:middle"/> RFFM</button>'+
-    '<button class="fbtn fbtn-esp'+(S.filterType==="espanola"?" on":"")+'" data-f="espanola"><img src="https://raw.githubusercontent.com/PabliVM/Convocatorias/main/Espa%C3%B1a.png" style="width:14px;height:10px;object-fit:cover;border-radius:1px;vertical-align:middle"/> RFEF</button>'+
+    '<button class="fbtn fbtn-mad'+(S.filterType==="madrilena"?" on":"")+'" data-f="madrilena"><img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/MADRID.png" style="width:14px;height:10px;object-fit:cover;border-radius:1px;vertical-align:middle"/> RFFM</button>'+
+    '<button class="fbtn fbtn-esp'+(S.filterType==="espanola"?" on":"")+'" data-f="espanola"><img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/Espa%C3%B1a.png" style="width:14px;height:10px;object-fit:cover;border-radius:1px;vertical-align:middle"/> RFEF</button>'+
     '<button class="fbtn fbtn-int'+(S.filterType==="internacional"?" on":"")+'" data-f="internacional">🌍 OTRAS</button>'+
     (descartadas.length?'<button class="fbtn'+(S.showDescartadas?" on":"")+'" id="btn-show-desc" style="border-color:rgba(239,68,68,.4);'+(S.showDescartadas?"background:rgba(239,68,68,.15);color:#EF4444":"")+'">❌ Descartadas ('+descartadas.length+')</button>':"")+
     '</div>'+catPills;
@@ -898,8 +898,8 @@ function renderNueva(){
     '<div class="fblock fblock-info">'+
     '<div class="fsec fsec-info"><span class="fsec-ico">📋</span><span class="fsec-lbl">Información general</span></div>'+
     '<div class="fg"><label class="fl">Tipo de selección *</label><div class="rc-group">'+
-    '<label class="rc"><input type="radio" name="selType" value="madrilena"/><span class="rc-ico"><img src="https://raw.githubusercontent.com/PabliVM/Convocatorias/main/MADRID.png" style="width:24px;height:16px;object-fit:cover;border-radius:2px"/></span><span class="rc-lbl">Madrileña</span></label>'+
-    '<label class="rc"><input type="radio" name="selType" value="espanola"/><span class="rc-ico"><img src="https://raw.githubusercontent.com/PabliVM/Convocatorias/main/Espa%C3%B1a.png" style="width:24px;height:16px;object-fit:cover;border-radius:2px"/></span><span class="rc-lbl">Española</span></label>'+
+    '<label class="rc"><input type="radio" name="selType" value="madrilena"/><span class="rc-ico"><img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/MADRID.png" style="width:24px;height:16px;object-fit:cover;border-radius:2px"/></span><span class="rc-lbl">Madrileña</span></label>'+
+    '<label class="rc"><input type="radio" name="selType" value="espanola"/><span class="rc-ico"><img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/Espa%C3%B1a.png" style="width:24px;height:16px;object-fit:cover;border-radius:2px"/></span><span class="rc-lbl">Española</span></label>'+
     '<label class="rc"><input type="radio" name="selType" value="internacional"/><span class="rc-ico">🌍</span><span class="rc-lbl">Internacional</span></label>'+
     "</div></div>"+
     '<div class="fg" id="pais-g" style="display:none"><label class="fl">País *</label><div id="pais-pills" class="pais-pills"></div><input class="fi" type="text" id="f-pais" name="pais" placeholder="Escribe el país..." style="display:none;margin-top:6px"/></div>'+
@@ -1171,7 +1171,7 @@ function bindAiParser(){
       var prompt="Eres un experto en convocatorias del Real Madrid Cantera. Analiza el texto y devuelve SOLO JSON válido, sin markdown.\nHoy es "+today+". Fechas en formato YYYY-MM-DD. Si un dato no aparece usa null o [].\nJSON schema:\n{\"selectionType\":\"madrilena|espanola|internacional\",\"convType\":\"definitiva|provisional\",\"selectionCategory\":\"sub12|sub13|sub14|sub15|sub16|sub17|sub18|sub19|sub20|sub21|abs\",\"pais\":\"pais si internacional sino null\",\"title\":\"titulo descriptivo\",\"startDate\":\"YYYY-MM-DD\",\"endDate\":\"YYYY-MM-DD\",\"rival\":\"rivales\",\"location\":\"lugar\",\"conc\":{\"date\":\"YYYY-MM-DD\",\"time\":\"HH:MM\",\"lugar\":\"lugar citacion\",\"hotel\":\"alojamiento\"},\"traslado\":{\"date\":\"YYYY-MM-DD\",\"time\":\"HH:MM\",\"lugar\":\"punto salida\",\"transporte\":\"vuelo/tren ida\"},\"vuelta\":{\"date\":\"YYYY-MM-DD\",\"time\":\"HH:MM\",\"lugar\":\"punto salida vuelta\",\"transporte\":\"vuelo/tren vuelta\"},\"matches\":[{\"date\":\"YYYY-MM-DD\",\"time\":\"HH:MM\",\"rival\":\"rival\",\"matchType\":\"amistoso|oficial|entrenamiento\"}],\"notes\":\"obs\",\"players\":[\"NOMBRE APELLIDO\"]}\nTEXTO:\n"+text;
 
       function doFetch(body){
-        return fetch("/api/parse-convocatoria",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)})
+        return fetch("/api/convocatoria",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)})
           .then(function(r){if(!r.ok)return r.text().then(function(t){throw new Error("Servidor: "+t.slice(0,120));});return r.json();});
       }
 
