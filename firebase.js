@@ -1,8 +1,9 @@
-window._callups=[];window._players=[];window._refdates=[];window._fbCallupsFlag=false;window._fbPlayersFlag=false;window._fbRefDatesFlag=false;
+window._callups=[];window._players=[];window._refdates=[];window._seasonsData=[];window._fbCallupsFlag=false;window._fbPlayersFlag=false;window._fbRefDatesFlag=false;window._fbMetaFlag=false;
 
 function _fbNotify(which){
   if(which==="callups"){window._fbCallupsFlag=true;if(typeof window._onCallupsLoaded==="function")window._onCallupsLoaded();}
   else if(which==="refdates"){window._fbRefDatesFlag=true;if(typeof window._onRefDatesLoaded==="function")window._onRefDatesLoaded();}
+  else if(which==="meta"){window._fbMetaFlag=true;if(typeof window._onMetaLoaded==="function")window._onMetaLoaded();}
   else{window._fbPlayersFlag=true;if(typeof window._onPlayersLoaded==="function")window._onPlayersLoaded();}
 }
 function _loadScript(src,cb){
@@ -12,7 +13,7 @@ function _loadScript(src,cb){
 }
 function _initFirebase(){
   try{
-    if(typeof firebase==="undefined"){console.warn("Firebase SDK no disponible. Modo sin conexión.");_fbNotify("callups");_fbNotify("players");_fbNotify("refdates");return;}
+    if(typeof firebase==="undefined"){console.warn("Firebase SDK no disponible. Modo sin conexión.");_fbNotify("callups");_fbNotify("players");_fbNotify("refdates");_fbNotify("meta");return;}
     firebase.initializeApp({apiKey:"AIzaSyBP3EtZNGNscSUxh6XxZ1viiFN6SNIBA7s",authDomain:"seleciones-8ee75.firebaseapp.com",projectId:"seleciones-8ee75",storageBucket:"seleciones-8ee75.firebasestorage.app",messagingSenderId:"859013254646",appId:"1:859013254646:web:84c239598e300097024bd7"});
     var db=firebase.firestore(),auth=firebase.auth();
     window._db=db;window._auth=auth;
@@ -40,9 +41,13 @@ function _initFirebase(){
       .then(function(s){window._refdates=[];s.forEach(function(d){window._refdates.push(Object.assign({id:d.id},d.data()));});})
       .catch(function(e){console.error("refdates:",e);})
       .finally(function(){_fbNotify("refdates");});
+    db.collection("meta").doc("app").get()
+      .then(function(d){window._seasonsData=(d.exists&&d.data().seasons)?d.data().seasons:[];})
+      .catch(function(e){console.error("meta:",e);})
+      .finally(function(){_fbNotify("meta");});
   }catch(e){
     console.error("Firebase error:",e);
-    _fbNotify("callups");_fbNotify("players");_fbNotify("refdates");
+    _fbNotify("callups");_fbNotify("players");_fbNotify("refdates");_fbNotify("meta");
   }
 }
 _loadScript("https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js",function(){
