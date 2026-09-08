@@ -38,7 +38,7 @@ function fifaBadge(c){
   return hit?'<span class="badge" style="background:#111827;color:#fff" title="Coincide con ventana FIFA">🌍 FIFA</span>':"";
 }
 
-var _seasons = ["2025-26"];
+var _seasons = [];
 var _refEvents = [];
 function refDatesAsEvents(){
   return getRefDates_raw().map(function(r){return Object.assign({},r,{title:r.title||r.tipo||"Fecha"});});
@@ -1931,6 +1931,9 @@ window._onRefDatesLoaded = function(){
 window._onMetaLoaded = function(){
   window._fbMetaFlag = true;
   (window._seasonsData||[]).forEach(function(s){if(_seasons.indexOf(s)===-1)_seasons.push(s);});
+  if(!_seasons.length)_seasons.push(S.season);
+  var sorted=_seasons.slice().sort();
+  S.season=sorted[sorted.length-1];
   renderSeasonSel();
   route(S.view || "agenda");
 };
