@@ -12,7 +12,7 @@ function _loadScript(src,cb){
 function _initFirebase(){
   try{
     if(typeof firebase==="undefined"){console.warn("Firebase SDK no disponible. Modo sin conexión.");_fbNotify("callups");_fbNotify("players");return;}
-    firebase.initializeApp({apiKey:"AIzaSyCPcij56A4Gc-sgqcVQ4Lj3N1bQtsVFGKU",authDomain:"convocatorias-51f3e.firebaseapp.com",projectId:"convocatorias-51f3e",storageBucket:"convocatorias-51f3e.firebasestorage.app",messagingSenderId:"275421566007",appId:"1:275421566007:web:c6655499e8e5e89503dbb2"});
+    firebase.initializeApp({apiKey:"AIzaSyBP3EtZNGNscSUxh6XxZ1viiFN6SNIBA7s",authDomain:"seleciones-8ee75.firebaseapp.com",projectId:"seleciones-8ee75",storageBucket:"seleciones-8ee75.firebasestorage.app",messagingSenderId:"859013254646",appId:"1:859013254646:web:84c239598e300097024bd7"});
     var db=firebase.firestore(),auth=firebase.auth();
     window._db=db;window._auth=auth;
     window._fbFns={
