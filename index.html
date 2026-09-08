@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<meta name="theme-color" content="#2563eb"/>
+<title>RM Convocatorias</title>
+<link rel="stylesheet" href="style.css"/>
+<!-- Firebase SDK -->
+<script src="firebase-init.js"></script>
+</head>
+<body>
+<div class="app">
+  <header class="hdr">
+    <div class="hdr-logo">
+      <img src="https://raw.githubusercontent.com/PabliVM/PLANNING/main/assets/rm.png" class="hdr-emblem-img" alt="Real Madrid"/>
+    </div>
+    <div style="display:flex;align-items:baseline;gap:10px;flex:1;min-width:0">
+      <div class="hdr-title">Convocatorias</div>
+      <div class="hdr-sub" id="season-sel"></div>
+    </div>
+    <button class="btn-dark" onclick="toggleDark()" id="darkBtn" title="Modo oscuro">☾</button>
+    <button id="hdr-login-btn" class="hdr-login-btn" title="Iniciar sesión">🔒</button>
+  </header>
+  <main class="main" id="main">
+    <div class="loading"><div class="spinner"></div><p>Cargando...</p></div>
+  </main>
+  <nav class="nav">
+    <button class="nb nb-new" data-v="nueva" style="display:none"><span class="ni">+</span><span class="nl">Nueva</span></button>
+    <button class="nb active" data-v="agenda"><span class="ni">☰</span><span class="nl">Agenda</span></button>
+    <button class="nb" data-v="jugadores" style="display:none"><span class="ni">⊞</span><span class="nl">Jugadores</span></button>
+    <button class="nb" data-v="calendario"><span class="ni">▦</span><span class="nl">Cal/Plan</span></button>
+    <button class="nb" data-v="stats"><span class="ni">▥</span><span class="nl">Stats</span></button>
+  </nav>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
