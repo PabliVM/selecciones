@@ -1497,11 +1497,21 @@ function openNewSeasonWizard(curSea,newSea){
       var teamName="";for(var t=0;t<TEAMS.length;t++){if(TEAMS[t].id===teamId){teamName=TEAMS[t].name;break;}}
       var p=null;for(var j=0;j<getPlayers_raw().length;j++){if(getPlayers_raw()[j].id===entry.playerId){p=getPlayers_raw()[j];break;}}
       if(!p)return;
-      if(!keep){p.active=false;p.teamHistory=p.teamHistory.map(function(h){return h.to===null?Object.assign({},h,{to:start}):h;});return;}
-      p.teamHistory=p.teamHistory.map(function(h){return h.to===null?Object.assign({},h,{to:start}):h;});
-      p.teamHistory.push({teamId:teamId,teamName:teamName,season:newSea,from:start,to:null});
+      if(!keep){p.active=false;p.teamHistory=p.teamHistory.map(function(h){return h.to===null?Object.assign({},h,{to:start}):h;});}
+      else{
+        p.teamHistory=p.teamHistory.map(function(h){return h.to===null?Object.assign({},h,{to:start}):h;});
+        p.teamHistory.push({teamId:teamId,teamName:teamName,season:newSea,from:start,to:null});
+      }
+      if(window._db&&window._fbUser){
+        var fns=window._fbFns;
+        fns.setDoc(fns.doc(window._db,"players",p.id),Object.assign({},p)).catch(function(e){console.error("player save:",e);});
+      }
     });
     if(_seasons.indexOf(newSea)===-1)_seasons.push(newSea);
+    if(window._db&&window._fbUser){
+      var fns2=window._fbFns;
+      fns2.setDoc(fns2.doc(window._db,"meta","app"),{seasons:_seasons},{merge:true}).catch(function(e){console.error("meta save:",e);});
+    }
     S.season=newSea;
     renderSeasonSel();
     toast("✅ Temporada "+newSea+" creada");
@@ -1918,6 +1928,12 @@ window._onRefDatesLoaded = function(){
   window._fbRefDatesFlag = true;
   route(S.view || "agenda");
 };
+window._onMetaLoaded = function(){
+  window._fbMetaFlag = true;
+  (window._seasonsData||[]).forEach(function(s){if(_seasons.indexOf(s)===-1)_seasons.push(s);});
+  renderSeasonSel();
+  route(S.view || "agenda");
+};
 
 renderSeasonSel();
 bindLoginBtn();
@@ -1926,3 +1942,4 @@ route(S.view || "agenda");
 if(window._fbCallupsFlag) { renderSeasonSel(); route(S.view || "agenda"); }
 if(window._fbPlayersFlag) { route(S.view || "agenda"); }
 if(window._fbRefDatesFlag) { route(S.view || "agenda"); }
+if(window._fbMetaFlag) { renderSeasonSel(); route(S.view || "agenda"); }
