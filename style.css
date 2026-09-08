@@ -457,6 +457,8 @@ details[open] .fin-summary__label::before{transform:rotate(90deg)}
 .cal-dot-mad{background:#5B8FF9}
 .cal-dot-esp{background:#F87171}
 .cal-dot-int{background:#34D399}
+.cal-bars{display:flex;flex-direction:column;gap:1px;width:100%;margin-top:2px}
+.cal-bar{height:4px;width:100%;border-radius:1px;flex-shrink:0}
 .cal-match-dot{font-size:8px;line-height:1}
 .cal-panel{background:var(--surface);border-radius:var(--r-sm);padding:12px;margin-top:8px;border:1px solid var(--border)}
 .cal-panel-date{font-size:12px;font-weight:700;color:var(--gold);text-transform:capitalize;margin-bottom:8px;letter-spacing:.5px}
