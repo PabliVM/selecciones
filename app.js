@@ -1905,16 +1905,34 @@ function loadHtml2Canvas(cb){
 function exportCalendarPNG(season){
   var wrap=document.querySelector("#cal-body .calv-wrap");
   if(!wrap){toast("No hay nada que exportar");return;}
+  var isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  var w=null;
+  if(isMobile){
+    w=window.open();
+    if(w){w.document.write('<title>Calendario '+esc(season)+'</title><body style="margin:0;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;color:#666">Generando imagen…</body>');w.document.close();}
+  }
   toast("Generando imagen...");
   loadHtml2Canvas(function(){
     var bg=getComputedStyle(document.body).backgroundColor||"#ffffff";
     html2canvas(wrap,{backgroundColor:bg,scale:2,useCORS:true}).then(function(canvas){
-      var link=document.createElement("a");
-      link.download="calendario-"+season+".png";
-      link.href=canvas.toDataURL("image/png");
-      link.click();
-      toast("✅ Imagen descargada");
-    }).catch(function(e){console.error(e);toast("❌ Error generando la imagen");});
+      if(isMobile){
+        var dataUrl=canvas.toDataURL("image/png");
+        if(w&&!w.closed){
+          w.document.open();
+          w.document.write('<title>Calendario '+esc(season)+'</title><body style="margin:0;background:#111;display:flex;align-items:center;justify-content:center"><img src="'+dataUrl+'" style="max-width:100%;height:auto"/></body>');
+          w.document.close();
+          toast("📷 Mantén pulsada la imagen para guardarla");
+        } else {
+          toast("❌ El navegador bloqueó la ventana. Permite pop-ups para ver la imagen.");
+        }
+      } else {
+        var link=document.createElement("a");
+        link.download="calendario-"+season+".png";
+        link.href=canvas.toDataURL("image/png");
+        link.click();
+        toast("✅ Imagen descargada");
+      }
+    }).catch(function(e){console.error(e);toast("❌ Error generando la imagen");if(w&&!w.closed)w.close();});
   });
 }
 
