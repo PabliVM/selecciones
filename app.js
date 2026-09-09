@@ -2114,38 +2114,20 @@ function computeMonthSegments(monthEvents,monthStart,monthEnd,daysInMonth){
     var sd=parseInt(s.split("-")[2],10),ed=parseInt(en.split("-")[2],10);
     return{ev:e,sd:sd,ed:ed,lane:-1};
   });
-  var byStart=evs.slice().sort(function(a,b){return calEventOrderCompare(a.ev,b.ev)||a.sd-b.sd;});
-  var laneEnd=[];
-  byStart.forEach(function(x){
+  var byPriority=evs.slice().sort(function(a,b){return calEventOrderCompare(a.ev,b.ev)||a.sd-b.sd;});
+  var laneIntervals=[];
+  byPriority.forEach(function(x){
     var lane=-1;
-    for(var li=0;li<laneEnd.length;li++){if(laneEnd[li]<x.sd){lane=li;break;}}
-    if(lane===-1){lane=laneEnd.length;laneEnd.push(x.ed);}else{laneEnd[lane]=x.ed;}
+    for(var li=0;li<laneIntervals.length;li++){
+      var conflict=laneIntervals[li].some(function(iv){return!(x.ed<iv.sd||x.sd>iv.ed);});
+      if(!conflict){lane=li;break;}
+    }
+    if(lane===-1){lane=laneIntervals.length;laneIntervals.push([]);}
+    laneIntervals[lane].push({sd:x.sd,ed:x.ed});
     x.lane=lane;
   });
-  var laneCount=Math.max(1,laneEnd.length);
-  var grid=[];
-  for(var d=1;d<=daysInMonth;d++)grid[d]=new Array(laneCount).fill(-1);
-  evs.forEach(function(x,idx){for(var d=x.sd;d<=x.ed;d++)grid[d][x.lane]=idx;});
-  for(var d2=1;d2<=daysInMonth;d2++){
-    for(var L=0;L<laneCount;L++){
-      if(grid[d2][L]===-1){
-        for(var R=L+1;R<laneCount;R++){
-          if(grid[d2][R]!==-1){grid[d2][L]=grid[d2][R];grid[d2][R]=-1;break;}
-        }
-      }
-    }
-  }
-  var segments=[];
-  evs.forEach(function(x,idx){
-    var curLane=null,segStart=null;
-    for(var d=x.sd;d<=x.ed+1;d++){
-      var laneHere=d<=x.ed?grid[d].indexOf(idx):-999;
-      if(laneHere!==curLane){
-        if(curLane!==null)segments.push({ev:x.ev,lane:curLane,sd:segStart,ed:d-1});
-        curLane=laneHere;segStart=d;
-      }
-    }
-  });
+  var laneCount=Math.max(1,laneIntervals.length);
+  var segments=evs.map(function(x){return{ev:x.ev,lane:x.lane,sd:x.sd,ed:x.ed};});
   return{segments:segments,laneCount:laneCount};
 }
 function renderCalVertical(events,season){
