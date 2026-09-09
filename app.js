@@ -2165,27 +2165,11 @@ function renderCalVertical(events,season){
     var monthEvents=events.filter(function(e){return e.startDate<=monthEnd&&e.endDate>=monthStart;});
     var layout=computeMonthSegments(monthEvents,monthStart,monthEnd,daysInMonth);
     var laneCount=layout.laneCount;
-    var tallestSeg={};
-    layout.segments.forEach(function(seg,i){
-      var key=seg.ev.raw.id||seg.ev.id;
-      var h=seg.ed-seg.sd;
-      if(!tallestSeg[key]||h>tallestSeg[key].h)tallestSeg[key]={i:i,h:h};
-    });
-    var barsHtml=layout.segments.map(function(seg,i){
+    var barsHtml=layout.segments.map(function(seg){
       var e=seg.ev;
       var top=(seg.sd-1)*ROWH,height=(seg.ed-seg.sd+1)*ROWH-2;
       var lw=100/laneCount;
-      var key=e.raw.id||e.id;
-      var isAlone=!layout.segments.some(function(other,j){return j!==i&&(other.ev.raw.id||other.ev.id)!==key&&!(other.ed<seg.sd||other.sd>seg.ed);});
-      if(isAlone){
-        return'<div class="calv-bar calv-bar-oneday" data-kind="'+e.kind+'" data-id="'+(e.raw.id||"")+'" style="top:'+top+'px;height:'+height+'px;left:0%;width:99%;background:'+e.color+'" title="'+esc(e.title)+" · "+fmtRange(e.startDate,e.endDate)+'"><span class="calv-bar-label-h" style="color:'+contrastText(e.color)+'">'+esc(e.title)+"</span></div>";
-      }
-      var showLabel=height>=ROWH*3&&tallestSeg[key]&&tallestSeg[key].i===i;
-      if(!showLabel&&seg.ed===seg.sd&&laneCount===2){
-        var shortLabel=e.raw&&e.raw.cat?(CAT[e.raw.cat]||e.raw.cat):e.title;
-        return'<div class="calv-bar" data-kind="'+e.kind+'" data-id="'+(e.raw.id||"")+'" style="top:'+top+'px;height:'+height+'px;left:'+(seg.lane*lw)+'%;width:'+(lw-1)+'%;background:'+e.color+'" title="'+esc(e.title)+" · "+fmtRange(e.startDate,e.endDate)+'"><span class="calv-bar-label-h" style="color:'+contrastText(e.color)+';font-size:7.5px">'+esc(shortLabel)+"</span></div>";
-      }
-      return'<div class="calv-bar" data-kind="'+e.kind+'" data-id="'+(e.raw.id||"")+'" style="top:'+top+'px;height:'+height+'px;left:'+(seg.lane*lw)+'%;width:'+(lw-1)+'%;background:'+e.color+'" title="'+esc(e.title)+" · "+fmtRange(e.startDate,e.endDate)+'">'+(showLabel?'<span class="calv-bar-label" style="color:'+contrastText(e.color)+'">'+esc(e.title)+"</span>":"")+"</div>";
+      return'<div class="calv-bar" data-kind="'+e.kind+'" data-id="'+(e.raw.id||"")+'" style="top:'+top+'px;height:'+height+'px;left:'+(seg.lane*lw)+'%;width:'+(lw-1)+'%;background:'+e.color+'" title="'+esc(e.title)+" · "+fmtRange(e.startDate,e.endDate)+'"><span class="calv-bar-label" style="color:'+contrastText(e.color)+'">'+esc(e.title)+"</span></div>";
     }).join("");
     return'<div class="calv-col"><div class="calv-mhdr">'+mn.label+" "+y+'</div><div class="calv-body" style="height:'+(daysInMonth*ROWH)+'px">'+rowsHtml+'<div class="calv-bars-layer">'+barsHtml+"</div></div></div>";
   }).join("");
