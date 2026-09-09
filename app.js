@@ -1,8 +1,19 @@
 function toggleDark(){
   document.body.classList.toggle('dark');
+  var isDark=document.body.classList.contains('dark');
+  try{localStorage.setItem('rmconv_dark',isDark?'1':'0');}catch(e){}
   var btn=document.getElementById('darkBtn');
-  if(document.body.classList.contains('dark')){btn.innerHTML='☀';}else{btn.innerHTML='☾';}
+  if(btn)btn.innerHTML=isDark?'☀':'☾';
 }
+(function(){
+  var saved="0";
+  try{saved=localStorage.getItem('rmconv_dark')||"0";}catch(e){}
+  if(saved==="1"){
+    document.body.classList.add('dark');
+    var btn=document.getElementById('darkBtn');
+    if(btn)btn.innerHTML='☀';
+  }
+})();
 
 function getCallups_raw(){ return window._callups || []; }
 function getPlayers_raw(){ return window._players || []; }
