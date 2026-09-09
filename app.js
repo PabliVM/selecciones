@@ -838,7 +838,7 @@ function agendaBannerHtml(){
 
   var chips=[];
   activeFechas.forEach(function(r){
-    var label=(r.tipo||"Fecha")+(r.cat?" · "+(CAT[r.cat]||r.cat):"");
+    var label=r.cat?(CAT[r.cat]||r.cat):(r.tipo||"Fecha");
     chips.push('<div class="agenda-banner-chip agenda-banner-active" style="border-color:'+(r.color||"#888")+'">'+
       '<span class="agenda-banner-dot" style="background:'+(r.color||"#888")+'"></span>'+
       '<div><b>🔴 Ahora mismo: '+esc(label)+"</b>"+
@@ -855,7 +855,7 @@ function agendaBannerHtml(){
   allFechas.forEach(function(r){
     var end=r.endDate||r.startDate;
     if(end<todayStr||r.startDate>monthEndStr)return;
-    var label=(r.tipo||"Fecha")+(r.cat?" · "+(CAT[r.cat]||r.cat):"");
+    var label=r.cat?(CAT[r.cat]||r.cat):(r.tipo||"Fecha");
     items.push({kind:"fecha",tipo:r.tipo,startDate:r.startDate,endDate:end,title:label,color:r.color||"#888"});
   });
   items.sort(function(a,b){
@@ -1815,9 +1815,10 @@ function getCalEvents(season){
   getRefDates_raw().forEach(function(r){
     if(!r.startDate)return;
     var tipoKey=(r.tipo||"").trim().toLowerCase();
-    var parts=[r.tipo];
+    var parts=[];
     if(r.cat)parts.push(CAT[r.cat]||r.cat);
     if(r.title)parts.push(r.title);
+    if(!parts.length)parts.push(r.tipo);
     var baseColor=r.color||"#888";
     var shaded=r.cat?shadeColorForCat(baseColor,r.cat,getCatsForTipo(r.tipo)):baseColor;
     events.push({id:"f_"+r.id,kind:"fecha",tipoKey:tipoKey,tipoLabel:r.tipo,selType:null,selCat:null,
