@@ -496,7 +496,7 @@ details[open] .fin-summary__label::before{transform:rotate(90deg)}
 .fecha-order-btn:disabled{opacity:.3;cursor:default}
 .fecha-cat-group{margin-top:8px}
 .fecha-cat-group:first-child{margin-top:0}
-.fecha-cat-group-hdr{font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--text-muted);padding:6px 0 2px;border-bottom:1px solid var(--border);margin-bottom:2px}
+.fecha-cat-group-hdr{font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;padding:4px 8px;border-radius:4px;margin-bottom:4px;display:inline-block}
 .fecha-add-icon{flex-shrink:0;width:36px;height:36px;border-radius:50%;background:var(--navy);color:#fff;border:none;font-size:20px;font-weight:400;line-height:1;cursor:pointer;box-shadow:var(--shadow-sm);display:flex;align-items:center;justify-content:center}
 .fbtn-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle;flex-shrink:0}
 .agenda-banner{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
