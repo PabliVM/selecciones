@@ -1689,10 +1689,10 @@ function renderCalendarioPlan(){
 function renderCalMain(){
   var season=S.season;
   var h='<div class="view-toggle">'+
-    '<button class="vtbtn'+(S.calMode==="clasico"?" on":"")+'" id="cm-clasico">🗓️ Mensual</button>'+
     '<button class="vtbtn'+(S.calMode==="vertical"?" on":"")+'" id="cm-vertical">📊 Temporada</button>'+
-    '<button class="vtbtn'+(S.calMode==="fechas"?" on":"")+'" id="cm-fechas">📝 Introducir fechas</button>'+
+    '<button class="vtbtn'+(S.calMode==="clasico"?" on":"")+'" id="cm-clasico">🗓️ Mensual</button>'+
     "</div>";
+  h+='<button class="btn btn-ghost btn-sm" id="cm-fechas" style="margin:8px 0 12px">'+(S.calMode==="fechas"?"× Cerrar":"+ Nuevas fechas")+"</button>";
 
   if(S.calMode==="fechas"){
     h+='<div id="cal-body"></div>';
@@ -1700,7 +1700,7 @@ function renderCalMain(){
     target0.innerHTML=h;
     $("cm-clasico").addEventListener("click",function(){S.calMode="clasico";renderCalMain();});
     $("cm-vertical").addEventListener("click",function(){S.calMode="vertical";renderCalMain();});
-    $("cm-fechas").addEventListener("click",function(){S.calMode="fechas";renderCalMain();});
+    $("cm-fechas").addEventListener("click",function(){S.calMode="vertical";renderCalMain();});
     renderFechas();
     return;
   }
