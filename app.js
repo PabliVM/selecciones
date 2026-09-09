@@ -898,8 +898,31 @@ function agendaBannerHtml(){
 
 function renderAgenda(viewMode){
   viewMode=viewMode||S.agendaView||"fichas";S.agendaView=viewMode;
+  if(!S.agendaTab)S.agendaTab="conv";
   if(S.showDescartadas===undefined)S.showDescartadas=false;
   if(!S.filterCats)S.filterCats=[];
+
+  var tabsHtml='<div class="pill-tabs" style="margin-bottom:14px">'+
+    '<button class="pill-btn'+(S.agendaTab==="conv"?" on":"")+'" id="atab-conv">📋 Convocatorias</button>'+
+    '<button class="pill-btn'+(S.agendaTab==="fechas"?" on":"")+'" id="atab-fechas">🗓️ Fechas y próximamente</button>'+
+    "</div>";
+
+  if(S.agendaTab==="fechas"){
+    var h0='<div class="vh" style="margin-bottom:12px"><h1 class="vt">Agenda</h1></div>'+tabsHtml+agendaBannerHtml();
+    $("main").innerHTML=h0;
+    document.querySelectorAll("[data-openid]").forEach(function(b){b.addEventListener("click",function(){openDetail(b.dataset.openid);});});
+    document.querySelectorAll(".agenda-months-btn").forEach(function(b){b.addEventListener("click",function(){S.agendaMonths=parseInt(b.dataset.months,10);renderAgenda(S.agendaView);});});
+    document.querySelectorAll("[data-agtipo]").forEach(function(b){b.addEventListener("click",function(){
+      var t=b.dataset.agtipo;var i=S.agendaFilterTipos.indexOf(t);
+      if(i===-1)S.agendaFilterTipos.push(t);else S.agendaFilterTipos.splice(i,1);
+      renderAgenda(S.agendaView);
+    });});
+    var agClear=document.querySelector("[data-agtipo-clear]");if(agClear)agClear.addEventListener("click",function(){S.agendaFilterTipos=[];renderAgenda(S.agendaView);});
+    $("atab-conv").addEventListener("click",function(){S.agendaTab="conv";renderAgenda(S.agendaView);});
+    $("atab-fechas").addEventListener("click",function(){S.agendaTab="fechas";renderAgenda(S.agendaView);});
+    return;
+  }
+
   var all=sortDate(getCallups({season:S.season}),"asc");
   var descartadas=all.filter(function(c){return c.convType==="descartada";});
   var visible=S.showDescartadas?all:all.filter(function(c){return c.convType!=="descartada";});
@@ -926,8 +949,7 @@ function renderAgenda(viewMode){
     '<button class="vtbtn'+(viewMode==="tabla"?" on":"")+'" data-vm="tabla">≡ Tabla</button>'+
     '</div>'+
     '<button class="btn-print" id="btn-print-agenda">🖨️</button>'+
-    '</div></div></div>'+
-    agendaBannerHtml()+
+    '</div></div>'+tabsHtml+
     '<div class="fb">'+
     '<button class="fbtn'+(!S.filterType?" on":"")+'" data-f="">Todas</button>'+
     '<button class="fbtn fbtn-mad'+(S.filterType==="madrilena"?" on":"")+'" data-f="madrilena"><img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/MADRID.png" style="width:14px;height:10px;object-fit:cover;border-radius:1px;vertical-align:middle"/> RFFM</button>'+
@@ -952,14 +974,8 @@ function renderAgenda(viewMode){
   if(viewMode==="fichas")bindCards();
   else document.querySelectorAll(".trow").forEach(function(row){row.addEventListener("click",function(){openDetail(row.dataset.id);});});
   document.querySelectorAll("[data-f]").forEach(function(b){b.addEventListener("click",function(){S.filterType=b.dataset.f||null;S.filterCats=[];renderAgenda(S.agendaView);});});
-  document.querySelectorAll("[data-openid]").forEach(function(b){b.addEventListener("click",function(){openDetail(b.dataset.openid);});});
-  document.querySelectorAll(".agenda-months-btn").forEach(function(b){b.addEventListener("click",function(){S.agendaMonths=parseInt(b.dataset.months,10);renderAgenda(S.agendaView);});});
-  document.querySelectorAll("[data-agtipo]").forEach(function(b){b.addEventListener("click",function(){
-    var t=b.dataset.agtipo;var i=S.agendaFilterTipos.indexOf(t);
-    if(i===-1)S.agendaFilterTipos.push(t);else S.agendaFilterTipos.splice(i,1);
-    renderAgenda(S.agendaView);
-  });});
-  var agClear=document.querySelector("[data-agtipo-clear]");if(agClear)agClear.addEventListener("click",function(){S.agendaFilterTipos=[];renderAgenda(S.agendaView);});
+  $("atab-conv").addEventListener("click",function(){S.agendaTab="conv";renderAgenda(S.agendaView);});
+  $("atab-fechas").addEventListener("click",function(){S.agendaTab="fechas";renderAgenda(S.agendaView);});
   document.querySelectorAll("[data-cat]").forEach(function(b){b.addEventListener("click",function(){var cat=b.dataset.cat;if(!cat)return;var idx=S.filterCats.indexOf(cat);if(idx===-1)S.filterCats.push(cat);else S.filterCats.splice(idx,1);renderAgenda(S.agendaView);});});
   document.querySelectorAll("[data-cat-clear]").forEach(function(b){b.addEventListener("click",function(){S.filterCats=[];renderAgenda(S.agendaView);});});
   document.querySelectorAll("[data-vm]").forEach(function(b){b.addEventListener("click",function(){renderAgenda(b.dataset.vm);});});
