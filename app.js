@@ -1760,6 +1760,31 @@ function calSwitchMode(mode){
   S.calMode=mode;
   renderCalMain();
 }
+function loadHtml2Canvas(cb){
+  if(window.html2canvas){cb();return;}
+  var s=document.createElement("script");
+  s.src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
+  s.onload=function(){cb();};
+  s.onerror=function(){toast("❌ No se pudo cargar el generador de imagen (revisa tu conexión)");};
+  document.head.appendChild(s);
+}
+
+function exportCalendarPNG(season){
+  var wrap=document.querySelector("#cal-body .calv-wrap");
+  if(!wrap){toast("No hay nada que exportar");return;}
+  toast("Generando imagen...");
+  loadHtml2Canvas(function(){
+    var bg=getComputedStyle(document.body).backgroundColor||"#ffffff";
+    html2canvas(wrap,{backgroundColor:bg,scale:2,useCORS:true}).then(function(canvas){
+      var link=document.createElement("a");
+      link.download="calendario-"+season+".png";
+      link.href=canvas.toDataURL("image/png");
+      link.click();
+      toast("✅ Imagen descargada");
+    }).catch(function(e){console.error(e);toast("❌ Error generando la imagen");});
+  });
+}
+
 function exportCalendarPDF(season){
   var body=$("cal-body");
   if(!body||!body.querySelector(".calv-wrap")){toast("No hay nada que exportar");return;}
@@ -1805,7 +1830,7 @@ function renderCalMain(){
     "</div>";
   h+='<div style="display:flex;gap:8px;align-items:center;margin:8px 0 12px;flex-wrap:wrap">'+
     '<button class="btn btn-ghost btn-sm" id="cm-fechas">'+(S.calMode==="fechas"?"× Cerrar":"+ Nuevas fechas")+"</button>"+
-    (S.calMode==="vertical"?'<button class="btn btn-ghost btn-sm" id="cm-export">🖨️ Exportar PDF</button>':"")+
+    (S.calMode==="vertical"?'<button class="btn btn-ghost btn-sm" id="cm-export">📷 Exportar PNG</button>':"")+
     "</div>";
 
   if(S.calMode==="fechas"){
@@ -1850,7 +1875,7 @@ function renderCalMain(){
   $("cm-clasico").addEventListener("click",function(){calSwitchMode("clasico");});
   $("cm-vertical").addEventListener("click",function(){calSwitchMode("vertical");});
   $("cm-fechas").addEventListener("click",function(){calSwitchMode("fechas");});
-  var exportBtn=$("cm-export");if(exportBtn)exportBtn.addEventListener("click",function(){exportCalendarPDF(season);});
+  var exportBtn=$("cm-export");if(exportBtn)exportBtn.addEventListener("click",function(){exportCalendarPNG(season);});
   $("cal-todos").addEventListener("click",function(){S.calFilterTipo=[];S.calFilterSel=[];S.calFilterCat=[];renderCalMain();});
   var clearBtn=$("cal-clear");if(clearBtn)clearBtn.addEventListener("click",function(){S.calFilterTipo=[];S.calFilterSel=[];S.calFilterCat=[];renderCalMain();});
   target.querySelectorAll("[data-tipo]").forEach(function(b){b.addEventListener("click",function(){
