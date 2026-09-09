@@ -487,6 +487,8 @@ details[open] .fin-summary__label::before{transform:rotate(90deg)}
 .fecha-range-row:first-child{border-top:none}
 .fecha-range-txt{flex:1;color:var(--text)}
 .fecha-range-actions{display:flex;gap:4px;flex-shrink:0}
+.fecha-cats-grid{display:flex;flex-wrap:wrap;gap:6px}
+.fecha-cat-chk{display:inline-flex;align-items:center;gap:5px;font-size:12px;border:1px solid var(--border);border-radius:999px;padding:5px 12px;cursor:pointer;user-select:none}
 .fbtn-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle;flex-shrink:0}
 .pill-tabs{display:flex;gap:8px;overflow-x:auto;margin-bottom:14px;-webkit-overflow-scrolling:touch}
 .pill-tabs::-webkit-scrollbar{display:none}
