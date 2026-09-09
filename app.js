@@ -1652,8 +1652,11 @@ function getCalEvents(season){
   getRefDates_raw().forEach(function(r){
     if(!r.startDate)return;
     var tipoKey=(r.tipo||"").trim().toLowerCase();
+    var parts=[r.tipo];
+    if(r.cat)parts.push(CAT[r.cat]||r.cat);
+    if(r.title)parts.push(r.title);
     events.push({id:"f_"+r.id,kind:"fecha",tipoKey:tipoKey,tipoLabel:r.tipo,selType:null,selCat:null,
-      title:r.title||r.tipo||"Fecha",startDate:r.startDate,endDate:r.endDate||r.startDate,color:r.color||"#888",raw:r});
+      title:parts.join(" · "),startDate:r.startDate,endDate:r.endDate||r.startDate,color:r.color||"#888",raw:r});
   });
   return events;
 }
@@ -1774,7 +1777,7 @@ function calDayPanelHtml(ds,dayEvents,dayMatches){
   var rows=dayEvents.map(function(e){
     return'<div class="cal-ev-item" data-kind="'+e.kind+'" data-id="'+(e.raw.id||"")+'">'+
       '<span class="cal-ev-flag">'+(e.kind==="callup"?getSelFlag(e.raw.selectionType,e.raw.pais):"🗓️")+'</span>'+
-      '<div class="cal-ev-info"><div class="cal-ev-title">'+esc(e.kind==="fecha"&&e.tipoLabel?e.tipoLabel+(e.raw.title?" · "+e.raw.title:""):e.title)+'</div>'+
+      '<div class="cal-ev-info"><div class="cal-ev-title">'+esc(e.title)+'</div>'+
       '<div class="cal-ev-dates">'+fmtRange(e.startDate,e.endDate)+"</div></div></div>";
   }).join("");
   var mrows=(dayMatches||[]).map(function(x){
