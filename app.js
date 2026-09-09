@@ -43,6 +43,10 @@ function contrastText(hex){
   var yiq=(r*299+g*587+b*114)/1000;
   return yiq>=160?"#111":"#fff";
 }
+function catsDesc(arr){
+  var order=Object.keys(CAT).filter(function(k){return k!=="todas";});
+  return arr.slice().sort(function(a,b){return order.indexOf(b)-order.indexOf(a);});
+}
 function getOrderedTipos(){
   var all=getRefDates_raw();
   var seen={};var list=[];
@@ -1130,7 +1134,7 @@ function renderNueva(){
     r.addEventListener("change",function(){
       var k=selKey(r.value);
       var cs=$("sel-cat");cs.innerHTML='<option value="">Selecciona categoría</option>';
-      var cats=SELS[k]?SELS[k].cats:[];
+      var cats=SELS[k]?SELS[k].cats.slice().reverse():[];
       cats.forEach(function(c){cs.innerHTML+='<option value="'+c+'">'+(CAT[c]||c)+"</option>";});
       $("cat-g").style.display="block";
       var paisG=$("pais-g");if(paisG)paisG.style.display=(k==="internacional")?"block":"none";
@@ -1423,7 +1427,7 @@ function renderJugadores(){
   var callups=getCallups({season:S.season});
   var callupCount={};
   callups.forEach(function(c){if(c.players)c.players.forEach(function(cp){callupCount[cp.playerId]=(callupCount[cp.playerId]||0)+1;});});
-  var allTeams=TEAMS.slice().reverse();
+  var allTeams=TEAMS.slice();
   var teamPills='<div class="jug-team-bar">'+
     '<button class="fbtn'+(S.jugTeam===""?" on":"")+'" data-jt="">Todos</button>'+
     allTeams.map(function(t){return'<button class="fbtn'+(S.jugTeam===t.name?" on":"")+'" data-jt="'+esc(t.name)+'">'+esc(t.name)+'</button>';}).join("")+
@@ -1457,6 +1461,16 @@ function renderJugadores(){
   var nsBtn=$("btn-new-season");if(nsBtn)nsBtn.addEventListener("click",function(){openNewSeasonWizard(S.season,nextSea(S.season));});
 }
 
+function deletePlayer(id,cb){
+  if(window._db&&window._fbUser){
+    var fns=window._fbFns;
+    fns.deleteDoc(fns.doc(window._db,"players",id)).then(function(){
+      window._players=getPlayers_raw().filter(function(p){return p.id!==id;});if(cb)cb();
+    }).catch(function(e){console.error(e);});
+  } else {
+    window._players=getPlayers_raw().filter(function(p){return p.id!==id;});if(cb)cb();
+  }
+}
 function openPlayerEdit(pid){
   var p=null;for(var i=0;i<getPlayers_raw().length;i++){if(getPlayers_raw()[i].id===pid){p=getPlayers_raw()[i];break;}}
   if(!p)return;
@@ -1471,12 +1485,18 @@ function openPlayerEdit(pid){
     '<button class="btn btn-danger btn-sm" id="pe-toggle" style="flex:1">'+(p.active?"🚫 Dar de baja":"✅ Reactivar")+'</button>'+
     '<button class="btn btn-ghost btn-sm" id="pe-cancel" style="flex:1">Cancelar</button>'+
     '<button class="btn btn-primary btn-sm" id="pe-save" style="flex:1">Guardar</button>'+
-    '</div></div>';
+    "</div>"+
+    '<button class="btn btn-danger btn-sm" id="pe-delete" style="width:100%;margin-top:8px">🗑 Eliminar jugador</button>'+
+    "</div>";
   document.body.appendChild(mo);
   function closeMo(){if(mo.parentNode)mo.parentNode.removeChild(mo);}
   $("pe-close").addEventListener("click",closeMo);$("pe-cancel").addEventListener("click",closeMo);
   mo.addEventListener("click",function(e){if(e.target===mo)closeMo();});
   $("pe-toggle").addEventListener("click",function(){p.active=!p.active;toast(p.active?"✅ Reactivado":"🚫 Dado de baja");closeMo();renderJugadores();});
+  $("pe-delete").addEventListener("click",function(){
+    if(!confirm("¿Eliminar a "+p.fullName+" definitivamente? Esta acción no se puede deshacer."))return;
+    deletePlayer(p.id,function(){toast("🗑 Jugador eliminado");closeMo();renderJugadores();});
+  });
   $("pe-save").addEventListener("click",function(){
     var newName=($("pe-name").value||"").trim();
     var newTeamId=$("pe-team").value;
@@ -1785,7 +1805,7 @@ function calAvailableCats(){
     var cats=getRefDates_raw().find(function(r){return(r.tipo||"").trim().toLowerCase()===tk&&r.cats&&r.cats.length;});
     if(cats)cats.cats.forEach(function(c){set[c]=1;});
   });
-  return Object.keys(set);
+  return catsDesc(Object.keys(set));
 }
 function calEventOrderKey(e){
   if(e.kind==="callup")return-1;
@@ -2226,7 +2246,7 @@ function openFechaAddToGroup(tipo,color,cats){
   cats=cats||[];
   var mode="single";
   var mo=document.createElement("div");mo.className="mo";
-  var catOptsHtml=cats.length?'<option value="">— Todas —</option>'+cats.map(function(c){return'<option value="'+c+'">'+(CAT[c]||c)+"</option>";}).join(""):"";
+  var catOptsHtml=cats.length?'<option value="">— Todas —</option>'+catsDesc(cats).map(function(c){return'<option value="'+c+'">'+(CAT[c]||c)+"</option>";}).join(""):"";
   mo.innerHTML='<div class="modal"><button class="mcl" id="fag-close">×</button>'+
     '<div class="mtitle">Añadir fecha a '+esc(tipo)+"</div>"+
     '<div class="view-toggle" style="margin-bottom:12px">'+
@@ -2310,7 +2330,7 @@ function openFechaAdd(tipos){
     '<div class="fg"><label class="fl">Nombre</label><input class="fi" id="fa-tipo" list="fecha-tipos-dl" type="text" placeholder="FIFA, RFFM sub14..." autocomplete="off"/>'+dl+"</div>"+
     '<div class="fg"><label class="fl">Color</label><input class="fi" id="fa-color" type="color" value="#F5B301" style="height:40px;padding:4px;cursor:pointer"/></div>'+
     '<div class="fg"><label class="fl">Subcategorías (opcional)</label><div class="fecha-cats-grid" id="fa-cats">'+
-    Object.keys(CAT).filter(function(k){return k!=="todas";}).map(function(k){return'<label class="fecha-cat-chk"><input type="checkbox" value="'+k+'"/>'+CAT[k]+"</label>";}).join("")+
+    catsDesc(Object.keys(CAT).filter(function(k){return k!=="todas";})).map(function(k){return'<label class="fecha-cat-chk"><input type="checkbox" value="'+k+'"/>'+CAT[k]+"</label>";}).join("")+
     "</div></div>"+
     '<div id="fa-err" class="ferr" style="display:none"></div>'+
     '<div style="display:flex;gap:8px;margin-top:8px">'+
@@ -2336,7 +2356,7 @@ function openFechaEdit(r,tipos){
   mo.innerHTML='<div class="modal"><button class="mcl" id="fee-close">×</button>'+
     '<div class="mtitle">Editar fecha</div>'+
     '<p class="msub">Tipo: <b>'+esc(r.tipo||"")+'</b></p>'+
-    (function(){var cats=getCatsForTipo(r.tipo);return cats.length?'<div class="fg"><label class="fl">Aplica a (opcional)</label><select class="fsel" id="fee-cat"><option value="">— Todas —</option>'+cats.map(function(c){return'<option value="'+c+'"'+(r.cat===c?" selected":"")+">"+(CAT[c]||c)+"</option>";}).join("")+"</select></div>":"";})()+
+    (function(){var cats=getCatsForTipo(r.tipo);return cats.length?'<div class="fg"><label class="fl">Aplica a (opcional)</label><select class="fsel" id="fee-cat"><option value="">— Todas —</option>'+catsDesc(cats).map(function(c){return'<option value="'+c+'"'+(r.cat===c?" selected":"")+">"+(CAT[c]||c)+"</option>";}).join("")+"</select></div>":"";})()+
     '<div class="fg"><label class="fl">Título (opcional)</label><input class="fi" id="fee-title" type="text" value="'+esc(r.title||"")+'"/></div>'+
     '<div class="fg"><label class="fl">Desde</label><input class="fi" id="fee-start" type="date" value="'+esc(r.startDate||"")+'"/></div>'+
     '<div class="fg"><label class="fl">Hasta</label><input class="fi" id="fee-end" type="date" value="'+esc(r.endDate||r.startDate||"")+'"/></div>'+
@@ -2371,7 +2391,7 @@ function openTipoEdit(tipo,color,cats){
     '<div class="fg"><label class="fl">Nombre</label><input class="fi" id="te-tipo" type="text" value="'+esc(tipo)+'"/></div>'+
     '<div class="fg"><label class="fl">Color</label><input class="fi" id="te-color" type="color" value="'+esc(color||"#F5B301")+'" style="height:40px;padding:4px;cursor:pointer"/></div>'+
     '<div class="fg"><label class="fl">Subcategorías (opcional)</label><div class="fecha-cats-grid" id="te-cats">'+
-    Object.keys(CAT).filter(function(k){return k!=="todas";}).map(function(k){return'<label class="fecha-cat-chk"><input type="checkbox" value="'+k+'"'+(cats.indexOf(k)!==-1?" checked":"")+"/>"+CAT[k]+"</label>";}).join("")+
+    catsDesc(Object.keys(CAT).filter(function(k){return k!=="todas";})).map(function(k){return'<label class="fecha-cat-chk"><input type="checkbox" value="'+k+'"'+(cats.indexOf(k)!==-1?" checked":"")+"/>"+CAT[k]+"</label>";}).join("")+
     "</div></div>"+
     '<div id="te-err" class="ferr" style="display:none"></div>'+
     '<div style="display:flex;gap:8px;margin-top:8px">'+
