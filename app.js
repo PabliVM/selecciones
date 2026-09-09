@@ -810,13 +810,16 @@ if(c.llegada){var lf={llegadaDate:c.llegada.date,llegadaTime:c.llegada.time,lleg
 // ── AGENDA ──
 function agendaBannerHtml(){
   if(!S.agendaMonths)S.agendaMonths=1;
+  if(!S.agendaFilterTipos)S.agendaFilterTipos=[];
   var today=new Date();today.setHours(0,0,0,0);
   var todayStr=today.getFullYear()+"-"+String(today.getMonth()+1).padStart(2,"0")+"-"+String(today.getDate()).padStart(2,"0");
   var monthEnd=new Date(today);monthEnd.setDate(monthEnd.getDate()+30*S.agendaMonths);
   var monthEndStr=monthEnd.getFullYear()+"-"+String(monthEnd.getMonth()+1).padStart(2,"0")+"-"+String(monthEnd.getDate()).padStart(2,"0");
 
   var allCallups=getCallups({season:S.season});
-  var allFechas=getRefDates_raw().filter(function(r){return!!r.startDate;});
+  var allFechasRaw=getRefDates_raw().filter(function(r){return!!r.startDate;});
+  var tipoList=getOrderedTipos();
+  var allFechas=S.agendaFilterTipos.length?allFechasRaw.filter(function(r){return S.agendaFilterTipos.indexOf((r.tipo||"").trim())!==-1;}):allFechasRaw;
   var activeFechas=allFechas.filter(function(r){return r.startDate<=todayStr&&(r.endDate||r.startDate)>=todayStr;}).sort(function(a,b){return getTipoOrder(a.tipo)-getTipoOrder(b.tipo);});
 
   var chips=[];
@@ -846,8 +849,18 @@ function agendaBannerHtml(){
       (a.kind==="callup"?-1:b.kind==="callup"?1:getTipoOrder(a.tipo)-getTipoOrder(b.tipo));
   });
 
+  var tipoFilterHtml=tipoList.length?'<div class="agenda-tipo-filter">'+
+    tipoList.map(function(t){
+      var rec=getRefDates_raw().find(function(r){return(r.tipo||"").trim()===t;});
+      var col=rec?rec.color:"#888";
+      var on=S.agendaFilterTipos.indexOf(t)!==-1;
+      return'<button class="fbtn'+(on?" on":"")+'" data-agtipo="'+esc(t)+'"><span class="fbtn-dot" style="background:'+col+'"></span>'+esc(t)+"</button>";
+    }).join("")+
+    (S.agendaFilterTipos.length?'<button class="fbtn" data-agtipo-clear="1" style="border-style:dashed;color:var(--text-muted)">✕ Limpiar</button>':"")+
+    "</div>":"";
+
   var monthLabel=S.agendaMonths===1?"el próximo mes":"los próximos "+S.agendaMonths+" meses";
-  var listHtml='<div class="agenda-upcoming"><div class="agenda-upcoming-hdr" style="display:flex;align-items:center;justify-content:space-between;gap:8px">'+
+  var listHtml=tipoFilterHtml+'<div class="agenda-upcoming"><div class="agenda-upcoming-hdr" style="display:flex;align-items:center;justify-content:space-between;gap:8px">'+
     '<span>📅 En '+monthLabel+"</span>"+
     '<div class="agenda-months-sel">'+
     [1,2,3].map(function(n){return'<button class="agenda-months-btn'+(S.agendaMonths===n?" on":"")+'" data-months="'+n+'">'+n+"m</button>";}).join("")+
@@ -924,6 +937,12 @@ function renderAgenda(viewMode){
   document.querySelectorAll("[data-f]").forEach(function(b){b.addEventListener("click",function(){S.filterType=b.dataset.f||null;S.filterCats=[];renderAgenda(S.agendaView);});});
   document.querySelectorAll("[data-openid]").forEach(function(b){b.addEventListener("click",function(){openDetail(b.dataset.openid);});});
   document.querySelectorAll(".agenda-months-btn").forEach(function(b){b.addEventListener("click",function(){S.agendaMonths=parseInt(b.dataset.months,10);renderAgenda(S.agendaView);});});
+  document.querySelectorAll("[data-agtipo]").forEach(function(b){b.addEventListener("click",function(){
+    var t=b.dataset.agtipo;var i=S.agendaFilterTipos.indexOf(t);
+    if(i===-1)S.agendaFilterTipos.push(t);else S.agendaFilterTipos.splice(i,1);
+    renderAgenda(S.agendaView);
+  });});
+  var agClear=document.querySelector("[data-agtipo-clear]");if(agClear)agClear.addEventListener("click",function(){S.agendaFilterTipos=[];renderAgenda(S.agendaView);});
   document.querySelectorAll("[data-cat]").forEach(function(b){b.addEventListener("click",function(){var cat=b.dataset.cat;if(!cat)return;var idx=S.filterCats.indexOf(cat);if(idx===-1)S.filterCats.push(cat);else S.filterCats.splice(idx,1);renderAgenda(S.agendaView);});});
   document.querySelectorAll("[data-cat-clear]").forEach(function(b){b.addEventListener("click",function(){S.filterCats=[];renderAgenda(S.agendaView);});});
   document.querySelectorAll("[data-vm]").forEach(function(b){b.addEventListener("click",function(){renderAgenda(b.dataset.vm);});});
