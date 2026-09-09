@@ -1848,7 +1848,7 @@ function renderCalVertical(events,season){
       var sd=parseInt(s.split("-")[2],10),ed=parseInt(en.split("-")[2],10);
       var top=(sd-1)*ROWH,height=(ed-sd+1)*ROWH-2;
       var lw=100/laneCount;
-      return'<div class="calv-bar" data-kind="'+e.kind+'" data-id="'+(e.raw.id||"")+'" style="top:'+top+'px;height:'+height+'px;left:'+(e._lane*lw)+'%;width:'+(lw-1)+'%;background:'+e.color+'" title="'+esc(e.title)+" · "+fmtRange(e.startDate,e.endDate)+'">'+(height>=ROWH-2?'<span class="calv-bar-label" style="color:'+contrastText(e.color)+'">'+esc(e.title)+"</span>":"")+"</div>";
+      return'<div class="calv-bar" data-kind="'+e.kind+'" data-id="'+(e.raw.id||"")+'" style="top:'+top+'px;height:'+height+'px;left:'+(e._lane*lw)+'%;width:'+(lw-1)+'%;background:'+e.color+'" title="'+esc(e.title)+" · "+fmtRange(e.startDate,e.endDate)+'">'+(height>=ROWH*3?'<span class="calv-bar-label" style="color:'+contrastText(e.color)+'">'+esc(e.title)+"</span>":"")+"</div>";
     }).join("");
     return'<div class="calv-col"><div class="calv-mhdr">'+mn.label+" "+y+'</div><div class="calv-body" style="height:'+(daysInMonth*ROWH)+'px">'+rowsHtml+'<div class="calv-bars-layer">'+barsHtml+"</div></div></div>";
   }).join("");
