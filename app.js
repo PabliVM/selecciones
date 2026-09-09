@@ -1724,13 +1724,53 @@ function calSwitchMode(mode){
   S.calMode=mode;
   renderCalMain();
 }
+function exportCalendarPDF(season){
+  var body=$("cal-body");
+  if(!body||!body.querySelector(".calv-wrap")){toast("No hay nada que exportar");return;}
+  var activeChips=[];
+  document.querySelectorAll("#cpt-content .fbtn.on").forEach(function(b){
+    if(b.id!=="cal-todos")activeChips.push(b.textContent.trim());
+  });
+  var win=window.open("","_blank","width=1400,height=900");
+  if(!win){toast("El navegador bloqueó la ventana emergente. Permite pop-ups para exportar.");return;}
+  win.document.write('<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/><title>Calendario '+esc(season)+'</title><style>'+
+    '*{box-sizing:border-box}'+
+    'body{font-family:Arial,sans-serif;padding:14px;color:#111}'+
+    '.hdr{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #2563eb;padding-bottom:8px;margin-bottom:14px}'+
+    '.hdr h1{font-size:16pt;margin:0 0 3px}'+
+    '.hdr p{font-size:9pt;color:#555;margin:0}'+
+    '.rm-logo{font-weight:700;color:#2563eb;font-size:11pt}'+
+    '.calv-wrap{border:1px solid #ccc;padding:6px}'+
+    '.calv-grid{display:flex;gap:0;border-left:1px solid #ccc;border-top:1px solid #ccc}'+
+    '.calv-col{flex:1;min-width:90px;position:relative}'+
+    '.calv-mhdr{text-align:center;font-weight:700;padding:5px 0;background:#f2f4f7;font-size:9pt;text-transform:uppercase;border-right:1px solid #ccc;border-bottom:1px solid #ccc}'+
+    '.calv-body{position:relative;border-right:1px solid #ccc}'+
+    '.calv-row{display:flex;align-items:center;gap:3px;padding:0 4px;font-size:7.5pt;color:#666;border-bottom:1px solid #eee;box-sizing:border-box}'+
+    '.calv-dow{width:9px;font-weight:700;flex-shrink:0;border-right:1px solid #eee;height:100%;display:flex;align-items:center}'+
+    '.calv-dn2{min-width:13px;flex-shrink:0}'+
+    '.calv-bars-layer{position:absolute;top:0;left:32px;right:0;bottom:0}'+
+    '.calv-bar{position:absolute;border-radius:2px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 1px rgba(0,0,0,.15)}'+
+    '.calv-bar-label{writing-mode:vertical-rl;text-orientation:mixed;transform:rotate(180deg);font-size:7pt;font-weight:700;letter-spacing:.2px;white-space:nowrap;overflow:hidden}'+
+    '@media print{@page{size:landscape;margin:8mm}}'+
+    "</style></head><body>"+
+    '<div class="hdr"><div><h1>Calendario de Fechas</h1><p>Temporada '+esc(season)+(activeChips.length?" · Filtro: "+esc(activeChips.join(", ")):" · Sin filtros (todo visible)")+'</p></div><div class="rm-logo">Real Madrid Cantera</div></div>'+
+    body.querySelector(".calv-wrap").outerHTML+
+    "</body></html>");
+  win.document.close();
+  win.focus();
+  setTimeout(function(){win.print();},400);
+}
+
 function renderCalMain(){
   var season=S.season;
   var h='<div class="view-toggle">'+
     '<button class="vtbtn'+(S.calMode==="vertical"?" on":"")+'" id="cm-vertical">📊 Temporada</button>'+
     '<button class="vtbtn'+(S.calMode==="clasico"?" on":"")+'" id="cm-clasico">🗓️ Mensual</button>'+
     "</div>";
-  h+='<button class="btn btn-ghost btn-sm" id="cm-fechas" style="margin:8px 0 12px">'+(S.calMode==="fechas"?"× Cerrar":"+ Nuevas fechas")+"</button>";
+  h+='<div style="display:flex;gap:8px;align-items:center;margin:8px 0 12px;flex-wrap:wrap">'+
+    '<button class="btn btn-ghost btn-sm" id="cm-fechas">'+(S.calMode==="fechas"?"× Cerrar":"+ Nuevas fechas")+"</button>"+
+    (S.calMode==="vertical"?'<button class="btn btn-ghost btn-sm" id="cm-export">🖨️ Exportar PDF</button>':"")+
+    "</div>";
 
   if(S.calMode==="fechas"){
     h+='<div id="cal-body"></div>';
@@ -1774,6 +1814,7 @@ function renderCalMain(){
   $("cm-clasico").addEventListener("click",function(){calSwitchMode("clasico");});
   $("cm-vertical").addEventListener("click",function(){calSwitchMode("vertical");});
   $("cm-fechas").addEventListener("click",function(){calSwitchMode("fechas");});
+  var exportBtn=$("cm-export");if(exportBtn)exportBtn.addEventListener("click",function(){exportCalendarPDF(season);});
   $("cal-todos").addEventListener("click",function(){S.calFilterTipo=[];S.calFilterSel=[];S.calFilterCat=[];renderCalMain();});
   var clearBtn=$("cal-clear");if(clearBtn)clearBtn.addEventListener("click",function(){S.calFilterTipo=[];S.calFilterSel=[];S.calFilterCat=[];renderCalMain();});
   target.querySelectorAll("[data-tipo]").forEach(function(b){b.addEventListener("click",function(){
