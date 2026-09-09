@@ -2114,7 +2114,7 @@ function computeMonthSegments(monthEvents,monthStart,monthEnd,daysInMonth){
     var sd=parseInt(s.split("-")[2],10),ed=parseInt(en.split("-")[2],10);
     return{ev:e,sd:sd,ed:ed,lane:-1};
   });
-  var byStart=evs.slice().sort(function(a,b){return a.sd-b.sd||calEventOrderCompare(a.ev,b.ev);});
+  var byStart=evs.slice().sort(function(a,b){return calEventOrderCompare(a.ev,b.ev)||a.sd-b.sd;});
   var laneEnd=[];
   byStart.forEach(function(x){
     var lane=-1;
