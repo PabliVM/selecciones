@@ -19,6 +19,17 @@ function addRefDate(data,cb){
     obj.id=gid();if(!window._refdates)window._refdates=[];window._refdates.push(obj);if(cb)cb();
   }
 }
+function updateRefDate(id,data,cb){
+  var idx=getRefDates_raw().findIndex(function(r){return r.id===id;});
+  if(idx===-1){if(cb)cb();return;}
+  var merged=Object.assign({},window._refdates[idx],data);
+  window._refdates[idx]=merged;
+  if(window._db&&window._fbUser){
+    var fns=window._fbFns;
+    fns.setDoc(fns.doc(window._db,"refdates",id),data,{merge:true}).catch(function(e){console.error("refdate update:",e);});
+  }
+  if(cb)cb();
+}
 function deleteRefDate(id,cb){
   if(window._db&&window._fbUser){
     var fns=window._fbFns;
@@ -1741,50 +1752,48 @@ function calDayPanelHtml(ds,dayEvents,dayMatches){
 function renderCalVertical(events,season){
   var startYear=parseInt(season.split("-")[0]);
   var today=new Date();var ty=today.getFullYear(),tm=today.getMonth(),td=today.getDate();
-  var monthNames=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+  var monthNames=["Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre","Enero","Febrero","Marzo","Abril","Mayo","Junio"];
+  var dowLetters=["L","M","X","J","V","S","D"];
   var months=[];
-  for(var m=6;m<18;m++){var y=startYear+(m>=12?1:0);var mo=m%12;months.push({year:y,month:mo});}
-  var callupIds={};events.forEach(function(e){if(e.kind==="callup")callupIds[e.raw.id]=true;});
-  var h="";
-  months.forEach(function(mn){
+  for(var m=6;m<18;m++){var y=startYear+(m>=12?1:0);var mo=m%12;months.push({year:y,month:mo,label:monthNames[m-6]});}
+  var ROWH=20;
+  var pad2=function(n){return String(n).padStart(2,"0");};
+  var colsHtml=months.map(function(mn){
     var y=mn.year,mo=mn.month;
-    var first=new Date(y,mo,1).getDay();var fd=(first+6)%7;
-    var days=new Date(y,mo+1,0).getDate();
-    h+='<div class="cal-month"><div class="cal-mhdr">'+monthNames[mo]+" "+y+"</div>"+
-      '<div class="cal-grid"><div class="cal-dow">L</div><div class="cal-dow">M</div><div class="cal-dow">X</div>'+
-      '<div class="cal-dow">J</div><div class="cal-dow">V</div><div class="cal-dow">S</div><div class="cal-dow">D</div>';
-    for(var i=0;i<fd;i++)h+='<div class="cal-empty"></div>';
-    for(var d=1;d<=days;d++){
-      var ds=y+"-"+String(mo+1).padStart(2,"0")+"-"+String(d).padStart(2,"0");
-      var dayEvs=events.filter(function(e){return e.startDate<=ds&&e.endDate>=ds;});
-      var ms=[];getCallups_raw().forEach(function(c){if(!callupIds[c.id]||!c.matches)return;c.matches.forEach(function(mt){if(mt.date===ds)ms.push({conv:c,match:mt});});});
+    var daysInMonth=new Date(y,mo+1,0).getDate();
+    var monthStart=y+"-"+pad2(mo+1)+"-01";
+    var monthEnd=y+"-"+pad2(mo+1)+"-"+pad2(daysInMonth);
+    var rowsHtml="";
+    for(var d=1;d<=daysInMonth;d++){
+      var dow=(new Date(y,mo,d).getDay()+6)%7;
       var isToday=(y===ty&&mo===tm&&d===td);
-      var classes="cal-day"+(isToday?" cal-today":"")+(dayEvs.length?" cal-has-ev":"")+(ms.length?" cal-has-match":"");
-      var bars=dayEvs.length?'<div class="cal-bars">'+dayEvs.map(function(e){
-        return'<div class="cal-bar" style="background:'+e.color+'" title="'+esc(e.title)+'"></div>';
-      }).join("")+"</div>":"";
-      var matchDot=ms.length?'<div class="cal-dots"><div class="cal-match-dot">⚽</div></div>':"";
-      h+='<div class="'+classes+'" data-ds="'+ds+'">'+
-        '<span class="cal-dn">'+d+"</span>"+matchDot+bars+
-        "</div>";
+      rowsHtml+='<div class="calv-row'+(isToday?" calv-today":"")+'" style="height:'+ROWH+'px"><span class="calv-dow">'+dowLetters[dow]+"</span><span>"+d+"</span></div>";
     }
-    h+="</div></div>";
-  });
-  h+='<div id="cal-panel" class="cal-panel" style="display:none"></div>';
+    var monthEvents=events.filter(function(e){return e.startDate<=monthEnd&&e.endDate>=monthStart;}).slice().sort(function(a,b){return a.startDate.localeCompare(b.startDate);});
+    var lanes=[];
+    monthEvents.forEach(function(e){
+      var laneIdx=-1;
+      for(var li=0;li<lanes.length;li++){if(lanes[li]<e.startDate){laneIdx=li;break;}}
+      if(laneIdx===-1){laneIdx=lanes.length;lanes.push(e.endDate);}else{lanes[laneIdx]=e.endDate;}
+      e._lane=laneIdx;
+    });
+    var laneCount=Math.max(1,lanes.length);
+    var barsHtml=monthEvents.map(function(e){
+      var s=e.startDate<monthStart?monthStart:e.startDate;
+      var en=e.endDate>monthEnd?monthEnd:e.endDate;
+      var sd=parseInt(s.split("-")[2],10),ed=parseInt(en.split("-")[2],10);
+      var top=(sd-1)*ROWH,height=(ed-sd+1)*ROWH-2;
+      var lw=100/laneCount;
+      return'<div class="calv-bar" data-kind="'+e.kind+'" data-id="'+(e.raw.id||"")+'" style="top:'+top+'px;height:'+height+'px;left:'+(e._lane*lw)+'%;width:'+(lw-1)+'%;background:'+e.color+'" title="'+esc(e.title)+" · "+fmtRange(e.startDate,e.endDate)+'">'+(height>=ROWH-2?'<span class="calv-bar-label">'+esc(e.title)+"</span>":"")+"</div>";
+    }).join("");
+    return'<div class="calv-col"><div class="calv-mhdr">'+mn.label+" "+y+'</div><div class="calv-body" style="height:'+(daysInMonth*ROWH)+'px">'+rowsHtml+'<div class="calv-bars-layer">'+barsHtml+"</div></div></div>";
+  }).join("");
+  var h='<div class="calv-wrap"><div class="calv-grid">'+colsHtml+"</div></div>"+
+    '<div id="cal-panel" class="cal-panel" style="display:none"></div>';
   var target=$("cal-body");if(!target)return;
   target.innerHTML=h;
-  target.querySelectorAll(".cal-day").forEach(function(el){
-    el.addEventListener("click",function(){
-      var ds=el.dataset.ds;if(!ds)return;
-      var dayEvs=events.filter(function(e){return e.startDate<=ds&&e.endDate>=ds;});
-      var ms=[];getCallups_raw().forEach(function(c){if(!callupIds[c.id]||!c.matches)return;c.matches.forEach(function(mt){if(mt.date===ds)ms.push({conv:c,match:mt});});});
-      var panel=$("cal-panel");
-      if(!dayEvs.length&&!ms.length){panel.style.display="none";return;}
-      panel.innerHTML=calDayPanelHtml(ds,dayEvs,ms);
-      panel.style.display="block";
-      panel.querySelectorAll(".cal-ev-item[data-kind='callup']").forEach(function(ei){ei.addEventListener("click",function(){openDetail(ei.dataset.id);});});
-    });
-  });
+  target.querySelectorAll(".calv-bar[data-kind='callup']").forEach(function(el){el.addEventListener("click",function(){openDetail(el.dataset.id);});});
+  target.querySelectorAll(".calv-bar[data-kind='fecha']").forEach(function(el){el.addEventListener("click",function(){toast("🗓️ "+el.title);});});
 }
 
 function renderCalClasico(events){
@@ -1926,7 +1935,7 @@ function renderFechas(){
     h+='<div class="cl">'+list.map(function(r){
       return'<article class="cc" style="--ca:'+(r.color||"#5a6170")+';cursor:default">'+
         '<div class="cc-hdr"><div class="cc-badges"><span class="badge" style="background:'+(r.color||"#5a6170")+';color:#fff">'+esc(r.tipo||"—")+"</span></div>"+
-        (editable?'<button class="jug-edit-btn fecha-del-btn" data-id="'+r.id+'" title="Eliminar">🗑</button>':"")+
+        (editable?'<div style="display:flex;gap:6px"><button class="jug-edit-btn fecha-edit-btn" data-id="'+r.id+'" title="Editar">✏️</button><button class="jug-edit-btn fecha-del-btn" data-id="'+r.id+'" title="Eliminar">🗑</button></div>':"")+
         "</div>"+
         '<h3 class="cc-title">'+esc(r.title||r.tipo||"")+"</h3>"+
         '<div class="cc-mi"><span class="mi">📅</span><span>'+fmtRange(r.startDate,r.endDate)+"</span></div>"+
@@ -1938,6 +1947,11 @@ function renderFechas(){
   target.querySelectorAll("[data-ft]").forEach(function(b){b.addEventListener("click",function(){S.fechaTipo=b.dataset.ft;renderFechas();});});
   var addBtn=$("btn-add-fecha");if(addBtn)addBtn.addEventListener("click",function(){openFechaAdd(tipos);});
   var addBulkBtn=$("btn-add-fecha-bulk");if(addBulkBtn)addBulkBtn.addEventListener("click",function(){openFechaAddBulk(tipos);});
+  target.querySelectorAll(".fecha-edit-btn").forEach(function(b){b.addEventListener("click",function(e){
+    e.stopPropagation();
+    var r=getRefDates_raw().find(function(x){return x.id===b.dataset.id;});
+    if(r)openFechaEdit(r,tipos);
+  });});
   target.querySelectorAll(".fecha-del-btn").forEach(function(b){b.addEventListener("click",function(e){
     e.stopPropagation();
     if(!confirm("¿Eliminar esta fecha?"))return;
@@ -1972,6 +1986,35 @@ function openFechaAdd(tipos){
     var start=$("fa-start").value;var end=$("fa-end").value||start;
     if(!tipo||!start){$("fa-err").style.display="block";$("fa-err").textContent="Tipo y fecha de inicio son obligatorios.";return;}
     addRefDate({tipo:tipo,title:title,color:color,startDate:start,endDate:end},function(){toast("✅ Fecha añadida");closeMo();renderFechas();});
+  });
+}
+
+function openFechaEdit(r,tipos){
+  var dl='<datalist id="fee-tipos-dl">'+tipos.map(function(t){return'<option value="'+esc(t)+'">';}).join("")+"</datalist>";
+  var mo=document.createElement("div");mo.className="mo";
+  mo.innerHTML='<div class="modal"><button class="mcl" id="fee-close">×</button>'+
+    '<div class="mtitle">Editar fecha</div>'+
+    '<div class="fg"><label class="fl">Tipo</label><input class="fi" id="fee-tipo" list="fee-tipos-dl" type="text" value="'+esc(r.tipo||"")+'" autocomplete="off"/>'+dl+"</div>"+
+    '<div class="fg"><label class="fl">Título (opcional)</label><input class="fi" id="fee-title" type="text" value="'+esc(r.title||"")+'"/></div>'+
+    '<div class="fg"><label class="fl">Color</label><input class="fi" id="fee-color" type="color" value="'+esc(r.color||"#F5B301")+'" style="height:40px;padding:4px;cursor:pointer"/></div>'+
+    '<div class="fg"><label class="fl">Desde</label><input class="fi" id="fee-start" type="date" value="'+esc(r.startDate||"")+'"/></div>'+
+    '<div class="fg"><label class="fl">Hasta</label><input class="fi" id="fee-end" type="date" value="'+esc(r.endDate||r.startDate||"")+'"/></div>'+
+    '<div id="fee-err" class="ferr" style="display:none"></div>'+
+    '<div style="display:flex;gap:8px;margin-top:8px">'+
+    '<button class="btn btn-ghost btn-sm" id="fee-cancel" style="flex:1">Cancelar</button>'+
+    '<button class="btn btn-primary btn-sm" id="fee-save" style="flex:1">Guardar</button>'+
+    "</div></div>";
+  document.body.appendChild(mo);
+  function closeMo(){if(mo.parentNode)mo.parentNode.removeChild(mo);}
+  $("fee-close").addEventListener("click",closeMo);$("fee-cancel").addEventListener("click",closeMo);
+  mo.addEventListener("click",function(e){if(e.target===mo)closeMo();});
+  $("fee-save").addEventListener("click",function(){
+    var tipo=($("fee-tipo").value||"").trim();
+    var title=($("fee-title").value||"").trim();
+    var color=($("fee-color").value||"#F5B301");
+    var start=$("fee-start").value;var end=$("fee-end").value||start;
+    if(!tipo||!start){$("fee-err").style.display="block";$("fee-err").textContent="Tipo y fecha de inicio son obligatorios.";return;}
+    updateRefDate(r.id,{tipo:tipo,title:title,color:color,startDate:start,endDate:end},function(){toast("✅ Fecha actualizada");closeMo();renderFechas();});
   });
 }
 
