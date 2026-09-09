@@ -1973,8 +1973,7 @@ function renderFechas(){
     (editable?'<button class="fecha-add-icon" id="btn-add-fecha" title="Añadir tipo de fecha">+</button>':"")+
     "</div>";
   if(editable){
-    h+='<button class="btn btn-ghost btn-sm" id="btn-add-fecha-bulk" style="margin-bottom:12px">+ Añadir en lista</button>';
-  }
+
   if(!groups.length){
     h+=emptyState("Sin fechas"+(filtro?' de "'+filtro+'"':""),"🗓️");
   } else {
