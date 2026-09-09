@@ -74,7 +74,7 @@ SELS["madrilena"] = {
 };SELS["espanola"]  = {label:"Española",short:"ESP",cats:["sub14","sub15","sub16","sub17","sub18","sub19","sub20","sub21","abs"],colors:{sub14:{badge:"#DC2626"},sub15:{badge:"#DC2626"},sub16:{badge:"#B91C1C"},sub17:{badge:"#B91C1C"},sub18:{badge:"#991B1B"},sub19:{badge:"#7F1D1D"},sub20:{badge:"#7F1D1D"},sub21:{badge:"#450A0A"},abs:{badge:"#1A0000"}}};
 SELS["internacional"]={label:"Internacional",short:"INT",cats:["sub16","sub17","sub18","sub19","sub20","sub21","abs"],colors:{sub16:{badge:"#10B981"},sub17:{badge:"#10B981"},sub18:{badge:"#047857"},sub19:{badge:"#047857"},sub20:{badge:"#065F46"},sub21:{badge:"#065F46"},abs:{badge:"#064E3B"}}};
 
-var CAT={todas:"Todas",sub12:"Sub-12",sub13:"Sub-13",sub14:"Sub-14",sub15:"Sub-15",sub16:"Sub-16",sub17:"Sub-17",sub18:"Sub-18",sub19:"Sub-19",sub20:"Sub-20",sub21:"Sub-21",abs:"Absoluta"};
+var CAT={TODAS:"TODAS",sub12:"Sub-12",sub13:"Sub-13",sub14:"Sub-14",sub15:"Sub-15",sub16:"Sub-16",sub17:"Sub-17",sub18:"Sub-18",sub19:"Sub-19",sub20:"Sub-20",sub21:"Sub-21",abs:"Absoluta"};
 var STATUS={proxima:{c:"s-prox",i:"⏰",l:"PRÓXIMA"},en_curso:{c:"s-cur",i:"●",l:"EN CURSO"},finalizada:{c:"s-fin",i:"✓",l:"FINALIZADA"}};
 
 var TEAMS=[
@@ -775,7 +775,7 @@ function renderAgenda(viewMode){
     '<button class="btn-print" id="btn-print-agenda">🖨️</button>'+
     '</div></div></div>'+
     '<div class="fb">'+
-    '<button class="fbtn'+(!S.filterType?" on":"")+'" data-f="">Todas</button>'+
+    '<button class="fbtn'+(!S.filterType?" on":"")+'" data-f="">TODAS</button>'+
     '<button class="fbtn fbtn-mad'+(S.filterType==="madrilena"?" on":"")+'" data-f="madrilena"><img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/MADRID.png" style="width:14px;height:10px;object-fit:cover;border-radius:1px;vertical-align:middle"/> RFFM</button>'+
     '<button class="fbtn fbtn-esp'+(S.filterType==="espanola"?" on":"")+'" data-f="espanola"><img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/Espa%C3%B1a.png" style="width:14px;height:10px;object-fit:cover;border-radius:1px;vertical-align:middle"/> RFEF</button>'+
     '<button class="fbtn fbtn-int'+(S.filterType==="internacional"?" on":"")+'" data-f="internacional">🌍 OTRAS</button>'+
@@ -820,12 +820,12 @@ function renderSel(type){
   if(type==="internacional"){renderIntl();return;}
   var sel=SELS[type];
   var allC=sortDate(getCallups({season:S.season,type:type}),"desc");
-  var activeCats=["todas"].concat(sel.cats);
-  $("main").innerHTML='<div class="vh"><h1 class="vt">'+sel.label+"</h1></div>"+makeTabs(activeCats,"todas")+
+  var activeCats=["TODAS"].concat(sel.cats);
+  $("main").innerHTML='<div class="vh"><h1 class="vt">'+sel.label+"</h1></div>"+makeTabs(activeCats,"TODAS")+
     '<div id="catc">'+(allC.length?'<div class="cl">'+allC.map(callupCard).join("")+"</div>":emptyState("Sin convocatorias","📋"))+"</div>";
   bindTabs(function(cat){
-    var cs=cat==="todas"?allC:sortDate(getCallups({season:S.season,type:type,cat:cat}),"desc");
-    $("catc").innerHTML=cat==="todas"?(cs.length?'<div class="cl">'+cs.map(callupCard).join("")+"</div>":emptyState("Sin convocatorias","📋")):renderCatCallups(cs,cat);
+    var cs=cat==="TODAS"?allC:sortDate(getCallups({season:S.season,type:type,cat:cat}),"desc");
+    $("catc").innerHTML=cat==="TODAS"?(cs.length?'<div class="cl">'+cs.map(callupCard).join("")+"</div>":emptyState("Sin convocatorias","📋")):renderCatCallups(cs,cat);
     bindCards();
   });
   bindCards();
@@ -1938,7 +1938,7 @@ function renderFechas(){
 
   var h='<div class="vh"><h1 class="vt">Fechas</h1><span class="vs">'+list.length+' registradas</span></div>';
   h+='<div class="fb">'+
-    '<button class="fbtn'+(filtro===""?" on":"")+'" data-ft="">Todas</button>'+
+    '<button class="fbtn'+(filtro===""?" on":"")+'" data-ft="">TODAS</button>'+
     tipos.map(function(t){return'<button class="fbtn'+(filtro===t?" on":"")+'" data-ft="'+esc(t)+'">'+esc(t)+"</button>";}).join("")+
     "</div>";
   if(editable){
