@@ -446,7 +446,7 @@ function callupDetail(c){
 var S={view:"agenda",season:"2025-26",filterType:null,agendaView:"fichas",finOpen:false,editingId:null,planView:"bloques",intlPais:null,statsSearch:"",statsPlayer:null,jugTeam:"",jugSearch:"",calPlanTab:"calendario",fechaTipo:"",calMode:"vertical",calFilterTipo:[],calFilterSel:[],calClasicoYear:null,calClasicoMonth:null};
 
 function renderSeasonSel(){
-  var opts=_seasons.slice().reverse().map(function(s){return'<option value="'+s+'"'+(s===S.season?" selected":"")+">"+s+"</option>";}).join("");
+  var opts=_seasons.filter(function(s){return s!=="2025-26";}).slice().reverse().map(function(s){return'<option value="'+s+'"'+(s===S.season?" selected":"")+">"+s+"</option>";}).join("");
   $("season-sel").innerHTML='<select class="season-sel" id="ss">'+opts+"</select>";
   $("ss").addEventListener("change",function(e){S.season=e.target.value;route(S.view);});
 }
@@ -1635,6 +1635,7 @@ function getCalEvents(season){
       title:c.title,startDate:c.startDate,endDate:c.endDate||c.startDate,color:col,raw:c});
   });
   getRefDates_raw().forEach(function(r){
+    if(!r.startDate)return;
     var tipoKey=(r.tipo||"").trim().toLowerCase();
     events.push({id:"f_"+r.id,kind:"fecha",tipoKey:tipoKey,tipoLabel:r.tipo,selType:null,selCat:null,
       title:r.title||r.tipo||"Fecha",startDate:r.startDate,endDate:r.endDate||r.startDate,color:r.color||"#888",raw:r});
@@ -1962,15 +1963,16 @@ function renderFechas(){
     h+=emptyState("Sin fechas"+(filtro?' de "'+filtro+'"':""),"🗓️");
   } else {
     h+='<div class="cl">'+groups.map(function(g){
+      var realCount=g.items.filter(function(r){return!!r.startDate;}).length;
       var rows=g.items.map(function(r){
         return'<div class="fecha-range-row" data-id="'+r.id+'">'+
-          '<span class="mi">📅</span><span class="fecha-range-txt">'+(r.title?esc(r.title)+" · ":"")+fmtRange(r.startDate,r.endDate)+"</span>"+
+          '<span class="mi">📅</span><span class="fecha-range-txt">'+(r.startDate?(r.title?esc(r.title)+" · ":"")+fmtRange(r.startDate,r.endDate):"(sin fechas todavía)")+"</span>"+
           (editable?'<span class="fecha-range-actions"><button class="jug-edit-btn fecha-edit-btn" data-id="'+r.id+'" title="Editar">✏️</button><button class="jug-edit-btn fecha-del-btn" data-id="'+r.id+'" title="Eliminar">🗑</button></span>':"")+
           "</div>";
       }).join("");
       return'<article class="cc" style="--ca:'+g.color+';cursor:default">'+
         '<div class="cc-hdr"><div class="cc-badges"><span class="badge" style="background:'+g.color+';color:#fff">'+esc(g.tipo)+"</span>"+
-        '<span class="vs" style="margin-left:6px">'+g.items.length+(g.items.length===1?" fecha":" fechas")+"</span></div></div>"+
+        '<span class="vs" style="margin-left:6px">'+realCount+(realCount===1?" fecha":" fechas")+"</span></div></div>"+
         '<div class="fecha-range-list">'+rows+"</div>"+
         (editable?'<button class="btn btn-ghost btn-sm fecha-addrange-btn" data-tipo="'+esc(g.tipo)+'" data-color="'+esc(g.color)+'" style="width:100%;margin-top:8px">+ Añadir fecha a '+esc(g.tipo)+"</button>":"")+
         "</article>";
@@ -2028,16 +2030,17 @@ function openFechaAdd(tipos){
   var dl='<datalist id="fecha-tipos-dl">'+tipos.map(function(t){return'<option value="'+esc(t)+'">';}).join("")+"</datalist>";
   var mo=document.createElement("div");mo.className="mo";
   mo.innerHTML='<div class="modal"><button class="mcl" id="fa-close">×</button>'+
-    '<div class="mtitle">Nueva fecha</div>'+
-    '<div class="fg"><label class="fl">Tipo</label><input class="fi" id="fa-tipo" list="fecha-tipos-dl" type="text" placeholder="FIFA, RFFM sub14..." autocomplete="off"/>'+dl+"</div>"+
+    '<div class="mtitle">Nuevo tipo de fecha</div>'+
+    '<div class="fg"><label class="fl">Nombre</label><input class="fi" id="fa-tipo" list="fecha-tipos-dl" type="text" placeholder="FIFA, RFFM sub14..." autocomplete="off"/>'+dl+"</div>"+
     '<div class="fg"><label class="fl">Color</label><input class="fi" id="fa-color" type="color" value="#F5B301" style="height:40px;padding:4px;cursor:pointer"/></div>'+
+    '<p class="msub">Las fechas son opcionales — puedes crear el tipo ahora y añadir fechas más tarde.</p>'+
     '<div class="fg"><label class="fl">Título (opcional)</label><input class="fi" id="fa-title" type="text" placeholder="Ventana marzo"/></div>'+
-    '<div class="fg"><label class="fl">Desde</label><input class="fi" id="fa-start" type="date"/></div>'+
-    '<div class="fg"><label class="fl">Hasta</label><input class="fi" id="fa-end" type="date"/></div>'+
+    '<div class="fg"><label class="fl">Desde (opcional)</label><input class="fi" id="fa-start" type="date"/></div>'+
+    '<div class="fg"><label class="fl">Hasta (opcional)</label><input class="fi" id="fa-end" type="date"/></div>'+
     '<div id="fa-err" class="ferr" style="display:none"></div>'+
     '<div style="display:flex;gap:8px;margin-top:8px">'+
     '<button class="btn btn-ghost btn-sm" id="fa-cancel" style="flex:1">Cancelar</button>'+
-    '<button class="btn btn-primary btn-sm" id="fa-save" style="flex:1">Añadir</button>'+
+    '<button class="btn btn-primary btn-sm" id="fa-save" style="flex:1">Crear</button>'+
     "</div></div>";
   document.body.appendChild(mo);
   setTimeout(function(){var n=$("fa-tipo");if(n)n.focus();},100);
@@ -2054,8 +2057,8 @@ function openFechaAdd(tipos){
     var title=($("fa-title").value||"").trim();
     var color=($("fa-color").value||"#F5B301");
     var start=$("fa-start").value;var end=$("fa-end").value||start;
-    if(!tipo||!start){$("fa-err").style.display="block";$("fa-err").textContent="Tipo y fecha de inicio son obligatorios.";return;}
-    addRefDate({tipo:tipo,title:title,color:color,startDate:start,endDate:end},function(){syncGroupColor(tipo,color);toast("✅ Fecha añadida");closeMo();renderFechas();});
+    if(!tipo){$("fa-err").style.display="block";$("fa-err").textContent="El nombre del tipo es obligatorio.";return;}
+    addRefDate({tipo:tipo,title:title,color:color,startDate:start||"",endDate:end||""},function(){syncGroupColor(tipo,color);toast(start?"✅ Fecha añadida":"✅ Tipo creado");closeMo();renderFechas();});
   });
 }
 
@@ -2089,8 +2092,8 @@ function openFechaEdit(r,tipos){
     var title=($("fee-title").value||"").trim();
     var color=($("fee-color").value||"#F5B301");
     var start=$("fee-start").value;var end=$("fee-end").value||start;
-    if(!tipo||!start){$("fee-err").style.display="block";$("fee-err").textContent="Tipo y fecha de inicio son obligatorios.";return;}
-    updateRefDate(r.id,{tipo:tipo,title:title,color:color,startDate:start,endDate:end},function(){syncGroupColor(tipo,color);toast("✅ Fecha actualizada");closeMo();renderFechas();});
+    if(!tipo){$("fee-err").style.display="block";$("fee-err").textContent="El nombre del tipo es obligatorio.";return;}
+    updateRefDate(r.id,{tipo:tipo,title:title,color:color,startDate:start||"",endDate:end||""},function(){syncGroupColor(tipo,color);toast("✅ Fecha actualizada");closeMo();renderFechas();});
   });
 }
 
@@ -2099,10 +2102,10 @@ function openFechaAddBulk(tipos){
   var mo=document.createElement("div");mo.className="mo";
   mo.innerHTML='<div class="modal"><button class="mcl" id="fab-close">×</button>'+
     '<div class="mtitle">Añadir fechas en lista</div>'+
-    '<p class="msub">Una por línea: AAAA-MM-DD,AAAA-MM-DD,Título opcional</p>'+
+    '<p class="msub">Una por línea: DD-MM-AAAA,DD-MM-AAAA,Título opcional</p>'+
     '<div class="fg"><label class="fl">Tipo (aplica a toda la lista)</label><input class="fi" id="fab-tipo" list="fecha-tipos-dl2" type="text" placeholder="FIFA" autocomplete="off"/>'+dl+"</div>"+
     '<div class="fg"><label class="fl">Color (aplica a toda la lista)</label><input class="fi" id="fab-color" type="color" value="#F5B301" style="height:40px;padding:4px;cursor:pointer"/></div>'+
-    '<div class="fg"><label class="fl">Fechas</label><textarea class="fi" id="fab-list" rows="8" placeholder="2026-03-16,2026-03-24,Ventana marzo\n2026-06-01,2026-06-09" style="resize:vertical;font-family:inherit"></textarea></div>'+
+    '<div class="fg"><label class="fl">Fechas</label><textarea class="fi" id="fab-list" rows="8" placeholder="16-03-2026,24-03-2026,Ventana marzo\n01-06-2026,09-06-2026" style="resize:vertical;font-family:inherit"></textarea></div>'+
     '<div id="fab-err" class="ferr" style="display:none"></div>'+
     '<div style="display:flex;gap:8px;margin-top:8px">'+
     '<button class="btn btn-ghost btn-sm" id="fab-cancel" style="flex:1">Cancelar</button>'+
@@ -2119,15 +2122,16 @@ function openFechaAddBulk(tipos){
     if(!tipo){$("fab-err").style.display="block";$("fab-err").textContent="Indica un tipo.";return;}
     var lines=($("fab-list").value||"").split("\n").map(function(s){return s.trim();}).filter(function(s){return s.length>0;});
     if(!lines.length){$("fab-err").style.display="block";$("fab-err").textContent="Pega al menos una fecha.";return;}
-    var dateRe=/^\d{4}-\d{2}-\d{2}$/;
+    var dateRe=/^(\d{2})[\/-](\d{2})[\/-](\d{4})$/;
+    function toISO(str){var m=str.match(dateRe);return m?m[3]+"-"+m[2]+"-"+m[1]:null;}
     var toAdd=[];var bad=[];
     lines.forEach(function(line){
       var parts=line.split(",").map(function(s){return s.trim();});
-      var start=parts[0],end=parts[1]||parts[0],title=parts[2]||"";
-      if(!dateRe.test(start)||!dateRe.test(end)){bad.push(line);return;}
+      var start=toISO(parts[0]),end=parts[1]?toISO(parts[1]):start,title=parts[2]||"";
+      if(!start||!end){bad.push(line);return;}
       toAdd.push({tipo:tipo,title:title,color:color,startDate:start,endDate:end});
     });
-    if(!toAdd.length){$("fab-err").style.display="block";$("fab-err").textContent="Ningún formato válido. Usa AAAA-MM-DD,AAAA-MM-DD.";return;}
+    if(!toAdd.length){$("fab-err").style.display="block";$("fab-err").textContent="Ningún formato válido. Usa DD-MM-AAAA,DD-MM-AAAA.";return;}
     var saveBtn=$("fab-save");saveBtn.disabled=true;saveBtn.textContent="Añadiendo...";
     var done=0,total=toAdd.length;
     toAdd.forEach(function(item){addRefDate(item,function(){done++;if(done===total)finish();});});
