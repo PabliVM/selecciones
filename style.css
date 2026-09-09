@@ -507,7 +507,8 @@ details[open] .fin-summary__label::before{transform:rotate(90deg)}
 .agenda-banner-chip b{display:block;font-size:12px;color:var(--text)}
 .agenda-banner-sub{display:block;font-size:11px;color:var(--text-muted);margin-top:1px}
 .agenda-upcoming{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow-sm);margin-bottom:16px;overflow:hidden}
-.agenda-upcoming-hdr{font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--text-muted);padding:10px 14px;border-bottom:1px solid var(--border);background:var(--surface-alt,var(--off-white-3))}
+.agenda-upcoming-hdr{font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--text-mid);padding:10px 14px;border-bottom:1px solid var(--border);background:#e2e5eb}
+body.dark .agenda-upcoming-hdr{background:#15181d}
 .agenda-upcoming-row{display:flex;align-items:center;gap:8px;padding:9px 14px;border-bottom:1px solid var(--border);font-size:13px}
 .agenda-upcoming-row:last-child{border-bottom:none}
 .agenda-upcoming-row[data-openid]{cursor:pointer}
