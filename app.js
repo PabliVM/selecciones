@@ -761,11 +761,12 @@ if(c.llegada){var lf={llegadaDate:c.llegada.date,llegadaTime:c.llegada.time,lleg
 function agendaBannerHtml(){
   var today=new Date();today.setHours(0,0,0,0);
   var todayStr=today.getFullYear()+"-"+String(today.getMonth()+1).padStart(2,"0")+"-"+String(today.getDate()).padStart(2,"0");
+  var monthEnd=new Date(today);monthEnd.setDate(monthEnd.getDate()+30);
+  var monthEndStr=monthEnd.getFullYear()+"-"+String(monthEnd.getMonth()+1).padStart(2,"0")+"-"+String(monthEnd.getDate()).padStart(2,"0");
+
   var allCallups=getCallups({season:S.season});
   var allFechas=getRefDates_raw().filter(function(r){return!!r.startDate;});
   var activeFechas=allFechas.filter(function(r){return r.startDate<=todayStr&&(r.endDate||r.startDate)>=todayStr;});
-  var nextFecha=allFechas.filter(function(r){return r.startDate>todayStr;}).sort(function(a,b){return a.startDate.localeCompare(b.startDate);})[0];
-  var nextCallup=allCallups.filter(function(c){return c.status!=="finalizada";}).sort(function(a,b){return(a.startDate||"").localeCompare(b.startDate||"");})[0];
 
   var chips=[];
   activeFechas.forEach(function(r){
@@ -775,21 +776,38 @@ function agendaBannerHtml(){
       '<div><b>🔴 Ahora mismo: '+esc(label)+"</b>"+
       '<span class="agenda-banner-sub">'+fmtRange(r.startDate,r.endDate)+"</span></div></div>");
   });
-  if(nextCallup){
-    chips.push('<div class="agenda-banner-chip" data-openid="'+nextCallup.id+'">'+
-      '<span class="agenda-banner-dot" style="background:#1A3A8F"></span>'+
-      '<div><b>📋 Próxima convocatoria</b>'+
-      '<span class="agenda-banner-sub">'+esc(nextCallup.title)+" · "+fmtRange(nextCallup.startDate,nextCallup.endDate)+"</span></div></div>");
+
+  var items=[];
+  allCallups.forEach(function(c){
+    if(c.status==="finalizada")return;
+    var end=c.endDate||c.startDate;
+    if(!c.startDate||end<todayStr||c.startDate>monthEndStr)return;
+    items.push({kind:"callup",startDate:c.startDate,endDate:end,title:c.title,id:c.id,color:"#1A3A8F"});
+  });
+  allFechas.forEach(function(r){
+    var end=r.endDate||r.startDate;
+    if(end<todayStr||r.startDate>monthEndStr)return;
+    var label=(r.tipo||"Fecha")+(r.cat?" · "+(CAT[r.cat]||r.cat):"");
+    items.push({kind:"fecha",startDate:r.startDate,endDate:end,title:label,color:r.color||"#888"});
+  });
+  items.sort(function(a,b){return a.startDate.localeCompare(b.startDate);});
+
+  var listHtml="";
+  if(items.length){
+    listHtml='<div class="agenda-upcoming"><div class="agenda-upcoming-hdr">📅 En el próximo mes</div>'+
+      items.map(function(it){
+        var isNow=it.startDate<=todayStr&&it.endDate>=todayStr;
+        return'<div class="agenda-upcoming-row"'+(it.kind==="callup"?' data-openid="'+it.id+'"':"")+'>'+
+          '<span class="agenda-banner-dot" style="background:'+it.color+'"></span>'+
+          '<span class="agenda-upcoming-title">'+esc(it.title)+(isNow?' <b class="agenda-upcoming-now">EN CURSO</b>':"")+"</span>"+
+          '<span class="agenda-upcoming-date">'+fmtRange(it.startDate,it.endDate)+"</span>"+
+          "</div>";
+      }).join("")+
+      "</div>";
   }
-  if(nextFecha){
-    var label2=(nextFecha.tipo||"Fecha")+(nextFecha.cat?" · "+(CAT[nextFecha.cat]||nextFecha.cat):"");
-    chips.push('<div class="agenda-banner-chip" style="border-color:'+(nextFecha.color||"#888")+'">'+
-      '<span class="agenda-banner-dot" style="background:'+(nextFecha.color||"#888")+'"></span>'+
-      '<div><b>🗓️ Próxima '+esc(label2)+"</b>"+
-      '<span class="agenda-banner-sub">'+fmtRange(nextFecha.startDate,nextFecha.endDate)+"</span></div></div>");
-  }
-  if(!chips.length)return"";
-  return'<div class="agenda-banner">'+chips.join("")+"</div>";
+
+  if(!chips.length&&!listHtml)return"";
+  return'<div class="agenda-banner">'+chips.join("")+"</div>"+listHtml;
 }
 
 function renderAgenda(viewMode){
