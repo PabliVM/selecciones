@@ -1914,7 +1914,7 @@ function exportCalendarPNG(season){
   toast("Generando imagen...");
   loadHtml2Canvas(function(){
     var bg=getComputedStyle(document.body).backgroundColor||"#ffffff";
-    html2canvas(wrap,{backgroundColor:bg,scale:2,useCORS:true}).then(function(canvas){
+    html2canvas(wrap,{backgroundColor:bg,scale:2,useCORS:true,width:wrap.scrollWidth,height:wrap.scrollHeight,windowWidth:wrap.scrollWidth,x:0,y:0}).then(function(canvas){
       if(isMobile){
         var dataUrl=canvas.toDataURL("image/png");
         if(w&&!w.closed){
