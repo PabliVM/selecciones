@@ -43,6 +43,35 @@ function contrastText(hex){
   var yiq=(r*299+g*587+b*114)/1000;
   return yiq>=160?"#111":"#fff";
 }
+function getOrderedTipos(){
+  var all=getRefDates_raw();
+  var seen={};var list=[];
+  all.forEach(function(r){
+    var k=(r.tipo||"").trim();if(!k||seen[k])return;seen[k]=1;
+    var withOrder=all.find(function(x){return(x.tipo||"").trim()===k&&typeof x.order==="number";});
+    list.push({tipo:k,order:withOrder?withOrder.order:9999});
+  });
+  list.sort(function(a,b){return a.order-b.order||a.tipo.localeCompare(b.tipo);});
+  return list.map(function(x){return x.tipo;});
+}
+function getTipoOrder(tipo){
+  var order=getOrderedTipos();
+  var i=order.indexOf((tipo||"").trim());
+  return i===-1?9999:i;
+}
+function moveTipoOrder(tipo,dir){
+  var order=getOrderedTipos();
+  var idx=order.indexOf(tipo);
+  var swapIdx=idx+dir;
+  if(idx===-1||swapIdx<0||swapIdx>=order.length)return;
+  var tmp=order[idx];order[idx]=order[swapIdx];order[swapIdx]=tmp;
+  order.forEach(function(t,i){
+    getRefDates_raw().filter(function(r){return(r.tipo||"").trim()===t;}).forEach(function(r){
+      if(r.order!==i)updateRefDate(r.id,{order:i});
+    });
+  });
+  renderFechas();
+}
 function syncGroupColor(tipo,color){
   var t=(tipo||"").trim();if(!t)return;
   getRefDates_raw().forEach(function(r){
@@ -766,7 +795,7 @@ function agendaBannerHtml(){
 
   var allCallups=getCallups({season:S.season});
   var allFechas=getRefDates_raw().filter(function(r){return!!r.startDate;});
-  var activeFechas=allFechas.filter(function(r){return r.startDate<=todayStr&&(r.endDate||r.startDate)>=todayStr;});
+  var activeFechas=allFechas.filter(function(r){return r.startDate<=todayStr&&(r.endDate||r.startDate)>=todayStr;}).sort(function(a,b){return getTipoOrder(a.tipo)-getTipoOrder(b.tipo);});
 
   var chips=[];
   activeFechas.forEach(function(r){
@@ -788,9 +817,12 @@ function agendaBannerHtml(){
     var end=r.endDate||r.startDate;
     if(end<todayStr||r.startDate>monthEndStr)return;
     var label=(r.tipo||"Fecha")+(r.cat?" · "+(CAT[r.cat]||r.cat):"");
-    items.push({kind:"fecha",startDate:r.startDate,endDate:end,title:label,color:r.color||"#888"});
+    items.push({kind:"fecha",tipo:r.tipo,startDate:r.startDate,endDate:end,title:label,color:r.color||"#888"});
   });
-  items.sort(function(a,b){return a.startDate.localeCompare(b.startDate);});
+  items.sort(function(a,b){
+    return a.startDate.localeCompare(b.startDate)||
+      (a.kind==="callup"?-1:b.kind==="callup"?1:getTipoOrder(a.tipo)-getTipoOrder(b.tipo));
+  });
 
   var listHtml="";
   if(items.length){
@@ -1726,9 +1758,12 @@ function calAvailableTipos(events){
     var key=e.kind==="callup"?"conv":e.tipoKey;
     var label=e.kind==="callup"?"Convocatorias":(e.tipoLabel||key);
     var color=e.kind==="callup"?"#1A3A8F":e.color;
-    if(key&&!seen[key]){seen[key]=1;list.push({key:key,label:label,color:color});}
+    if(key&&!seen[key]){seen[key]=1;list.push({key:key,label:label,color:color,tipoLabel:e.tipoLabel||""});}
   });
-  list.sort(function(a,b){return a.key==="conv"?-1:b.key==="conv"?1:a.label.localeCompare(b.label);});
+  list.sort(function(a,b){
+    if(a.key==="conv")return-1;if(b.key==="conv")return 1;
+    return getTipoOrder(a.tipoLabel)-getTipoOrder(b.tipoLabel);
+  });
   return list;
 }
 function calAvailableSels(events){
@@ -1751,6 +1786,10 @@ function calAvailableCats(){
     if(cats)cats.cats.forEach(function(c){set[c]=1;});
   });
   return Object.keys(set);
+}
+function calEventOrderKey(e){
+  if(e.kind==="callup")return-1;
+  return getTipoOrder(e.tipoLabel||"");
 }
 function calMatchesFilters(e){
   if(S.calFilterTipo.length){
@@ -1953,7 +1992,7 @@ function renderCalVertical(events,season){
       var isToday=(y===ty&&mo===tm&&d===td);
       rowsHtml+='<div class="calv-row'+(isToday?" calv-today":"")+'" style="height:'+ROWH+'px"><span class="calv-dow">'+dowLetters[dow]+'</span><span class="calv-dn2">'+d+"</span></div>";
     }
-    var monthEvents=events.filter(function(e){return e.startDate<=monthEnd&&e.endDate>=monthStart;}).slice().sort(function(a,b){return a.startDate.localeCompare(b.startDate);});
+    var monthEvents=events.filter(function(e){return e.startDate<=monthEnd&&e.endDate>=monthStart;}).slice().sort(function(a,b){return a.startDate.localeCompare(b.startDate)||calEventOrderKey(a)-calEventOrderKey(b);});
     var lanes=[];
     monthEvents.forEach(function(e){
       var laneIdx=-1;
@@ -1996,7 +2035,7 @@ function renderCalClasico(events){
   for(var i=0;i<fd;i++)h+='<div class="cal-day-big"></div>';
   for(var d=1;d<=days;d++){
     var ds=y+"-"+String(mo+1).padStart(2,"0")+"-"+String(d).padStart(2,"0");
-    var dayEvs=events.filter(function(e){return e.startDate<=ds&&e.endDate>=ds;});
+    var dayEvs=events.filter(function(e){return e.startDate<=ds&&e.endDate>=ds;}).sort(function(a,b){return calEventOrderKey(a)-calEventOrderKey(b);});
     var isToday=(y===ty&&mo===tm&&d===td);
     var shown=dayEvs.slice(0,3);
     var chips=shown.map(function(e){return'<div class="cal-chip" style="background:'+e.color+";color:"+contrastText(e.color)+'" data-kind="'+e.kind+'" data-id="'+(e.raw.id||"")+'" title="'+esc(e.title)+'">'+esc(e.title)+"</div>";}).join("");
@@ -2014,7 +2053,7 @@ function renderCalClasico(events){
   target.querySelectorAll(".cal-chip-more").forEach(function(el){el.addEventListener("click",function(e){
     e.stopPropagation();
     var ds=el.dataset.ds;
-    var dayEvs=events.filter(function(ev){return ev.startDate<=ds&&ev.endDate>=ds;});
+    var dayEvs=events.filter(function(ev){return ev.startDate<=ds&&ev.endDate>=ds;}).sort(function(a,b){return calEventOrderKey(a)-calEventOrderKey(b);});
     var panel=$("cal-panel");
     panel.innerHTML=calDayPanelHtml(ds,dayEvs,[]);
     panel.style.display="block";
@@ -2112,7 +2151,7 @@ function renderFechas(){
     if(r.cats&&r.cats.length&&!groups[gIdx[k]].cats.length)groups[gIdx[k]].cats=r.cats;
     groups[gIdx[k]].items.push(r);
   });
-  groups.sort(function(a,b){return(a.items[0].startDate||"").localeCompare(b.items[0].startDate||"");});
+  groups.sort(function(a,b){return getTipoOrder(a.tipo)-getTipoOrder(b.tipo);});
 
   var h='<div class="vh"><h1 class="vt">Fechas</h1><span class="vs">'+list.length+' registradas</span></div>';
   h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">'+
@@ -2125,7 +2164,7 @@ function renderFechas(){
   if(!groups.length){
     h+=emptyState("Sin fechas"+(filtro?' de "'+filtro+'"':""),"🗓️");
   } else {
-    h+='<div class="cl">'+groups.map(function(g){
+    h+='<div class="cl">'+groups.map(function(g,gi){
       var realCount=g.items.filter(function(r){return!!r.startDate;}).length;
       var rows=g.items.filter(function(r){return!!r.startDate;}).map(function(r){
         var catTag=r.cat?'<span class="badge" style="background:var(--surface-alt,#eef1f5);color:var(--text-mid);font-size:10px;margin-right:6px">'+esc(CAT[r.cat]||r.cat)+"</span>":"";
@@ -2137,11 +2176,16 @@ function renderFechas(){
       var catsLine=g.cats.length?'<div class="cc-mi" style="margin-top:2px"><span class="mi">🏷️</span><span>'+g.cats.map(function(c){return CAT[c]||c;}).join(", ")+"</span></div>":"";
       var emptyMsg=!realCount?'<p class="msub" style="margin-top:6px">(sin fechas todavía)</p>':"";
       var gdata=' data-tipo="'+esc(g.tipo)+'" data-color="'+esc(g.color)+'" data-cats="'+esc(JSON.stringify(g.cats))+'"';
+      var moveBtns=editable?'<span class="fecha-order-btns">'+
+        '<button class="jug-edit-btn fecha-order-btn" data-tipo="'+esc(g.tipo)+'" data-dir="-1" title="Subir"'+(gi===0?" disabled":"")+'>▲</button>'+
+        '<button class="jug-edit-btn fecha-order-btn" data-tipo="'+esc(g.tipo)+'" data-dir="1" title="Bajar"'+(gi===groups.length-1?" disabled":"")+'>▼</button>'+
+        "</span>":"";
       return'<article class="cc" style="--ca:'+g.color+';cursor:default">'+
         '<div class="cc-hdr"><div class="cc-badges"><span class="badge" style="background:'+g.color+";color:"+contrastText(g.color)+'">'+esc(g.tipo)+"</span>"+
         '<span class="vs" style="margin-left:6px">'+realCount+(realCount===1?" fecha":" fechas")+"</span></div>"+
+        '<div style="display:flex;gap:6px;align-items:center">'+moveBtns+
         (editable?'<button class="jug-edit-btn tipo-edit-btn"'+gdata+' title="Editar tipo (nombre/color/subcategorías)">✏️</button>':"")+
-        "</div>"+
+        "</div></div>"+
         catsLine+emptyMsg+
         '<div class="fecha-range-list">'+rows+"</div>"+
         (editable?'<button class="btn btn-ghost btn-sm fecha-addrange-btn"'+gdata+' style="width:100%;margin-top:8px">+ Añadir fecha</button>':"")+
@@ -2152,6 +2196,11 @@ function renderFechas(){
   target.innerHTML=h;
   target.querySelectorAll("[data-ft]").forEach(function(b){b.addEventListener("click",function(){S.fechaTipo=b.dataset.ft;renderFechas();});});
   var addBtn=$("btn-add-fecha");if(addBtn)addBtn.addEventListener("click",function(){openFechaAdd(tipos);});
+  target.querySelectorAll(".fecha-order-btn").forEach(function(b){b.addEventListener("click",function(e){
+    e.stopPropagation();
+    if(b.disabled)return;
+    moveTipoOrder(b.dataset.tipo,parseInt(b.dataset.dir,10));
+  });});
   target.querySelectorAll(".fecha-addrange-btn").forEach(function(b){b.addEventListener("click",function(){
     var cats=[];try{cats=JSON.parse(b.dataset.cats||"[]");}catch(e){}
     openFechaAddToGroup(b.dataset.tipo,b.dataset.color,cats);
