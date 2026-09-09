@@ -1994,10 +1994,7 @@ function renderFechas(){
         "</div>"+
         catsLine+emptyMsg+
         '<div class="fecha-range-list">'+rows+"</div>"+
-        (editable?'<div style="display:flex;gap:6px;margin-top:8px">'+
-          '<button class="btn btn-ghost btn-sm fecha-addrange-btn"'+gdata+' style="flex:1">+ Añadir fecha</button>'+
-          '<button class="btn btn-ghost btn-sm fecha-addbulk-btn"'+gdata+' style="flex:1">+ Añadir en lista</button>'+
-          "</div>":"")+
+        (editable?'<button class="btn btn-ghost btn-sm fecha-addrange-btn"'+gdata+' style="width:100%;margin-top:8px">+ Añadir fecha</button>':"")+
         "</article>";
     }).join("")+"</div>";
   }
@@ -2008,10 +2005,6 @@ function renderFechas(){
   target.querySelectorAll(".fecha-addrange-btn").forEach(function(b){b.addEventListener("click",function(){
     var cats=[];try{cats=JSON.parse(b.dataset.cats||"[]");}catch(e){}
     openFechaAddToGroup(b.dataset.tipo,b.dataset.color,cats);
-  });});
-  target.querySelectorAll(".fecha-addbulk-btn").forEach(function(b){b.addEventListener("click",function(){
-    var cats=[];try{cats=JSON.parse(b.dataset.cats||"[]");}catch(e){}
-    openFechaAddBulkToGroup(b.dataset.tipo,b.dataset.color,cats);
   });});
   target.querySelectorAll(".tipo-edit-btn").forEach(function(b){b.addEventListener("click",function(e){
     e.stopPropagation();
@@ -2032,13 +2025,26 @@ function renderFechas(){
 
 function openFechaAddToGroup(tipo,color,cats){
   cats=cats||[];
+  var mode="single";
   var mo=document.createElement("div");mo.className="mo";
+  var catOptsHtml=cats.length?'<option value="">— Todas —</option>'+cats.map(function(c){return'<option value="'+c+'">'+(CAT[c]||c)+"</option>";}).join(""):"";
   mo.innerHTML='<div class="modal"><button class="mcl" id="fag-close">×</button>'+
     '<div class="mtitle">Añadir fecha a '+esc(tipo)+"</div>"+
-    (cats.length?'<div class="fg"><label class="fl">Aplica a (opcional)</label><select class="fsel" id="fag-cat"><option value="">— Todas —</option>'+cats.map(function(c){return'<option value="'+c+'">'+(CAT[c]||c)+"</option>";}).join("")+"</select></div>":"")+
+    '<div class="view-toggle" style="margin-bottom:12px">'+
+    '<button class="vtbtn on" id="fag-mode-single">Una fecha</button>'+
+    '<button class="vtbtn" id="fag-mode-list">Lista</button>'+
+    "</div>"+
+    '<div id="fag-single">'+
+    (cats.length?'<div class="fg"><label class="fl">Aplica a (opcional)</label><select class="fsel" id="fag-cat">'+catOptsHtml+"</select></div>":"")+
     '<div class="fg"><label class="fl">Título (opcional)</label><input class="fi" id="fag-title" type="text" placeholder="Ventana marzo"/></div>'+
     '<div class="fg"><label class="fl">Desde</label><input class="fi" id="fag-start" type="date"/></div>'+
     '<div class="fg"><label class="fl">Hasta</label><input class="fi" id="fag-end" type="date"/></div>'+
+    "</div>"+
+    '<div id="fag-list" style="display:none">'+
+    '<p class="msub">Una por línea: DD-MM-AAAA,DD-MM-AAAA,Título opcional</p>'+
+    (cats.length?'<div class="fg"><label class="fl">Aplica a (opcional, toda la lista)</label><select class="fsel" id="fag-list-cat">'+catOptsHtml+"</select></div>":"")+
+    '<div class="fg"><textarea class="fi" id="fag-list-text" rows="8" placeholder="16-03-2026,24-03-2026,Ventana marzo\n01-06-2026,09-06-2026" style="resize:vertical;font-family:inherit"></textarea></div>'+
+    "</div>"+
     '<div id="fag-err" class="ferr" style="display:none"></div>'+
     '<div style="display:flex;gap:8px;margin-top:8px">'+
     '<button class="btn btn-ghost btn-sm" id="fag-cancel" style="flex:1">Cancelar</button>'+
@@ -2051,40 +2057,31 @@ function openFechaAddToGroup(tipo,color,cats){
     endEl.min=v;
     if(!endEl.value||endEl.value<v)endEl.value=v;
   });
+  function setMode(m){
+    mode=m;
+    $("fag-mode-single").classList.toggle("on",m==="single");
+    $("fag-mode-list").classList.toggle("on",m==="list");
+    $("fag-single").style.display=m==="single"?"":"none";
+    $("fag-list").style.display=m==="list"?"":"none";
+    $("fag-err").style.display="none";
+  }
+  $("fag-mode-single").addEventListener("click",function(){setMode("single");});
+  $("fag-mode-list").addEventListener("click",function(){setMode("list");});
   function closeMo(){if(mo.parentNode)mo.parentNode.removeChild(mo);}
   $("fag-close").addEventListener("click",closeMo);$("fag-cancel").addEventListener("click",closeMo);
   mo.addEventListener("click",function(e){if(e.target===mo)closeMo();});
   $("fag-save").addEventListener("click",function(){
-    var title=($("fag-title").value||"").trim();
-    var catEl=$("fag-cat");var cat=catEl?catEl.value:"";
-    var start=$("fag-start").value;var end=$("fag-end").value||start;
-    if(!start){$("fag-err").style.display="block";$("fag-err").textContent="La fecha de inicio es obligatoria.";return;}
-    addRefDate({tipo:tipo,title:title,color:color,cat:cat,startDate:start,endDate:end},function(){toast("✅ Fecha añadida a "+tipo);closeMo();renderFechas();});
-  });
-}
-
-function openFechaAddBulkToGroup(tipo,color,cats){
-  cats=cats||[];
-  var mo=document.createElement("div");mo.className="mo";
-  mo.innerHTML='<div class="modal"><button class="mcl" id="fabg-close">×</button>'+
-    '<div class="mtitle">Añadir fechas en lista a '+esc(tipo)+"</div>"+
-    '<p class="msub">Una por línea: DD-MM-AAAA,DD-MM-AAAA,Título opcional</p>'+
-    (cats.length?'<div class="fg"><label class="fl">Aplica a (opcional, toda la lista)</label><select class="fsel" id="fabg-cat"><option value="">— Todas —</option>'+cats.map(function(c){return'<option value="'+c+'">'+(CAT[c]||c)+"</option>";}).join("")+"</select></div>":"")+
-    '<div class="fg"><label class="fl">Fechas</label><textarea class="fi" id="fabg-list" rows="8" placeholder="16-03-2026,24-03-2026,Ventana marzo\n01-06-2026,09-06-2026" style="resize:vertical;font-family:inherit"></textarea></div>'+
-    '<div id="fabg-err" class="ferr" style="display:none"></div>'+
-    '<div style="display:flex;gap:8px;margin-top:8px">'+
-    '<button class="btn btn-ghost btn-sm" id="fabg-cancel" style="flex:1">Cancelar</button>'+
-    '<button class="btn btn-primary btn-sm" id="fabg-save" style="flex:1">Añadir</button>'+
-    "</div></div>";
-  document.body.appendChild(mo);
-  setTimeout(function(){var n=$("fabg-list");if(n)n.focus();},100);
-  function closeMo(){if(mo.parentNode)mo.parentNode.removeChild(mo);}
-  $("fabg-close").addEventListener("click",closeMo);$("fabg-cancel").addEventListener("click",closeMo);
-  mo.addEventListener("click",function(e){if(e.target===mo)closeMo();});
-  $("fabg-save").addEventListener("click",function(){
-    var catEl=$("fabg-cat");var cat=catEl?catEl.value:"";
-    var lines=($("fabg-list").value||"").split("\n").map(function(s){return s.trim();}).filter(function(s){return s.length>0;});
-    if(!lines.length){$("fabg-err").style.display="block";$("fabg-err").textContent="Pega al menos una fecha.";return;}
+    if(mode==="single"){
+      var title=($("fag-title").value||"").trim();
+      var catEl=$("fag-cat");var cat=catEl?catEl.value:"";
+      var start=$("fag-start").value;var end=$("fag-end").value||start;
+      if(!start){$("fag-err").style.display="block";$("fag-err").textContent="La fecha de inicio es obligatoria.";return;}
+      addRefDate({tipo:tipo,title:title,color:color,cat:cat,startDate:start,endDate:end},function(){toast("✅ Fecha añadida a "+tipo);closeMo();renderFechas();});
+      return;
+    }
+    var catEl2=$("fag-list-cat");var cat2=catEl2?catEl2.value:"";
+    var lines=($("fag-list-text").value||"").split("\n").map(function(s){return s.trim();}).filter(function(s){return s.length>0;});
+    if(!lines.length){$("fag-err").style.display="block";$("fag-err").textContent="Pega al menos una fecha.";return;}
     var dateRe=/^(\d{2})[\/-](\d{2})[\/-](\d{4})$/;
     function toISO(str){var m=str.match(dateRe);return m?m[3]+"-"+m[2]+"-"+m[1]:null;}
     var toAdd=[];var bad=[];
@@ -2092,10 +2089,10 @@ function openFechaAddBulkToGroup(tipo,color,cats){
       var parts=line.split(",").map(function(s){return s.trim();});
       var start=toISO(parts[0]),end=parts[1]?toISO(parts[1]):start,title=parts[2]||"";
       if(!start||!end){bad.push(line);return;}
-      toAdd.push({tipo:tipo,title:title,color:color,cat:cat,startDate:start,endDate:end});
+      toAdd.push({tipo:tipo,title:title,color:color,cat:cat2,startDate:start,endDate:end});
     });
-    if(!toAdd.length){$("fabg-err").style.display="block";$("fabg-err").textContent="Ningún formato válido. Usa DD-MM-AAAA,DD-MM-AAAA.";return;}
-    var saveBtn=$("fabg-save");saveBtn.disabled=true;saveBtn.textContent="Añadiendo...";
+    if(!toAdd.length){$("fag-err").style.display="block";$("fag-err").textContent="Ningún formato válido. Usa DD-MM-AAAA,DD-MM-AAAA.";return;}
+    var saveBtn=$("fag-save");saveBtn.disabled=true;saveBtn.textContent="Añadiendo...";
     var done=0,total=toAdd.length;
     toAdd.forEach(function(item){addRefDate(item,function(){done++;if(done===total)finish();});});
     function finish(){
