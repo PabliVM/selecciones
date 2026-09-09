@@ -2331,14 +2331,14 @@ function renderFechas(){
 
   if(!S.fechaCollapsed)S.fechaCollapsed={};
   var h='<div class="vh"><h1 class="vt">Fechas</h1><span class="vs">'+list.length+' registradas</span></div>';
-  h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">'+
-    '<div class="fb" style="margin-bottom:0;flex:1">'+
+  h+='<div class="fb" style="margin-bottom:10px">'+
     '<button class="fbtn'+(filtro===""?" on":"")+'" data-ft="">Todas</button>'+
     tipos.map(function(t){return'<button class="fbtn'+(filtro===t?" on":"")+'" data-ft="'+esc(t)+'">'+esc(t)+"</button>";}).join("")+
-    "</div>"+
-    (groups.length?'<button class="fecha-toggle-all-btn" id="btn-toggle-all" title="Expandir/contraer todas">⇕ Todas</button>':"")+
-    (groups.length?'<button class="fecha-toggle-all-btn" id="btn-fechas-export" title="Exportar imagen">📷</button>':"")+
-    (editable?'<button class="fecha-add-icon" id="btn-add-fecha" title="Añadir lista">+</button>':"")+
+    "</div>";
+  h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap">'+
+    (groups.length?'<button class="fecha-action-btn" id="btn-toggle-all"><span class="fecha-action-ic">⇕</span>Expandir/contraer</button>':"")+
+    (groups.length?'<button class="fecha-action-btn" id="btn-fechas-export"><span class="fecha-action-ic">📷</span>Exportar PNG</button>':"")+
+    (editable?'<button class="fecha-action-btn fecha-action-primary" id="btn-add-fecha" style="margin-left:auto"><span class="fecha-action-ic">+</span>Añadir lista</button>':"")+
     "</div>";
   if(!groups.length){
     h+=emptyState("Sin fechas"+(filtro?' de "'+filtro+'"':""),"🗓️");
