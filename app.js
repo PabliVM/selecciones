@@ -1902,6 +1902,41 @@ function loadHtml2Canvas(cb){
   document.head.appendChild(s);
 }
 
+function exportFechasPNG(filtro){
+  var wrap=document.querySelector("#cal-body .cl");
+  if(!wrap){toast("No hay nada que exportar");return;}
+  var isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  var label=filtro?filtro:"todas";
+  var w=null;
+  if(isMobile){
+    w=window.open();
+    if(w){w.document.write('<title>Fechas</title><body style="margin:0;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;color:#666">Generando imagen…</body>');w.document.close();}
+  }
+  toast("Generando imagen...");
+  loadHtml2Canvas(function(){
+    var bg=getComputedStyle(document.body).backgroundColor||"#ffffff";
+    html2canvas(wrap,{backgroundColor:bg,scale:2,useCORS:true,width:wrap.scrollWidth,height:wrap.scrollHeight,windowWidth:wrap.scrollWidth,x:0,y:0}).then(function(canvas){
+      if(isMobile){
+        var dataUrl=canvas.toDataURL("image/png");
+        if(w&&!w.closed){
+          w.document.open();
+          w.document.write('<title>Fechas</title><body style="margin:0;background:#111;display:flex;align-items:center;justify-content:center"><img src="'+dataUrl+'" style="max-width:100%;height:auto"/></body>');
+          w.document.close();
+          toast("📷 Mantén pulsada la imagen para guardarla");
+        } else {
+          toast("❌ El navegador bloqueó la ventana. Permite pop-ups para ver la imagen.");
+        }
+      } else {
+        var link=document.createElement("a");
+        link.download="fechas-"+label+".png";
+        link.href=canvas.toDataURL("image/png");
+        link.click();
+        toast("✅ Imagen descargada");
+      }
+    }).catch(function(e){console.error(e);toast("❌ Error generando la imagen");if(w&&!w.closed)w.close();});
+  });
+}
+
 function exportCalendarPNG(season){
   var wrap=document.querySelector("#cal-body .calv-wrap");
   if(!wrap){toast("No hay nada que exportar");return;}
@@ -2086,7 +2121,7 @@ function renderCalVertical(events,season){
       var isToday=(y===ty&&mo===tm&&d===td);
       rowsHtml+='<div class="calv-row'+(isToday?" calv-today":"")+'" style="height:'+ROWH+'px"><span class="calv-dow">'+dowLetters[dow]+'</span><span class="calv-dn2">'+d+"</span></div>";
     }
-    var monthEvents=events.filter(function(e){return e.startDate<=monthEnd&&e.endDate>=monthStart;}).slice().sort(function(a,b){return a.startDate.localeCompare(b.startDate)||calEventOrderKey(a)-calEventOrderKey(b);});
+    var monthEvents=events.filter(function(e){return e.startDate<=monthEnd&&e.endDate>=monthStart;}).slice().sort(function(a,b){return calEventOrderKey(a)-calEventOrderKey(b)||a.startDate.localeCompare(b.startDate);});
     var lanes=[];
     monthEvents.forEach(function(e){
       var laneIdx=-1;
@@ -2254,7 +2289,8 @@ function renderFechas(){
     '<button class="fbtn'+(filtro===""?" on":"")+'" data-ft="">Todas</button>'+
     tipos.map(function(t){return'<button class="fbtn'+(filtro===t?" on":"")+'" data-ft="'+esc(t)+'">'+esc(t)+"</button>";}).join("")+
     "</div>"+
-    (groups.length?'<button class="fecha-add-icon" id="btn-toggle-all" title="Expandir/contraer todas" style="background:var(--surface);color:var(--text-mid)">⇅</button>':"")+
+    (groups.length?'<button class="fecha-toggle-all-btn" id="btn-toggle-all" title="Expandir/contraer todas">⇕ Todas</button>':"")+
+    (groups.length?'<button class="fecha-toggle-all-btn" id="btn-fechas-export" title="Exportar imagen">📷</button>':"")+
     (editable?'<button class="fecha-add-icon" id="btn-add-fecha" title="Añadir lista">+</button>':"")+
     "</div>";
   if(!groups.length){
@@ -2278,9 +2314,19 @@ function renderFechas(){
         rows=catsPresent.map(function(c){
           var itemsC=withCat.filter(function(r){return r.cat===c;});
           var shade=shadeColorForCat(g.color,c,g.cats);
-          return'<div class="fecha-cat-group"><div class="fecha-cat-group-hdr" style="background:'+shade+";color:"+contrastText(shade)+'">'+esc(CAT[c]||c)+"</div>"+itemsC.map(rowHtml).join("")+"</div>";
+          var subKey=g.tipo+"::"+c;
+          var subCollapsed=!!S.fechaCollapsed[subKey];
+          return'<div class="fecha-cat-group"><div class="fecha-cat-group-hdr" style="background:'+shade+";color:"+contrastText(shade)+'" data-subtoggle="'+esc(subKey)+'">'+
+            '<span class="fecha-cat-group-chev">'+(subCollapsed?"▶":"▼")+"</span>"+esc(CAT[c]||c)+" ("+itemsC.length+")</div>"+
+            (subCollapsed?"":itemsC.map(rowHtml).join(""))+"</div>";
         }).join("");
-        if(noCat.length)rows+='<div class="fecha-cat-group"><div class="fecha-cat-group-hdr">Sin subcategoría</div>'+noCat.map(rowHtml).join("")+"</div>";
+        if(noCat.length){
+          var subKeyNo=g.tipo+"::none";
+          var subCollapsedNo=!!S.fechaCollapsed[subKeyNo];
+          rows+='<div class="fecha-cat-group"><div class="fecha-cat-group-hdr" data-subtoggle="'+esc(subKeyNo)+'">'+
+            '<span class="fecha-cat-group-chev">'+(subCollapsedNo?"▶":"▼")+"</span>Sin subcategoría ("+noCat.length+")</div>"+
+            (subCollapsedNo?"":noCat.map(rowHtml).join(""))+"</div>";
+        }
       } else {
         rows=realItems.map(rowHtml).join("");
       }
@@ -2315,11 +2361,18 @@ function renderFechas(){
     S.fechaCollapsed[t]=!S.fechaCollapsed[t];
     renderFechas();
   });});
+  target.querySelectorAll("[data-subtoggle]").forEach(function(el){el.addEventListener("click",function(e){
+    e.stopPropagation();
+    var k=el.dataset.subtoggle;
+    S.fechaCollapsed[k]=!S.fechaCollapsed[k];
+    renderFechas();
+  });});
   var toggleAllBtn=$("btn-toggle-all");if(toggleAllBtn)toggleAllBtn.addEventListener("click",function(){
     var anyExpanded=groups.some(function(g){return!S.fechaCollapsed[g.tipo];});
     groups.forEach(function(g){S.fechaCollapsed[g.tipo]=anyExpanded;});
     renderFechas();
   });
+  var exportFechasBtn=$("btn-fechas-export");if(exportFechasBtn)exportFechasBtn.addEventListener("click",function(){exportFechasPNG(filtro);});
   target.querySelectorAll(".fecha-order-btn").forEach(function(b){b.addEventListener("click",function(e){
     e.stopPropagation();
     if(b.disabled)return;
