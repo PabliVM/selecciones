@@ -1686,6 +1686,12 @@ function renderCalendarioPlan(){
   renderCalMain();
 }
 
+function calSwitchMode(mode){
+  var cpt=$("cpt-content");
+  if(cpt)window.scrollTo({top:cpt.getBoundingClientRect().top+window.scrollY-8,behavior:"auto"});
+  S.calMode=mode;
+  renderCalMain();
+}
 function renderCalMain(){
   var season=S.season;
   var h='<div class="view-toggle">'+
@@ -1698,9 +1704,9 @@ function renderCalMain(){
     h+='<div id="cal-body"></div>';
     var target0=$("cpt-content");if(!target0)return;
     target0.innerHTML=h;
-    $("cm-clasico").addEventListener("click",function(){S.calMode="clasico";renderCalMain();});
-    $("cm-vertical").addEventListener("click",function(){S.calMode="vertical";renderCalMain();});
-    $("cm-fechas").addEventListener("click",function(){S.calMode="vertical";renderCalMain();});
+    $("cm-clasico").addEventListener("click",function(){calSwitchMode("clasico");});
+    $("cm-vertical").addEventListener("click",function(){calSwitchMode("vertical");});
+    $("cm-fechas").addEventListener("click",function(){calSwitchMode("vertical");});
     renderFechas();
     return;
   }
@@ -1727,9 +1733,9 @@ function renderCalMain(){
   var target=$("cpt-content");if(!target)return;
   target.innerHTML=h;
 
-  $("cm-clasico").addEventListener("click",function(){S.calMode="clasico";renderCalMain();});
-  $("cm-vertical").addEventListener("click",function(){S.calMode="vertical";renderCalMain();});
-  $("cm-fechas").addEventListener("click",function(){S.calMode="fechas";renderCalMain();});
+  $("cm-clasico").addEventListener("click",function(){calSwitchMode("clasico");});
+  $("cm-vertical").addEventListener("click",function(){calSwitchMode("vertical");});
+  $("cm-fechas").addEventListener("click",function(){calSwitchMode("fechas");});
   $("cal-todos").addEventListener("click",function(){S.calFilterTipo=[];S.calFilterSel=[];renderCalMain();});
   var clearBtn=$("cal-clear");if(clearBtn)clearBtn.addEventListener("click",function(){S.calFilterTipo=[];S.calFilterSel=[];renderCalMain();});
   target.querySelectorAll("[data-tipo]").forEach(function(b){b.addEventListener("click",function(){
