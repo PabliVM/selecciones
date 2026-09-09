@@ -457,7 +457,7 @@ function callupDetail(c){
 
 // ── STATE ──
 var _savedView="agenda";try{_savedView=localStorage.getItem("rmconv_view")||"agenda";}catch(e){}
-var S={view:_savedView,season:"2025-26",filterType:null,agendaView:"fichas",finOpen:false,editingId:null,planView:"bloques",intlPais:null,statsSearch:"",statsPlayer:null,jugTeam:"",jugSearch:"",calPlanTab:"calendario",fechaTipo:"",calMode:"vertical",calFilterTipo:[],calFilterSel:[],calClasicoYear:null,calClasicoMonth:null};
+var S={view:_savedView,season:"2025-26",filterType:null,agendaView:"fichas",finOpen:false,editingId:null,planView:"bloques",intlPais:null,statsSearch:"",statsPlayer:null,jugTeam:"",jugSearch:"",calPlanTab:"calendario",fechaTipo:"",calMode:"vertical",calFilterTipo:[],calFilterSel:[],calFilterCat:[],calClasicoYear:null,calClasicoMonth:null};
 
 function renderSeasonSel(){
   var opts=_seasons.filter(function(s){return s!=="2025-26";}).slice().reverse().map(function(s){return'<option value="'+s+'"'+(s===S.season?" selected":"")+">"+s+"</option>";}).join("");
@@ -1688,6 +1688,16 @@ function calAvailableSels(events){
   list.sort(function(a,b){return a.label.localeCompare(b.label);});
   return list;
 }
+function calAvailableCats(){
+  var activeTipos=S.calFilterTipo.filter(function(k){return k!=="conv";});
+  if(!activeTipos.length)return[];
+  var set={};
+  activeTipos.forEach(function(tk){
+    var cats=getRefDates_raw().find(function(r){return(r.tipo||"").trim().toLowerCase()===tk&&r.cats&&r.cats.length;});
+    if(cats)cats.cats.forEach(function(c){set[c]=1;});
+  });
+  return Object.keys(set);
+}
 function calMatchesFilters(e){
   if(S.calFilterTipo.length){
     var tk=e.kind==="callup"?"conv":e.tipoKey;
@@ -1696,6 +1706,9 @@ function calMatchesFilters(e){
   if(S.calFilterSel.length&&e.kind==="callup"){
     var sk=calEventSelKey(e);
     if(!sk||S.calFilterSel.indexOf(sk)===-1)return false;
+  }
+  if(S.calFilterCat.length&&e.kind==="fecha"){
+    if(!e.raw.cat||S.calFilterCat.indexOf(e.raw.cat)===-1)return false;
   }
   return true;
 }
@@ -1733,12 +1746,18 @@ function renderCalMain(){
   var events=getCalEvents(season);
   var tipos=calAvailableTipos(events);
   var sels=calAvailableSels(events);
-  var anyFilter=S.calFilterTipo.length||S.calFilterSel.length;
+  var cats=calAvailableCats();
+  var anyFilter=S.calFilterTipo.length||S.calFilterSel.length||S.calFilterCat.length;
 
   h+='<div class="fb"><button class="fbtn'+(!anyFilter?" on":"")+'" id="cal-todos">Todos</button></div>';
   if(tipos.length){
     h+='<div class="cal-fgroup"><span class="cal-fglabel">Tipo</span><div class="fb">'+
       tipos.map(function(t){return'<button class="fbtn'+(S.calFilterTipo.indexOf(t.key)!==-1?" on":"")+'" data-tipo="'+esc(t.key)+'"><span class="fbtn-dot" style="background:'+(t.color||"#999")+'"></span>'+esc(t.label)+"</button>";}).join("")+
+      "</div></div>";
+  }
+  if(cats.length){
+    h+='<div class="cal-fgroup"><span class="cal-fglabel">Subcategoría</span><div class="fb">'+
+      cats.map(function(c){return'<button class="fbtn'+(S.calFilterCat.indexOf(c)!==-1?" on":"")+'" data-cat="'+esc(c)+'">'+esc(CAT[c]||c)+"</button>";}).join("")+
       "</div></div>";
   }
   if(sels.length){
@@ -1755,11 +1774,17 @@ function renderCalMain(){
   $("cm-clasico").addEventListener("click",function(){calSwitchMode("clasico");});
   $("cm-vertical").addEventListener("click",function(){calSwitchMode("vertical");});
   $("cm-fechas").addEventListener("click",function(){calSwitchMode("fechas");});
-  $("cal-todos").addEventListener("click",function(){S.calFilterTipo=[];S.calFilterSel=[];renderCalMain();});
-  var clearBtn=$("cal-clear");if(clearBtn)clearBtn.addEventListener("click",function(){S.calFilterTipo=[];S.calFilterSel=[];renderCalMain();});
+  $("cal-todos").addEventListener("click",function(){S.calFilterTipo=[];S.calFilterSel=[];S.calFilterCat=[];renderCalMain();});
+  var clearBtn=$("cal-clear");if(clearBtn)clearBtn.addEventListener("click",function(){S.calFilterTipo=[];S.calFilterSel=[];S.calFilterCat=[];renderCalMain();});
   target.querySelectorAll("[data-tipo]").forEach(function(b){b.addEventListener("click",function(){
     var k=b.dataset.tipo;var i=S.calFilterTipo.indexOf(k);
     if(i===-1)S.calFilterTipo.push(k);else S.calFilterTipo.splice(i,1);
+    S.calFilterCat=[];
+    renderCalMain();
+  });});
+  target.querySelectorAll("[data-cat]").forEach(function(b){b.addEventListener("click",function(){
+    var k=b.dataset.cat;var i=S.calFilterCat.indexOf(k);
+    if(i===-1)S.calFilterCat.push(k);else S.calFilterCat.splice(i,1);
     renderCalMain();
   });});
   target.querySelectorAll("[data-sel]").forEach(function(b){b.addEventListener("click",function(){
