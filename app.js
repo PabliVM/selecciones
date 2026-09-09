@@ -456,7 +456,8 @@ function callupDetail(c){
 }
 
 // ── STATE ──
-var S={view:"agenda",season:"2025-26",filterType:null,agendaView:"fichas",finOpen:false,editingId:null,planView:"bloques",intlPais:null,statsSearch:"",statsPlayer:null,jugTeam:"",jugSearch:"",calPlanTab:"calendario",fechaTipo:"",calMode:"vertical",calFilterTipo:[],calFilterSel:[],calClasicoYear:null,calClasicoMonth:null};
+var _savedView="agenda";try{_savedView=localStorage.getItem("rmconv_view")||"agenda";}catch(e){}
+var S={view:_savedView,season:"2025-26",filterType:null,agendaView:"fichas",finOpen:false,editingId:null,planView:"bloques",intlPais:null,statsSearch:"",statsPlayer:null,jugTeam:"",jugSearch:"",calPlanTab:"calendario",fechaTipo:"",calMode:"vertical",calFilterTipo:[],calFilterSel:[],calClasicoYear:null,calClasicoMonth:null};
 
 function renderSeasonSel(){
   var opts=_seasons.filter(function(s){return s!=="2025-26";}).slice().reverse().map(function(s){return'<option value="'+s+'"'+(s===S.season?" selected":"")+">"+s+"</option>";}).join("");
@@ -487,6 +488,7 @@ function bindTabs(onSelect){
 
 function route(v){
   S.view=v;
+  try{localStorage.setItem("rmconv_view",v);}catch(e){}
   document.querySelectorAll(".nb").forEach(function(b){b.classList.toggle("active",b.dataset.v===v);});
   document.querySelectorAll(".nb-new,.nb[data-v='jugadores']").forEach(function(b){b.style.display=canEdit()?"":"none";});
   var views={
