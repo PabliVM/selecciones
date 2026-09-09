@@ -485,6 +485,11 @@ details[open] .fin-summary__label::before{transform:rotate(90deg)}
 .cal-viewtoggle{display:inline-flex;gap:4px;background:var(--off-white-3,#eef1f5);border-radius:999px;padding:3px;margin-bottom:14px}
 .cal-viewtoggle button{border:none;background:none;padding:6px 14px;border-radius:999px;font-size:12px;font-weight:600;color:var(--text-muted);cursor:pointer;transition:all var(--t)}
 .cal-viewtoggle button.on{background:var(--surface);color:var(--navy);box-shadow:var(--shadow-sm)}
+.fecha-range-list{display:flex;flex-direction:column;gap:2px;margin-top:6px}
+.fecha-range-row{display:flex;align-items:center;gap:6px;padding:6px 4px;border-top:1px solid var(--border);font-size:13px}
+.fecha-range-row:first-child{border-top:none}
+.fecha-range-txt{flex:1;color:var(--text)}
+.fecha-range-actions{display:flex;gap:4px;flex-shrink:0}
 .cal-match-dot{font-size:8px;line-height:1}
 .cal-panel{background:var(--surface);border-radius:var(--r-sm);padding:12px;margin-top:8px;border:1px solid var(--border)}
 .cal-panel-date{font-size:12px;font-weight:700;color:var(--gold);text-transform:capitalize;margin-bottom:8px;letter-spacing:.5px}
