@@ -2115,32 +2115,15 @@ function calGroupKey(e){
   if(e.kind==="callup")return"c|"+(e.raw.selectionType||"")+"|"+(e.raw.selectionCategory||"");
   return"f|"+(e.tipoLabel||"")+"|"+(e.raw.cat||"");
 }
-function computeMonthSegments(monthEvents,monthStart,monthEnd,daysInMonth){
-  var evs=monthEvents.map(function(e){
-    var s=e.startDate<monthStart?monthStart:e.startDate;
-    var en=e.endDate>monthEnd?monthEnd:e.endDate;
-    var sd=parseInt(s.split("-")[2],10),ed=parseInt(en.split("-")[2],10);
-    return{ev:e,sd:sd,ed:ed,groupKey:calGroupKey(e),lane:-1};
+function computeGlobalLanes(allEvents){
+  var seen={};var keys=[];
+  allEvents.slice().sort(function(a,b){return calEventOrderCompare(a,b)||a.startDate.localeCompare(b.startDate);}).forEach(function(e){
+    var k=calGroupKey(e);
+    if(!seen[k]){seen[k]=1;keys.push(k);}
   });
-  var byStart=evs.slice().sort(function(a,b){return a.sd-b.sd;});
-  var clusters=[];
-  var curCluster=null,curEnd=-1;
-  byStart.forEach(function(x){
-    if(curCluster&&x.sd<=curEnd){curCluster.push(x);curEnd=Math.max(curEnd,x.ed);}
-    else{curCluster=[x];curEnd=x.ed;clusters.push(curCluster);}
-  });
-  var laneCount=1;
-  clusters.forEach(function(cluster){
-    var keys=[];var seen={};
-    cluster.forEach(function(x){if(!seen[x.groupKey]){seen[x.groupKey]=1;keys.push(x);}});
-    keys.sort(function(a,b){return calEventOrderCompare(a.ev,b.ev);});
-    var laneOfKey={};
-    keys.forEach(function(k,i){laneOfKey[k.groupKey]=i;});
-    cluster.forEach(function(x){x.lane=laneOfKey[x.groupKey];});
-    laneCount=Math.max(laneCount,keys.length);
-  });
-  var segments=evs.map(function(x){return{ev:x.ev,lane:x.lane,sd:x.sd,ed:x.ed};});
-  return{segments:segments,laneCount:laneCount};
+  var laneOfKey={};
+  keys.forEach(function(k,i){laneOfKey[k]=i;});
+  return{laneOfKey:laneOfKey,laneCount:Math.max(1,keys.length)};
 }
 function renderCalVertical(events,season){
   var startYear=parseInt(season.split("-")[0]);
@@ -2151,6 +2134,8 @@ function renderCalVertical(events,season){
   for(var m=6;m<18;m++){var y=startYear+(m>=12?1:0);var mo=m%12;months.push({year:y,month:mo,label:monthNames[m-6]});}
   var ROWH=20;
   var pad2=function(n){return String(n).padStart(2,"0");};
+  var global=computeGlobalLanes(events);
+  var laneCount=global.laneCount;
   var colsHtml=months.map(function(mn){
     var y=mn.year,mo=mn.month;
     var daysInMonth=new Date(y,mo+1,0).getDate();
@@ -2163,13 +2148,14 @@ function renderCalVertical(events,season){
       rowsHtml+='<div class="calv-row'+(isToday?" calv-today":"")+'" style="height:'+ROWH+'px"><span class="calv-dow">'+dowLetters[dow]+'</span><span class="calv-dn2">'+d+"</span></div>";
     }
     var monthEvents=events.filter(function(e){return e.startDate<=monthEnd&&e.endDate>=monthStart;});
-    var layout=computeMonthSegments(monthEvents,monthStart,monthEnd,daysInMonth);
-    var laneCount=layout.laneCount;
-    var barsHtml=layout.segments.map(function(seg){
-      var e=seg.ev;
-      var top=(seg.sd-1)*ROWH,height=(seg.ed-seg.sd+1)*ROWH-2;
+    var barsHtml=monthEvents.map(function(e){
+      var s=e.startDate<monthStart?monthStart:e.startDate;
+      var en=e.endDate>monthEnd?monthEnd:e.endDate;
+      var sd=parseInt(s.split("-")[2],10),ed=parseInt(en.split("-")[2],10);
+      var top=(sd-1)*ROWH,height=(ed-sd+1)*ROWH-2;
       var lw=100/laneCount;
-      return'<div class="calv-bar" data-kind="'+e.kind+'" data-id="'+(e.raw.id||"")+'" style="top:'+top+'px;height:'+height+'px;left:'+(seg.lane*lw)+'%;width:'+(lw-1)+'%;background:'+e.color+'" title="'+esc(e.title)+" · "+fmtRange(e.startDate,e.endDate)+'"><span class="calv-bar-label" style="color:'+contrastText(e.color)+'">'+esc(e.title)+"</span></div>";
+      var lane=global.laneOfKey[calGroupKey(e)]||0;
+      return'<div class="calv-bar" data-kind="'+e.kind+'" data-id="'+(e.raw.id||"")+'" style="top:'+top+'px;height:'+height+'px;left:'+(lane*lw)+'%;width:'+(lw-1)+'%;background:'+e.color+'" title="'+esc(e.title)+" · "+fmtRange(e.startDate,e.endDate)+'"><span class="calv-bar-label" style="color:'+contrastText(e.color)+'">'+esc(e.title)+"</span></div>";
     }).join("");
     return'<div class="calv-col"><div class="calv-mhdr">'+mn.label+" "+y+'</div><div class="calv-body" style="height:'+(daysInMonth*ROWH)+'px">'+rowsHtml+'<div class="calv-bars-layer">'+barsHtml+"</div></div></div>";
   }).join("");
