@@ -1682,9 +1682,9 @@ function calMatchesFilters(e){
 }
 
 function renderCalendarioPlan(){
-  var h='<div style="display:flex;background:var(--surface-alt,var(--off-white-3));border-radius:8px;padding:3px;gap:2px;border:1px solid var(--border);margin-bottom:16px">'+
-    '<button class="plan-tbtn'+(S.calPlanTab==="calendario"?" on":"")+'" id="cpt-cal">📅 Calendario</button>'+
-    '<button class="plan-tbtn'+(S.calPlanTab==="fechas"?" on":"")+'" id="cpt-plan">🗓️ Fechas</button>'+
+  var h='<div class="pill-tabs">'+
+    '<button class="pill-btn'+(S.calPlanTab==="calendario"?" on":"")+'" id="cpt-cal">📅 Calendario</button>'+
+    '<button class="pill-btn'+(S.calPlanTab==="fechas"?" on":"")+'" id="cpt-plan">🗓️ Fechas</button>'+
     '</div><div id="cpt-content"></div>';
   $("main").innerHTML=h;
   $("cpt-cal").addEventListener("click",function(){S.calPlanTab="calendario";$("cpt-cal").classList.add("on");$("cpt-plan").classList.remove("on");renderCalMain();});
@@ -1699,9 +1699,9 @@ function renderCalMain(){
   var sels=calAvailableSels(events);
   var anyFilter=S.calFilterTipo.length||S.calFilterSel.length;
 
-  var h='<div class="cal-viewtoggle">'+
-    '<button class="'+(S.calMode==="clasico"?"on":"")+'" id="cm-clasico">🗓️ Mensual</button>'+
-    '<button class="'+(S.calMode==="vertical"?"on":"")+'" id="cm-vertical">📊 Temporada completa</button>'+
+  var h='<div class="pill-tabs">'+
+    '<button class="pill-btn'+(S.calMode==="clasico"?" on":"")+'" id="cm-clasico">🗓️ Mensual</button>'+
+    '<button class="pill-btn'+(S.calMode==="vertical"?" on":"")+'" id="cm-vertical">📊 Temporada completa</button>'+
     "</div>";
 
   h+='<div class="fb"><button class="fbtn'+(!anyFilter?" on":"")+'" id="cal-todos">Todos</button></div>';
