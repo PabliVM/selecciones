@@ -30,6 +30,12 @@ function updateRefDate(id,data,cb){
   }
   if(cb)cb();
 }
+function syncGroupColor(tipo,color){
+  var t=(tipo||"").trim();if(!t)return;
+  getRefDates_raw().forEach(function(r){
+    if((r.tipo||"").trim()===t&&r.color!==color)updateRefDate(r.id,{color:color});
+  });
+}
 function deleteRefDate(id,cb){
   if(window._db&&window._fbUser){
     var fns=window._fbFns;
@@ -2036,7 +2042,7 @@ function openFechaAdd(tipos){
     var color=($("fa-color").value||"#F5B301");
     var start=$("fa-start").value;var end=$("fa-end").value||start;
     if(!tipo||!start){$("fa-err").style.display="block";$("fa-err").textContent="Tipo y fecha de inicio son obligatorios.";return;}
-    addRefDate({tipo:tipo,title:title,color:color,startDate:start,endDate:end},function(){toast("✅ Fecha añadida");closeMo();renderFechas();});
+    addRefDate({tipo:tipo,title:title,color:color,startDate:start,endDate:end},function(){syncGroupColor(tipo,color);toast("✅ Fecha añadida");closeMo();renderFechas();});
   });
 }
 
@@ -2071,7 +2077,7 @@ function openFechaEdit(r,tipos){
     var color=($("fee-color").value||"#F5B301");
     var start=$("fee-start").value;var end=$("fee-end").value||start;
     if(!tipo||!start){$("fee-err").style.display="block";$("fee-err").textContent="Tipo y fecha de inicio son obligatorios.";return;}
-    updateRefDate(r.id,{tipo:tipo,title:title,color:color,startDate:start,endDate:end},function(){toast("✅ Fecha actualizada");closeMo();renderFechas();});
+    updateRefDate(r.id,{tipo:tipo,title:title,color:color,startDate:start,endDate:end},function(){syncGroupColor(tipo,color);toast("✅ Fecha actualizada");closeMo();renderFechas();});
   });
 }
 
@@ -2113,6 +2119,7 @@ function openFechaAddBulk(tipos){
     var done=0,total=toAdd.length;
     toAdd.forEach(function(item){addRefDate(item,function(){done++;if(done===total)finish();});});
     function finish(){
+      syncGroupColor(tipo,color);
       var msg="✅ "+toAdd.length+" fecha"+(toAdd.length>1?"s":"")+" añadida"+(toAdd.length>1?"s":"");
       if(bad.length)msg+=" ("+bad.length+" con formato incorrecto, omitidas)";
       toast(msg);closeMo();renderFechas();
