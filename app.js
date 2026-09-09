@@ -2186,13 +2186,26 @@ function renderFechas(){
   } else {
     h+='<div class="cl">'+groups.map(function(g,gi){
       var realCount=g.items.filter(function(r){return!!r.startDate;}).length;
-      var rows=g.items.filter(function(r){return!!r.startDate;}).map(function(r){
-        var catTag=r.cat?'<span class="badge" style="background:var(--surface-alt,#eef1f5);color:var(--text-mid);font-size:10px;margin-right:6px">'+esc(CAT[r.cat]||r.cat)+"</span>":"";
+      var realItems=g.items.filter(function(r){return!!r.startDate;});
+      function rowHtml(r){
         return'<div class="fecha-range-row" data-id="'+r.id+'">'+
-          '<span class="mi">📅</span><span class="fecha-range-txt">'+catTag+(r.title?esc(r.title)+" · ":"")+fmtRange(r.startDate,r.endDate)+"</span>"+
+          '<span class="mi">📅</span><span class="fecha-range-txt">'+(r.title?esc(r.title)+" · ":"")+fmtRange(r.startDate,r.endDate)+"</span>"+
           (editable?'<span class="fecha-range-actions"><button class="jug-edit-btn fecha-edit-btn" data-id="'+r.id+'" title="Editar fecha">✏️</button><button class="jug-edit-btn fecha-del-btn" data-id="'+r.id+'" title="Eliminar">🗑</button></span>':"")+
           "</div>";
-      }).join("");
+      }
+      var rows;
+      if(g.cats.length){
+        var withCat=realItems.filter(function(r){return!!r.cat;});
+        var noCat=realItems.filter(function(r){return!r.cat;});
+        var catsPresent=catsDesc(g.cats.filter(function(c){return withCat.some(function(r){return r.cat===c;});}));
+        rows=catsPresent.map(function(c){
+          var itemsC=withCat.filter(function(r){return r.cat===c;});
+          return'<div class="fecha-cat-group"><div class="fecha-cat-group-hdr">'+esc(CAT[c]||c)+"</div>"+itemsC.map(rowHtml).join("")+"</div>";
+        }).join("");
+        if(noCat.length)rows+='<div class="fecha-cat-group"><div class="fecha-cat-group-hdr">Sin subcategoría</div>'+noCat.map(rowHtml).join("")+"</div>";
+      } else {
+        rows=realItems.map(rowHtml).join("");
+      }
       var catsLine=g.cats.length?'<div class="cc-mi" style="margin-top:2px"><span class="mi">🏷️</span><span>'+g.cats.map(function(c){return CAT[c]||c;}).join(", ")+"</span></div>":"";
       var emptyMsg=!realCount?'<p class="msub" style="margin-top:6px">(sin fechas todavía)</p>':"";
       var gdata=' data-tipo="'+esc(g.tipo)+'" data-color="'+esc(g.color)+'" data-cats="'+esc(JSON.stringify(g.cats))+'"';
