@@ -1682,30 +1682,33 @@ function calMatchesFilters(e){
 }
 
 function renderCalendarioPlan(){
-  if(S.calPlanTab==="fechas"){
-    var hf='<button class="btn btn-ghost btn-sm" id="cpt-back" style="margin-bottom:10px">← Volver al calendario</button><div id="cpt-content"></div>';
-    $("main").innerHTML=hf;
-    $("cpt-back").addEventListener("click",function(){S.calPlanTab="calendario";renderCalendarioPlan();});
-    renderFechas();
-    return;
-  }
-  var h='<div class="cal-topbar"><button class="cal-fechas-btn" id="cpt-fechas-btn" title="Gestionar fechas (FIFA, RFFM...)">🗓️ Gestionar fechas</button></div><div id="cpt-content"></div>';
-  $("main").innerHTML=h;
-  $("cpt-fechas-btn").addEventListener("click",function(){S.calPlanTab="fechas";renderCalendarioPlan();});
+  $("main").innerHTML='<div id="cpt-content"></div>';
   renderCalMain();
 }
 
 function renderCalMain(){
   var season=S.season;
+  var h='<div class="view-toggle">'+
+    '<button class="vtbtn'+(S.calMode==="clasico"?" on":"")+'" id="cm-clasico">🗓️ Mensual</button>'+
+    '<button class="vtbtn'+(S.calMode==="vertical"?" on":"")+'" id="cm-vertical">📊 Temporada</button>'+
+    '<button class="vtbtn'+(S.calMode==="fechas"?" on":"")+'" id="cm-fechas">📝 Introducir fechas</button>'+
+    "</div>";
+
+  if(S.calMode==="fechas"){
+    h+='<div id="cal-body"></div>';
+    var target0=$("cpt-content");if(!target0)return;
+    target0.innerHTML=h;
+    $("cm-clasico").addEventListener("click",function(){S.calMode="clasico";renderCalMain();});
+    $("cm-vertical").addEventListener("click",function(){S.calMode="vertical";renderCalMain();});
+    $("cm-fechas").addEventListener("click",function(){S.calMode="fechas";renderCalMain();});
+    renderFechas();
+    return;
+  }
+
   var events=getCalEvents(season);
   var tipos=calAvailableTipos(events);
   var sels=calAvailableSels(events);
   var anyFilter=S.calFilterTipo.length||S.calFilterSel.length;
-
-  var h='<div class="pill-tabs">'+
-    '<button class="pill-btn'+(S.calMode==="clasico"?" on":"")+'" id="cm-clasico">🗓️ Mensual</button>'+
-    '<button class="pill-btn'+(S.calMode==="vertical"?" on":"")+'" id="cm-vertical">📊 Temporada completa</button>'+
-    "</div>";
 
   h+='<div class="fb"><button class="fbtn'+(!anyFilter?" on":"")+'" id="cal-todos">Todos</button></div>';
   if(tipos.length){
@@ -1726,6 +1729,7 @@ function renderCalMain(){
 
   $("cm-clasico").addEventListener("click",function(){S.calMode="clasico";renderCalMain();});
   $("cm-vertical").addEventListener("click",function(){S.calMode="vertical";renderCalMain();});
+  $("cm-fechas").addEventListener("click",function(){S.calMode="fechas";renderCalMain();});
   $("cal-todos").addEventListener("click",function(){S.calFilterTipo=[];S.calFilterSel=[];renderCalMain();});
   var clearBtn=$("cal-clear");if(clearBtn)clearBtn.addEventListener("click",function(){S.calFilterTipo=[];S.calFilterSel=[];renderCalMain();});
   target.querySelectorAll("[data-tipo]").forEach(function(b){b.addEventListener("click",function(){
@@ -1966,7 +1970,7 @@ function renderFechas(){
         "</article>";
     }).join("")+"</div>";
   }
-  var target=$("cpt-content");if(!target)return;
+  var target=$("cal-body");if(!target)return;
   target.innerHTML=h;
   target.querySelectorAll("[data-ft]").forEach(function(b){b.addEventListener("click",function(){S.fechaTipo=b.dataset.ft;renderFechas();});});
   var addBtn=$("btn-add-fecha");if(addBtn)addBtn.addEventListener("click",function(){openFechaAdd(tipos);});
