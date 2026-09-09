@@ -518,6 +518,7 @@ details[open] .fin-summary__label::before{transform:rotate(90deg)}
 .agenda-months-sel{display:flex;gap:2px;flex-shrink:0;background:var(--off-white-3,#eef1f5);border-radius:999px;padding:2px}
 .agenda-months-btn{background:none;border:none;color:var(--text-muted);font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;cursor:pointer;transition:all var(--t)}
 .agenda-months-btn.on{background:var(--navy);color:#fff;box-shadow:var(--shadow-sm)}
+.agenda-tipo-filter{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
 .pill-tabs{display:flex;gap:8px;overflow-x:auto;margin-bottom:14px;-webkit-overflow-scrolling:touch}
 .pill-tabs::-webkit-scrollbar{display:none}
 .pill-btn{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:999px;border:1px solid var(--border);background:var(--surface);font-size:13px;font-weight:600;color:var(--text-mid);cursor:pointer;transition:all var(--t);white-space:nowrap;box-shadow:var(--shadow-sm)}
