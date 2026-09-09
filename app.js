@@ -809,9 +809,10 @@ if(c.llegada){var lf={llegadaDate:c.llegada.date,llegadaTime:c.llegada.time,lleg
 
 // ── AGENDA ──
 function agendaBannerHtml(){
+  if(!S.agendaMonths)S.agendaMonths=1;
   var today=new Date();today.setHours(0,0,0,0);
   var todayStr=today.getFullYear()+"-"+String(today.getMonth()+1).padStart(2,"0")+"-"+String(today.getDate()).padStart(2,"0");
-  var monthEnd=new Date(today);monthEnd.setDate(monthEnd.getDate()+30);
+  var monthEnd=new Date(today);monthEnd.setDate(monthEnd.getDate()+30*S.agendaMonths);
   var monthEndStr=monthEnd.getFullYear()+"-"+String(monthEnd.getMonth()+1).padStart(2,"0")+"-"+String(monthEnd.getDate()).padStart(2,"0");
 
   var allCallups=getCallups({season:S.season});
@@ -845,19 +846,21 @@ function agendaBannerHtml(){
       (a.kind==="callup"?-1:b.kind==="callup"?1:getTipoOrder(a.tipo)-getTipoOrder(b.tipo));
   });
 
-  var listHtml="";
-  if(items.length){
-    listHtml='<div class="agenda-upcoming"><div class="agenda-upcoming-hdr">📅 En el próximo mes</div>'+
-      items.map(function(it){
-        var isNow=it.startDate<=todayStr&&it.endDate>=todayStr;
-        return'<div class="agenda-upcoming-row"'+(it.kind==="callup"?' data-openid="'+it.id+'"':"")+'>'+
-          '<span class="agenda-banner-dot" style="background:'+it.color+'"></span>'+
-          '<span class="agenda-upcoming-title">'+esc(it.title)+(isNow?' <b class="agenda-upcoming-now">EN CURSO</b>':"")+"</span>"+
-          '<span class="agenda-upcoming-date">'+fmtRange(it.startDate,it.endDate)+"</span>"+
-          "</div>";
-      }).join("")+
-      "</div>";
-  }
+  var monthLabel=S.agendaMonths===1?"el próximo mes":"los próximos "+S.agendaMonths+" meses";
+  var listHtml='<div class="agenda-upcoming"><div class="agenda-upcoming-hdr" style="display:flex;align-items:center;justify-content:space-between;gap:8px">'+
+    '<span>📅 En '+monthLabel+"</span>"+
+    '<div class="agenda-months-sel">'+
+    [1,2,3].map(function(n){return'<button class="agenda-months-btn'+(S.agendaMonths===n?" on":"")+'" data-months="'+n+'">'+n+"m</button>";}).join("")+
+    "</div></div>"+
+    (items.length?items.map(function(it){
+      var isNow=it.startDate<=todayStr&&it.endDate>=todayStr;
+      return'<div class="agenda-upcoming-row"'+(it.kind==="callup"?' data-openid="'+it.id+'"':"")+'>'+
+        '<span class="agenda-banner-dot" style="background:'+it.color+'"></span>'+
+        '<span class="agenda-upcoming-title">'+esc(it.title)+(isNow?' <b class="agenda-upcoming-now">EN CURSO</b>':"")+"</span>"+
+        '<span class="agenda-upcoming-date">'+fmtRange(it.startDate,it.endDate)+"</span>"+
+        "</div>";
+    }).join(""):'<p class="msub" style="padding:10px 14px">Nada en '+monthLabel+"</p>")+
+    "</div>";
 
   if(!chips.length&&!listHtml)return"";
   return'<div class="agenda-banner">'+chips.join("")+"</div>"+listHtml;
@@ -920,6 +923,7 @@ function renderAgenda(viewMode){
   else document.querySelectorAll(".trow").forEach(function(row){row.addEventListener("click",function(){openDetail(row.dataset.id);});});
   document.querySelectorAll("[data-f]").forEach(function(b){b.addEventListener("click",function(){S.filterType=b.dataset.f||null;S.filterCats=[];renderAgenda(S.agendaView);});});
   document.querySelectorAll("[data-openid]").forEach(function(b){b.addEventListener("click",function(){openDetail(b.dataset.openid);});});
+  document.querySelectorAll(".agenda-months-btn").forEach(function(b){b.addEventListener("click",function(){S.agendaMonths=parseInt(b.dataset.months,10);renderAgenda(S.agendaView);});});
   document.querySelectorAll("[data-cat]").forEach(function(b){b.addEventListener("click",function(){var cat=b.dataset.cat;if(!cat)return;var idx=S.filterCats.indexOf(cat);if(idx===-1)S.filterCats.push(cat);else S.filterCats.splice(idx,1);renderAgenda(S.agendaView);});});
   document.querySelectorAll("[data-cat-clear]").forEach(function(b){b.addEventListener("click",function(){S.filterCats=[];renderAgenda(S.agendaView);});});
   document.querySelectorAll("[data-vm]").forEach(function(b){b.addEventListener("click",function(){renderAgenda(b.dataset.vm);});});
