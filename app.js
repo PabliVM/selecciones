@@ -87,7 +87,7 @@ SELS["madrilena"] = {
 };SELS["espanola"]  = {label:"Española",short:"ESP",cats:["sub14","sub15","sub16","sub17","sub18","sub19","sub20","sub21","abs"],colors:{sub14:{badge:"#DC2626"},sub15:{badge:"#DC2626"},sub16:{badge:"#B91C1C"},sub17:{badge:"#B91C1C"},sub18:{badge:"#991B1B"},sub19:{badge:"#7F1D1D"},sub20:{badge:"#7F1D1D"},sub21:{badge:"#450A0A"},abs:{badge:"#1A0000"}}};
 SELS["internacional"]={label:"Internacional",short:"INT",cats:["sub16","sub17","sub18","sub19","sub20","sub21","abs"],colors:{sub16:{badge:"#10B981"},sub17:{badge:"#10B981"},sub18:{badge:"#047857"},sub19:{badge:"#047857"},sub20:{badge:"#065F46"},sub21:{badge:"#065F46"},abs:{badge:"#064E3B"}}};
 
-var CAT={todas:"Todas",sub12:"Sub-12",sub13:"Sub-13",sub14:"Sub-14",sub15:"Sub-15",sub16:"Sub-16",sub17:"Sub-17",sub18:"Sub-18",sub19:"Sub-19",sub20:"Sub-20",sub21:"Sub-21",abs:"Absoluta"};
+var CAT={todas:"Todas",sub12:"Sub-12",sub14:"Sub-14",sub15:"Sub-15",sub16:"Sub-16",sub17:"Sub-17",sub18:"Sub-18",sub19:"Sub-19",sub20:"Sub-20",sub21:"Sub-21",abs:"Absoluta"};
 var STATUS={proxima:{c:"s-prox",i:"⏰",l:"PRÓXIMA"},en_curso:{c:"s-cur",i:"●",l:"EN CURSO"},finalizada:{c:"s-fin",i:"✓",l:"FINALIZADA"}};
 
 var TEAMS=[
@@ -770,7 +770,7 @@ function renderAgenda(viewMode){
   // Build category pills — always visible, collected from all visible convocatorias
   var allCatsSet={};
   visible.forEach(function(c){if(c.selectionCategory)allCatsSet[c.selectionCategory]=true;});
-  var catOrder=["sub12","sub13","sub14","sub15","sub16","sub17","sub18","sub19","sub20","sub21","abs"];
+  var catOrder=["sub12","sub14","sub15","sub16","sub17","sub18","sub19","sub20","sub21","abs"];
   var allCats=catOrder.filter(function(c){return allCatsSet[c];});
   var catPills="";
   if(allCats.length>1){
@@ -1232,7 +1232,7 @@ function bindAiParser(){
       if(isImg&&!imgFile&&!pastedFile){status.textContent="Sube o pega una foto primero.";return;}
       status.className="ai-status";status.textContent="⏳ Analizando...";okBtn.disabled=true;okBtn.textContent="Analizando...";
       var today=new Date().toISOString().slice(0,10);
-      var prompt="Eres un experto en convocatorias del Real Madrid Cantera. Analiza el texto y devuelve SOLO JSON válido, sin markdown.\nHoy es "+today+". Fechas en formato YYYY-MM-DD. Si un dato no aparece usa null o [].\nJSON schema:\n{\"selectionType\":\"madrilena|espanola|internacional\",\"convType\":\"definitiva|provisional\",\"selectionCategory\":\"sub12|sub13|sub14|sub15|sub16|sub17|sub18|sub19|sub20|sub21|abs\",\"pais\":\"pais si internacional sino null\",\"title\":\"titulo descriptivo\",\"startDate\":\"YYYY-MM-DD\",\"endDate\":\"YYYY-MM-DD\",\"rival\":\"rivales\",\"location\":\"lugar\",\"conc\":{\"date\":\"YYYY-MM-DD\",\"time\":\"HH:MM\",\"lugar\":\"lugar citacion\",\"hotel\":\"alojamiento\"},\"traslado\":{\"date\":\"YYYY-MM-DD\",\"time\":\"HH:MM\",\"lugar\":\"punto salida\",\"transporte\":\"vuelo/tren ida\"},\"vuelta\":{\"date\":\"YYYY-MM-DD\",\"time\":\"HH:MM\",\"lugar\":\"punto salida vuelta\",\"transporte\":\"vuelo/tren vuelta\"},\"matches\":[{\"date\":\"YYYY-MM-DD\",\"time\":\"HH:MM\",\"rival\":\"rival\",\"matchType\":\"amistoso|oficial|entrenamiento\"}],\"notes\":\"obs\",\"players\":[\"NOMBRE APELLIDO\"]}\nTEXTO:\n"+text;
+      var prompt="Eres un experto en convocatorias del Real Madrid Cantera. Analiza el texto y devuelve SOLO JSON válido, sin markdown.\nHoy es "+today+". Fechas en formato YYYY-MM-DD. Si un dato no aparece usa null o [].\nJSON schema:\n{\"selectionType\":\"madrilena|espanola|internacional\",\"convType\":\"definitiva|provisional\",\"selectionCategory\":\"sub12|sub14|sub15|sub16|sub17|sub18|sub19|sub20|sub21|abs\",\"pais\":\"pais si internacional sino null\",\"title\":\"titulo descriptivo\",\"startDate\":\"YYYY-MM-DD\",\"endDate\":\"YYYY-MM-DD\",\"rival\":\"rivales\",\"location\":\"lugar\",\"conc\":{\"date\":\"YYYY-MM-DD\",\"time\":\"HH:MM\",\"lugar\":\"lugar citacion\",\"hotel\":\"alojamiento\"},\"traslado\":{\"date\":\"YYYY-MM-DD\",\"time\":\"HH:MM\",\"lugar\":\"punto salida\",\"transporte\":\"vuelo/tren ida\"},\"vuelta\":{\"date\":\"YYYY-MM-DD\",\"time\":\"HH:MM\",\"lugar\":\"punto salida vuelta\",\"transporte\":\"vuelo/tren vuelta\"},\"matches\":[{\"date\":\"YYYY-MM-DD\",\"time\":\"HH:MM\",\"rival\":\"rival\",\"matchType\":\"amistoso|oficial|entrenamiento\"}],\"notes\":\"obs\",\"players\":[\"NOMBRE APELLIDO\"]}\nTEXTO:\n"+text;
 
       function doFetch(body){
         return fetch("/api/convocatoria",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)})
@@ -1978,18 +1978,21 @@ function renderFechas(){
   } else {
     h+='<div class="cl">'+groups.map(function(g){
       var realCount=g.items.filter(function(r){return!!r.startDate;}).length;
-      var rows=g.items.map(function(r){
+      var rows=g.items.filter(function(r){return!!r.startDate;}).map(function(r){
         var catTag=r.cat?'<span class="badge" style="background:var(--surface-alt,#eef1f5);color:var(--text-mid);font-size:10px;margin-right:6px">'+esc(CAT[r.cat]||r.cat)+"</span>":"";
         return'<div class="fecha-range-row" data-id="'+r.id+'">'+
-          '<span class="mi">📅</span><span class="fecha-range-txt">'+catTag+(r.startDate?(r.title?esc(r.title)+" · ":"")+fmtRange(r.startDate,r.endDate):"(sin fechas todavía)")+"</span>"+
-          (editable?'<span class="fecha-range-actions"><button class="jug-edit-btn fecha-edit-btn" data-id="'+r.id+'" title="Editar">✏️</button><button class="jug-edit-btn fecha-del-btn" data-id="'+r.id+'" title="Eliminar">🗑</button></span>':"")+
+          '<span class="mi">📅</span><span class="fecha-range-txt">'+catTag+(r.title?esc(r.title)+" · ":"")+fmtRange(r.startDate,r.endDate)+"</span>"+
+          (editable?'<span class="fecha-range-actions"><button class="jug-edit-btn fecha-edit-btn" data-id="'+r.id+'" title="Editar fecha">✏️</button><button class="jug-edit-btn fecha-del-btn" data-id="'+r.id+'" title="Eliminar">🗑</button></span>':"")+
           "</div>";
       }).join("");
       var catsLine=g.cats.length?'<div class="cc-mi" style="margin-top:2px"><span class="mi">🏷️</span><span>'+g.cats.map(function(c){return CAT[c]||c;}).join(", ")+"</span></div>":"";
+      var emptyMsg=!realCount?'<p class="msub" style="margin-top:6px">(sin fechas todavía)</p>':"";
       return'<article class="cc" style="--ca:'+g.color+';cursor:default">'+
         '<div class="cc-hdr"><div class="cc-badges"><span class="badge" style="background:'+g.color+";color:"+contrastText(g.color)+'">'+esc(g.tipo)+"</span>"+
-        '<span class="vs" style="margin-left:6px">'+realCount+(realCount===1?" fecha":" fechas")+"</span></div></div>"+
-        catsLine+
+        '<span class="vs" style="margin-left:6px">'+realCount+(realCount===1?" fecha":" fechas")+"</span></div>"+
+        (editable?'<button class="jug-edit-btn tipo-edit-btn" data-tipo="'+esc(g.tipo)+'" data-color="'+esc(g.color)+'" data-cats="'+esc(JSON.stringify(g.cats))+'" title="Editar tipo (nombre/color/subcategorías)">✏️</button>':"")+
+        "</div>"+
+        catsLine+emptyMsg+
         '<div class="fecha-range-list">'+rows+"</div>"+
         (editable?'<button class="btn btn-ghost btn-sm fecha-addrange-btn" data-tipo="'+esc(g.tipo)+'" data-color="'+esc(g.color)+'" data-cats="'+esc(JSON.stringify(g.cats))+'" style="width:100%;margin-top:8px">+ Añadir fecha a '+esc(g.tipo)+"</button>":"")+
         "</article>";
@@ -2003,6 +2006,11 @@ function renderFechas(){
   target.querySelectorAll(".fecha-addrange-btn").forEach(function(b){b.addEventListener("click",function(){
     var cats=[];try{cats=JSON.parse(b.dataset.cats||"[]");}catch(e){}
     openFechaAddToGroup(b.dataset.tipo,b.dataset.color,cats);
+  });});
+  target.querySelectorAll(".tipo-edit-btn").forEach(function(b){b.addEventListener("click",function(e){
+    e.stopPropagation();
+    var cats=[];try{cats=JSON.parse(b.dataset.cats||"[]");}catch(e){}
+    openTipoEdit(b.dataset.tipo,b.dataset.color,cats);
   });});
   target.querySelectorAll(".fecha-edit-btn").forEach(function(b){b.addEventListener("click",function(e){
     e.stopPropagation();
@@ -2079,14 +2087,12 @@ function openFechaAdd(tipos){
 }
 
 function openFechaEdit(r,tipos){
-  var dl='<datalist id="fee-tipos-dl">'+tipos.map(function(t){return'<option value="'+esc(t)+'">';}).join("")+"</datalist>";
   var mo=document.createElement("div");mo.className="mo";
   mo.innerHTML='<div class="modal"><button class="mcl" id="fee-close">×</button>'+
     '<div class="mtitle">Editar fecha</div>'+
-    '<div class="fg"><label class="fl">Tipo</label><input class="fi" id="fee-tipo" list="fee-tipos-dl" type="text" value="'+esc(r.tipo||"")+'" autocomplete="off"/>'+dl+"</div>"+
+    '<p class="msub">Tipo: <b>'+esc(r.tipo||"")+'</b></p>'+
     (function(){var cats=getCatsForTipo(r.tipo);return cats.length?'<div class="fg"><label class="fl">Aplica a (opcional)</label><select class="fsel" id="fee-cat"><option value="">— Todas —</option>'+cats.map(function(c){return'<option value="'+c+'"'+(r.cat===c?" selected":"")+">"+(CAT[c]||c)+"</option>";}).join("")+"</select></div>":"";})()+
     '<div class="fg"><label class="fl">Título (opcional)</label><input class="fi" id="fee-title" type="text" value="'+esc(r.title||"")+'"/></div>'+
-    '<div class="fg"><label class="fl">Color</label><input class="fi" id="fee-color" type="color" value="'+esc(r.color||"#F5B301")+'" style="height:40px;padding:4px;cursor:pointer"/></div>'+
     '<div class="fg"><label class="fl">Desde</label><input class="fi" id="fee-start" type="date" value="'+esc(r.startDate||"")+'"/></div>'+
     '<div class="fg"><label class="fl">Hasta</label><input class="fi" id="fee-end" type="date" value="'+esc(r.endDate||r.startDate||"")+'"/></div>'+
     '<div id="fee-err" class="ferr" style="display:none"></div>'+
@@ -2105,13 +2111,45 @@ function openFechaEdit(r,tipos){
   $("fee-close").addEventListener("click",closeMo);$("fee-cancel").addEventListener("click",closeMo);
   mo.addEventListener("click",function(e){if(e.target===mo)closeMo();});
   $("fee-save").addEventListener("click",function(){
-    var tipo=($("fee-tipo").value||"").trim();
     var catEl=$("fee-cat");var cat=catEl?catEl.value:(r.cat||"");
     var title=($("fee-title").value||"").trim();
-    var color=($("fee-color").value||"#F5B301");
     var start=$("fee-start").value;var end=$("fee-end").value||start;
-    if(!tipo){$("fee-err").style.display="block";$("fee-err").textContent="El nombre del tipo es obligatorio.";return;}
-    updateRefDate(r.id,{tipo:tipo,title:title,color:color,cat:cat,startDate:start||"",endDate:end||""},function(){syncGroupColor(tipo,color);toast("✅ Fecha actualizada");closeMo();renderFechas();});
+    if(!start){$("fee-err").style.display="block";$("fee-err").textContent="La fecha de inicio es obligatoria.";return;}
+    updateRefDate(r.id,{title:title,cat:cat,startDate:start,endDate:end},function(){toast("✅ Fecha actualizada");closeMo();renderFechas();});
+  });
+}
+
+function openTipoEdit(tipo,color,cats){
+  var mo=document.createElement("div");mo.className="mo";
+  mo.innerHTML='<div class="modal"><button class="mcl" id="te-close">×</button>'+
+    '<div class="mtitle">Editar tipo de fecha</div>'+
+    '<div class="fg"><label class="fl">Nombre</label><input class="fi" id="te-tipo" type="text" value="'+esc(tipo)+'"/></div>'+
+    '<div class="fg"><label class="fl">Color</label><input class="fi" id="te-color" type="color" value="'+esc(color||"#F5B301")+'" style="height:40px;padding:4px;cursor:pointer"/></div>'+
+    '<div class="fg"><label class="fl">Subcategorías (opcional)</label><div class="fecha-cats-grid" id="te-cats">'+
+    Object.keys(CAT).filter(function(k){return k!=="todas";}).map(function(k){return'<label class="fecha-cat-chk"><input type="checkbox" value="'+k+'"'+(cats.indexOf(k)!==-1?" checked":"")+"/>"+CAT[k]+"</label>";}).join("")+
+    "</div></div>"+
+    '<div id="te-err" class="ferr" style="display:none"></div>'+
+    '<div style="display:flex;gap:8px;margin-top:8px">'+
+    '<button class="btn btn-ghost btn-sm" id="te-cancel" style="flex:1">Cancelar</button>'+
+    '<button class="btn btn-primary btn-sm" id="te-save" style="flex:1">Guardar</button>'+
+    "</div></div>";
+  document.body.appendChild(mo);
+  setTimeout(function(){var n=$("te-tipo");if(n)n.focus();},100);
+  function closeMo(){if(mo.parentNode)mo.parentNode.removeChild(mo);}
+  $("te-close").addEventListener("click",closeMo);$("te-cancel").addEventListener("click",closeMo);
+  mo.addEventListener("click",function(e){if(e.target===mo)closeMo();});
+  $("te-save").addEventListener("click",function(){
+    var newTipo=($("te-tipo").value||"").trim();
+    var newColor=($("te-color").value||"#F5B301");
+    var newCats=[];$("te-cats").querySelectorAll("input:checked").forEach(function(c){newCats.push(c.value);});
+    if(!newTipo){$("te-err").style.display="block";$("te-err").textContent="El nombre del tipo es obligatorio.";return;}
+    var recs=getRefDates_raw().filter(function(r){return(r.tipo||"").trim()===tipo.trim();});
+    var done=0,total=recs.length||1;
+    function finish(){toast("✅ Tipo actualizado");closeMo();renderFechas();}
+    if(!recs.length){finish();return;}
+    recs.forEach(function(r){
+      updateRefDate(r.id,{tipo:newTipo,color:newColor,cats:newCats},function(){done++;if(done===total)finish();});
+    });
   });
 }
 
