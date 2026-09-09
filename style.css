@@ -494,6 +494,7 @@ details[open] .fin-summary__label::before{transform:rotate(90deg)}
 .fecha-order-btns{display:flex;flex-direction:column;gap:1px}
 .fecha-order-btn{width:22px;height:16px;font-size:9px;line-height:1;padding:0;display:flex;align-items:center;justify-content:center}
 .fecha-order-btn:disabled{opacity:.3;cursor:default}
+.fecha-chevron{background:none;border:none;color:var(--text-mid);font-size:11px;cursor:pointer;padding:2px 4px;flex-shrink:0}
 .fecha-cat-group{margin-top:8px}
 .fecha-cat-group:first-child{margin-top:0}
 .fecha-cat-group-hdr{font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;padding:4px 8px;border-radius:4px;margin-bottom:4px;display:inline-block}
