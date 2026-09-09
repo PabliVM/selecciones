@@ -2113,7 +2113,6 @@ function calDayPanelHtml(ds,dayEvents,dayMatches){
 
 var FIXED_LANE_ORDER=[
   {label:"FIFA",match:function(e){return e.kind==="fecha"&&(e.tipoLabel||"").trim().toLowerCase()==="fifa";}},
-  {label:"España Absoluta",match:function(e){return e.kind==="callup"&&e.raw.selectionType==="espanola"&&e.raw.selectionCategory==="abs";}},
   {label:"España U21",match:function(e){return e.kind==="callup"&&e.raw.selectionType==="espanola"&&e.raw.selectionCategory==="sub21";}},
   {label:"España U20",match:function(e){return e.kind==="callup"&&e.raw.selectionType==="espanola"&&e.raw.selectionCategory==="sub20";}},
   {label:"España U19",match:function(e){return e.kind==="callup"&&e.raw.selectionType==="espanola"&&e.raw.selectionCategory==="sub19";}},
