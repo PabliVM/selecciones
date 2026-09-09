@@ -865,9 +865,9 @@ function agendaBannerHtml(){
       var rec=getRefDates_raw().find(function(r){return(r.tipo||"").trim()===t;});
       var col=rec?rec.color:"#888";
       var on=S.agendaFilterTipos.indexOf(t)!==-1;
-      return'<button class="fbtn'+(on?" on":"")+'" data-agtipo="'+esc(t)+'"><span class="fbtn-dot" style="background:'+col+'"></span>'+esc(t)+"</button>";
+      return'<button class="agenda-tipo-btn'+(on?" on":"")+'" data-agtipo="'+esc(t)+'"><span class="fbtn-dot" style="background:'+col+'"></span>'+esc(t)+"</button>";
     }).join("")+
-    (S.agendaFilterTipos.length?'<button class="fbtn" data-agtipo-clear="1" style="border-style:dashed;color:var(--text-muted)">✕ Limpiar</button>':"")+
+    (S.agendaFilterTipos.length?'<button class="agenda-tipo-btn" data-agtipo-clear="1" style="color:var(--text-muted)">✕</button>':"")+
     "</div>":"";
 
   var monthLabel=S.agendaMonths===1?"el próximo mes":"los próximos "+S.agendaMonths+" meses";
@@ -877,9 +877,9 @@ function agendaBannerHtml(){
     [1,2,3].map(function(n){return'<button class="agenda-months-btn'+(S.agendaMonths===n?" on":"")+'" data-months="'+n+'">'+n+"m</button>";}).join("")+
     "</div></div>"+
     tipoFilterHtml+
-    (items.length?items.map(function(it){
+    (items.length?items.map(function(it,idx){
       var isNow=it.startDate<=todayStr&&it.endDate>=todayStr;
-      return'<div class="agenda-upcoming-row"'+(it.kind==="callup"?' data-openid="'+it.id+'"':"")+'>'+
+      return'<div class="agenda-upcoming-row'+(idx===0?" agenda-upcoming-first":"")+'"'+(it.kind==="callup"?' data-openid="'+it.id+'"':"")+'>'+
         '<span class="agenda-banner-dot" style="background:'+it.color+'"></span>'+
         '<span class="agenda-upcoming-title">'+esc(it.title)+(isNow?' <b class="agenda-upcoming-now">EN CURSO</b>':"")+"</span>"+
         '<span class="agenda-upcoming-date">'+fmtRange(it.startDate,it.endDate)+"</span>"+
