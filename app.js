@@ -1965,13 +1965,15 @@ function renderFechas(){
   groups.sort(function(a,b){return(a.items[0].startDate||"").localeCompare(b.items[0].startDate||"");});
 
   var h='<div class="vh"><h1 class="vt">Fechas</h1><span class="vs">'+list.length+' registradas</span></div>';
-  h+='<div class="fb">'+
+  h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">'+
+    '<div class="fb" style="margin-bottom:0;flex:1">'+
     '<button class="fbtn'+(filtro===""?" on":"")+'" data-ft="">Todas</button>'+
     tipos.map(function(t){return'<button class="fbtn'+(filtro===t?" on":"")+'" data-ft="'+esc(t)+'">'+esc(t)+"</button>";}).join("")+
+    "</div>"+
+    (editable?'<button class="fecha-add-icon" id="btn-add-fecha" title="Añadir tipo de fecha">+</button>':"")+
     "</div>";
   if(editable){
-    h+='<button class="btn btn-gold" id="btn-add-fecha" style="width:100%;margin-bottom:8px;margin-top:4px">+ Añadir tipo de fecha</button>'+
-      '<button class="btn btn-ghost" id="btn-add-fecha-bulk" style="width:100%;margin-bottom:12px">+ Añadir en lista</button>';
+    h+='<button class="btn btn-ghost btn-sm" id="btn-add-fecha-bulk" style="margin-bottom:12px">+ Añadir en lista</button>';
   }
   if(!groups.length){
     h+=emptyState("Sin fechas"+(filtro?' de "'+filtro+'"':""),"🗓️");
