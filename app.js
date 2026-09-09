@@ -849,7 +849,7 @@ function agendaBannerHtml(){
       (a.kind==="callup"?-1:b.kind==="callup"?1:getTipoOrder(a.tipo)-getTipoOrder(b.tipo));
   });
 
-  var tipoFilterHtml=tipoList.length?'<div class="agenda-tipo-filter">'+
+  var tipoFilterHtml=tipoList.length?'<div class="agenda-tipo-filter agenda-tipo-filter-in">'+
     tipoList.map(function(t){
       var rec=getRefDates_raw().find(function(r){return(r.tipo||"").trim()===t;});
       var col=rec?rec.color:"#888";
@@ -860,11 +860,12 @@ function agendaBannerHtml(){
     "</div>":"";
 
   var monthLabel=S.agendaMonths===1?"el próximo mes":"los próximos "+S.agendaMonths+" meses";
-  var listHtml=tipoFilterHtml+'<div class="agenda-upcoming"><div class="agenda-upcoming-hdr" style="display:flex;align-items:center;justify-content:space-between;gap:8px">'+
+  var listHtml='<div class="agenda-upcoming"><div class="agenda-upcoming-hdr" style="display:flex;align-items:center;justify-content:space-between;gap:8px">'+
     '<span>📅 En '+monthLabel+"</span>"+
     '<div class="agenda-months-sel">'+
     [1,2,3].map(function(n){return'<button class="agenda-months-btn'+(S.agendaMonths===n?" on":"")+'" data-months="'+n+'">'+n+"m</button>";}).join("")+
     "</div></div>"+
+    tipoFilterHtml+
     (items.length?items.map(function(it){
       var isNow=it.startDate<=todayStr&&it.endDate>=todayStr;
       return'<div class="agenda-upcoming-row"'+(it.kind==="callup"?' data-openid="'+it.id+'"':"")+'>'+
