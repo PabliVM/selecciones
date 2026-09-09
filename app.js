@@ -862,12 +862,10 @@ function agendaBannerHtml(){
 
   var tipoFilterHtml=tipoList.length?'<div class="agenda-tipo-filter">'+
     tipoList.map(function(t){
-      var rec=getRefDates_raw().find(function(r){return(r.tipo||"").trim()===t;});
-      var col=rec?rec.color:"#888";
       var on=S.agendaFilterTipos.indexOf(t)!==-1;
-      return'<button class="agenda-tipo-btn'+(on?" on":"")+'" data-agtipo="'+esc(t)+'"><span class="fbtn-dot" style="background:'+col+'"></span>'+esc(t)+"</button>";
+      return'<button class="agenda-tipo-btn'+(on?" on":"")+'" data-agtipo="'+esc(t)+'">'+esc(t)+"</button>";
     }).join("")+
-    (S.agendaFilterTipos.length?'<button class="agenda-tipo-btn" data-agtipo-clear="1" style="color:var(--text-muted)">✕</button>':"")+
+    '<button class="agenda-tipo-btn agenda-tipo-clear" data-agtipo-clear="1"'+(S.agendaFilterTipos.length?"":' style="visibility:hidden;pointer-events:none"')+'>✕</button>'+
     "</div>":"";
 
   var monthLabel=S.agendaMonths===1?"el próximo mes":"los próximos "+S.agendaMonths+" meses";
