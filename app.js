@@ -1970,10 +1970,8 @@ function renderFechas(){
     '<button class="fbtn'+(filtro===""?" on":"")+'" data-ft="">Todas</button>'+
     tipos.map(function(t){return'<button class="fbtn'+(filtro===t?" on":"")+'" data-ft="'+esc(t)+'">'+esc(t)+"</button>";}).join("")+
     "</div>"+
-    (editable?'<button class="fecha-add-icon" id="btn-add-fecha" title="Añadir tipo de fecha">+</button>':"")+
+    (editable?'<button class="fecha-add-icon" id="btn-add-fecha" title="Añadir lista">+</button>':"")+
     "</div>";
-  if(editable){
-
   if(!groups.length){
     h+=emptyState("Sin fechas"+(filtro?' de "'+filtro+'"':""),"🗓️");
   } else {
@@ -1988,14 +1986,18 @@ function renderFechas(){
       }).join("");
       var catsLine=g.cats.length?'<div class="cc-mi" style="margin-top:2px"><span class="mi">🏷️</span><span>'+g.cats.map(function(c){return CAT[c]||c;}).join(", ")+"</span></div>":"";
       var emptyMsg=!realCount?'<p class="msub" style="margin-top:6px">(sin fechas todavía)</p>':"";
+      var gdata=' data-tipo="'+esc(g.tipo)+'" data-color="'+esc(g.color)+'" data-cats="'+esc(JSON.stringify(g.cats))+'"';
       return'<article class="cc" style="--ca:'+g.color+';cursor:default">'+
         '<div class="cc-hdr"><div class="cc-badges"><span class="badge" style="background:'+g.color+";color:"+contrastText(g.color)+'">'+esc(g.tipo)+"</span>"+
         '<span class="vs" style="margin-left:6px">'+realCount+(realCount===1?" fecha":" fechas")+"</span></div>"+
-        (editable?'<button class="jug-edit-btn tipo-edit-btn" data-tipo="'+esc(g.tipo)+'" data-color="'+esc(g.color)+'" data-cats="'+esc(JSON.stringify(g.cats))+'" title="Editar tipo (nombre/color/subcategorías)">✏️</button>':"")+
+        (editable?'<button class="jug-edit-btn tipo-edit-btn"'+gdata+' title="Editar tipo (nombre/color/subcategorías)">✏️</button>':"")+
         "</div>"+
         catsLine+emptyMsg+
         '<div class="fecha-range-list">'+rows+"</div>"+
-        (editable?'<button class="btn btn-ghost btn-sm fecha-addrange-btn" data-tipo="'+esc(g.tipo)+'" data-color="'+esc(g.color)+'" data-cats="'+esc(JSON.stringify(g.cats))+'" style="width:100%;margin-top:8px">+ Añadir fecha a '+esc(g.tipo)+"</button>":"")+
+        (editable?'<div style="display:flex;gap:6px;margin-top:8px">'+
+          '<button class="btn btn-ghost btn-sm fecha-addrange-btn"'+gdata+' style="flex:1">+ Añadir fecha</button>'+
+          '<button class="btn btn-ghost btn-sm fecha-addbulk-btn"'+gdata+' style="flex:1">+ Añadir en lista</button>'+
+          "</div>":"")+
         "</article>";
     }).join("")+"</div>";
   }
@@ -2003,10 +2005,13 @@ function renderFechas(){
   target.innerHTML=h;
   target.querySelectorAll("[data-ft]").forEach(function(b){b.addEventListener("click",function(){S.fechaTipo=b.dataset.ft;renderFechas();});});
   var addBtn=$("btn-add-fecha");if(addBtn)addBtn.addEventListener("click",function(){openFechaAdd(tipos);});
-  var addBulkBtn=$("btn-add-fecha-bulk");if(addBulkBtn)addBulkBtn.addEventListener("click",function(){openFechaAddBulk(tipos);});
   target.querySelectorAll(".fecha-addrange-btn").forEach(function(b){b.addEventListener("click",function(){
     var cats=[];try{cats=JSON.parse(b.dataset.cats||"[]");}catch(e){}
     openFechaAddToGroup(b.dataset.tipo,b.dataset.color,cats);
+  });});
+  target.querySelectorAll(".fecha-addbulk-btn").forEach(function(b){b.addEventListener("click",function(){
+    var cats=[];try{cats=JSON.parse(b.dataset.cats||"[]");}catch(e){}
+    openFechaAddBulkToGroup(b.dataset.tipo,b.dataset.color,cats);
   });});
   target.querySelectorAll(".tipo-edit-btn").forEach(function(b){b.addEventListener("click",function(e){
     e.stopPropagation();
@@ -2055,6 +2060,49 @@ function openFechaAddToGroup(tipo,color,cats){
     var start=$("fag-start").value;var end=$("fag-end").value||start;
     if(!start){$("fag-err").style.display="block";$("fag-err").textContent="La fecha de inicio es obligatoria.";return;}
     addRefDate({tipo:tipo,title:title,color:color,cat:cat,startDate:start,endDate:end},function(){toast("✅ Fecha añadida a "+tipo);closeMo();renderFechas();});
+  });
+}
+
+function openFechaAddBulkToGroup(tipo,color,cats){
+  cats=cats||[];
+  var mo=document.createElement("div");mo.className="mo";
+  mo.innerHTML='<div class="modal"><button class="mcl" id="fabg-close">×</button>'+
+    '<div class="mtitle">Añadir fechas en lista a '+esc(tipo)+"</div>"+
+    '<p class="msub">Una por línea: DD-MM-AAAA,DD-MM-AAAA,Título opcional</p>'+
+    (cats.length?'<div class="fg"><label class="fl">Aplica a (opcional, toda la lista)</label><select class="fsel" id="fabg-cat"><option value="">— Todas —</option>'+cats.map(function(c){return'<option value="'+c+'">'+(CAT[c]||c)+"</option>";}).join("")+"</select></div>":"")+
+    '<div class="fg"><label class="fl">Fechas</label><textarea class="fi" id="fabg-list" rows="8" placeholder="16-03-2026,24-03-2026,Ventana marzo\n01-06-2026,09-06-2026" style="resize:vertical;font-family:inherit"></textarea></div>'+
+    '<div id="fabg-err" class="ferr" style="display:none"></div>'+
+    '<div style="display:flex;gap:8px;margin-top:8px">'+
+    '<button class="btn btn-ghost btn-sm" id="fabg-cancel" style="flex:1">Cancelar</button>'+
+    '<button class="btn btn-primary btn-sm" id="fabg-save" style="flex:1">Añadir</button>'+
+    "</div></div>";
+  document.body.appendChild(mo);
+  setTimeout(function(){var n=$("fabg-list");if(n)n.focus();},100);
+  function closeMo(){if(mo.parentNode)mo.parentNode.removeChild(mo);}
+  $("fabg-close").addEventListener("click",closeMo);$("fabg-cancel").addEventListener("click",closeMo);
+  mo.addEventListener("click",function(e){if(e.target===mo)closeMo();});
+  $("fabg-save").addEventListener("click",function(){
+    var catEl=$("fabg-cat");var cat=catEl?catEl.value:"";
+    var lines=($("fabg-list").value||"").split("\n").map(function(s){return s.trim();}).filter(function(s){return s.length>0;});
+    if(!lines.length){$("fabg-err").style.display="block";$("fabg-err").textContent="Pega al menos una fecha.";return;}
+    var dateRe=/^(\d{2})[\/-](\d{2})[\/-](\d{4})$/;
+    function toISO(str){var m=str.match(dateRe);return m?m[3]+"-"+m[2]+"-"+m[1]:null;}
+    var toAdd=[];var bad=[];
+    lines.forEach(function(line){
+      var parts=line.split(",").map(function(s){return s.trim();});
+      var start=toISO(parts[0]),end=parts[1]?toISO(parts[1]):start,title=parts[2]||"";
+      if(!start||!end){bad.push(line);return;}
+      toAdd.push({tipo:tipo,title:title,color:color,cat:cat,startDate:start,endDate:end});
+    });
+    if(!toAdd.length){$("fabg-err").style.display="block";$("fabg-err").textContent="Ningún formato válido. Usa DD-MM-AAAA,DD-MM-AAAA.";return;}
+    var saveBtn=$("fabg-save");saveBtn.disabled=true;saveBtn.textContent="Añadiendo...";
+    var done=0,total=toAdd.length;
+    toAdd.forEach(function(item){addRefDate(item,function(){done++;if(done===total)finish();});});
+    function finish(){
+      var msg="✅ "+toAdd.length+" fecha"+(toAdd.length>1?"s":"")+" añadida"+(toAdd.length>1?"s":"");
+      if(bad.length)msg+=" ("+bad.length+" con formato incorrecto, omitidas)";
+      toast(msg);closeMo();renderFechas();
+    }
   });
 }
 
