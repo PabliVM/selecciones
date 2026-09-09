@@ -41,7 +41,7 @@ function fifaBadge(c){
 var _seasons = [];
 var _refEvents = [];
 function refDatesAsEvents(){
-  return getRefDates_raw().map(function(r){return Object.assign({},r,{title:r.title||r.tipo||"Fecha"});});
+  return getRefDates_raw().map(function(r){return Object.assign({},r,{title:r.title||r.tipo||"Fecha",_isRefDate:true});});
 }
 
 var SELS = {};
@@ -426,7 +426,7 @@ function callupDetail(c){
 }
 
 // ── STATE ──
-var S={view:"agenda",season:"2025-26",filterType:null,agendaView:"fichas",finOpen:false,editingId:null,planView:"bloques",intlPais:null,statsSearch:"",statsPlayer:null,jugTeam:"",jugSearch:"",calPlanTab:"calendario",fechaTipo:""};
+var S={view:"agenda",season:"2025-26",filterType:null,agendaView:"fichas",finOpen:false,editingId:null,planView:"bloques",intlPais:null,statsSearch:"",statsPlayer:null,jugTeam:"",jugSearch:"",calPlanTab:"calendario",fechaTipo:"",calMode:"vertical",calFilterTipo:[],calFilterSel:[],calClasicoYear:null,calClasicoMonth:null};
 
 function renderSeasonSel(){
   var opts=_seasons.slice().reverse().map(function(s){return'<option value="'+s+'"'+(s===S.season?" selected":"")+">"+s+"</option>";}).join("");
@@ -1607,26 +1607,145 @@ function renderPlayerDetail(pid){
 }
 
 // ── CALENDARIO + PLANIFICACION ──
+// ── CALENDARIO UNIFICADO: datos únicos → filtros → vista clásica o vertical ──
+function getCalEvents(season){
+  var events=[];
+  getCallups({season:season}).forEach(function(c){
+    var k=selKey(c.selectionType);
+    var sel=SELS[k];
+    var col=(sel&&sel.colors&&sel.colors[c.selectionCategory])?sel.colors[c.selectionCategory].badge:"#1A3A8F";
+    events.push({id:"c_"+c.id,kind:"callup",tipoKey:"conv",selType:k,selCat:c.selectionCategory,
+      title:c.title,startDate:c.startDate,endDate:c.endDate||c.startDate,color:col,raw:c});
+  });
+  getRefDates_raw().forEach(function(r){
+    var tipoKey=(r.tipo||"").trim().toLowerCase();
+    events.push({id:"f_"+r.id,kind:"fecha",tipoKey:tipoKey,tipoLabel:r.tipo,selType:null,selCat:null,
+      title:r.title||r.tipo||"Fecha",startDate:r.startDate,endDate:r.endDate||r.startDate,color:r.color||"#888",raw:r});
+  });
+  return events;
+}
+function calEventSelKey(e){
+  if(e.selType==="madrilena")return"mad:*";
+  if(e.selType==="internacional")return"int:*";
+  if(e.selType==="espanola")return"esp:"+e.selCat;
+  return null;
+}
+function calAvailableTipos(events){
+  var seen={};var list=[];
+  events.forEach(function(e){
+    var key=e.kind==="callup"?"conv":e.tipoKey;
+    var label=e.kind==="callup"?"Convocatorias":(e.tipoLabel||key);
+    if(key&&!seen[key]){seen[key]=1;list.push({key:key,label:label});}
+  });
+  list.sort(function(a,b){return a.key==="conv"?-1:b.key==="conv"?1:a.label.localeCompare(b.label);});
+  return list;
+}
+function calAvailableSels(events){
+  var seen={};var list=[];
+  events.forEach(function(e){
+    if(e.kind!=="callup")return;
+    var key=calEventSelKey(e);if(!key)return;
+    var label=e.selType==="madrilena"?"Selecciones territoriales":e.selType==="internacional"?"Internacional":"España "+(CAT[e.selCat]||e.selCat);
+    if(!seen[key]){seen[key]=1;list.push({key:key,label:label});}
+  });
+  list.sort(function(a,b){return a.label.localeCompare(b.label);});
+  return list;
+}
+function calMatchesFilters(e){
+  if(S.calFilterTipo.length){
+    var tk=e.kind==="callup"?"conv":e.tipoKey;
+    if(S.calFilterTipo.indexOf(tk)===-1)return false;
+  }
+  if(S.calFilterSel.length&&e.kind==="callup"){
+    var sk=calEventSelKey(e);
+    if(!sk||S.calFilterSel.indexOf(sk)===-1)return false;
+  }
+  return true;
+}
+
 function renderCalendarioPlan(){
   var h='<div style="display:flex;background:var(--surface-alt,var(--off-white-3));border-radius:8px;padding:3px;gap:2px;border:1px solid var(--border);margin-bottom:16px">'+
     '<button class="plan-tbtn'+(S.calPlanTab==="calendario"?" on":"")+'" id="cpt-cal">📅 Calendario</button>'+
     '<button class="plan-tbtn'+(S.calPlanTab==="fechas"?" on":"")+'" id="cpt-plan">🗓️ Fechas</button>'+
     '</div><div id="cpt-content"></div>';
   $("main").innerHTML=h;
-  $("cpt-cal").addEventListener("click",function(){S.calPlanTab="calendario";$("cpt-cal").classList.add("on");$("cpt-plan").classList.remove("on");renderCalendario();});
+  $("cpt-cal").addEventListener("click",function(){S.calPlanTab="calendario";$("cpt-cal").classList.add("on");$("cpt-plan").classList.remove("on");renderCalMain();});
   $("cpt-plan").addEventListener("click",function(){S.calPlanTab="fechas";$("cpt-plan").classList.add("on");$("cpt-cal").classList.remove("on");renderFechas();});
-  if(S.calPlanTab==="fechas")renderFechas();else renderCalendario();
+  if(S.calPlanTab==="fechas")renderFechas();else renderCalMain();
 }
 
-function renderCalendario(){
-  var season=S.season;var startYear=parseInt(season.split("-")[0]);
-  var rmCallups=getCallups({season:season});
-  var allEvs=rmCallups.concat(refDatesAsEvents().filter(function(e){return e.startDate>=(startYear)+"-07-01";}));
+function renderCalMain(){
+  var season=S.season;
+  var events=getCalEvents(season);
+  var tipos=calAvailableTipos(events);
+  var sels=calAvailableSels(events);
+  var anyFilter=S.calFilterTipo.length||S.calFilterSel.length;
+
+  var h='<div style="display:flex;background:var(--surface-alt,var(--off-white-3));border-radius:8px;padding:3px;gap:2px;border:1px solid var(--border);margin-bottom:14px">'+
+    '<button class="plan-tbtn'+(S.calMode==="clasico"?" on":"")+'" id="cm-clasico">📅 Calendario</button>'+
+    '<button class="plan-tbtn'+(S.calMode==="vertical"?" on":"")+'" id="cm-vertical">📜 Vertical</button>'+
+    "</div>";
+
+  h+='<div class="fb"><button class="fbtn'+(!anyFilter?" on":"")+'" id="cal-todos">Todos</button></div>';
+  if(tipos.length){
+    h+='<div class="cal-fgroup"><span class="cal-fglabel">Tipo</span><div class="fb">'+
+      tipos.map(function(t){return'<button class="fbtn'+(S.calFilterTipo.indexOf(t.key)!==-1?" on":"")+'" data-tipo="'+esc(t.key)+'">'+esc(t.label)+"</button>";}).join("")+
+      "</div></div>";
+  }
+  if(sels.length){
+    h+='<div class="cal-fgroup"><span class="cal-fglabel">Selección</span><div class="fb">'+
+      sels.map(function(s){return'<button class="fbtn'+(S.calFilterSel.indexOf(s.key)!==-1?" on":"")+'" data-sel="'+esc(s.key)+'">'+esc(s.label)+"</button>";}).join("")+
+      "</div></div>";
+  }
+  if(anyFilter)h+='<button class="btn btn-ghost btn-sm" id="cal-clear" style="margin-bottom:12px">Limpiar filtros</button>';
+  h+='<div id="cal-body"></div>';
+
+  var target=$("cpt-content");if(!target)return;
+  target.innerHTML=h;
+
+  $("cm-clasico").addEventListener("click",function(){S.calMode="clasico";renderCalMain();});
+  $("cm-vertical").addEventListener("click",function(){S.calMode="vertical";renderCalMain();});
+  $("cal-todos").addEventListener("click",function(){S.calFilterTipo=[];S.calFilterSel=[];renderCalMain();});
+  var clearBtn=$("cal-clear");if(clearBtn)clearBtn.addEventListener("click",function(){S.calFilterTipo=[];S.calFilterSel=[];renderCalMain();});
+  target.querySelectorAll("[data-tipo]").forEach(function(b){b.addEventListener("click",function(){
+    var k=b.dataset.tipo;var i=S.calFilterTipo.indexOf(k);
+    if(i===-1)S.calFilterTipo.push(k);else S.calFilterTipo.splice(i,1);
+    renderCalMain();
+  });});
+  target.querySelectorAll("[data-sel]").forEach(function(b){b.addEventListener("click",function(){
+    var k=b.dataset.sel;var i=S.calFilterSel.indexOf(k);
+    if(i===-1)S.calFilterSel.push(k);else S.calFilterSel.splice(i,1);
+    renderCalMain();
+  });});
+
+  var filtered=events.filter(calMatchesFilters);
+  if(S.calMode==="clasico")renderCalClasico(filtered);else renderCalVertical(filtered,season);
+}
+
+function calDayPanelHtml(ds,dayEvents,dayMatches){
+  var dt=new Date(ds+"T12:00:00");
+  var rows=dayEvents.map(function(e){
+    return'<div class="cal-ev-item" data-kind="'+e.kind+'" data-id="'+(e.raw.id||"")+'">'+
+      '<span class="cal-ev-flag">'+(e.kind==="callup"?getSelFlag(e.raw.selectionType,e.raw.pais):"🗓️")+'</span>'+
+      '<div class="cal-ev-info"><div class="cal-ev-title">'+esc(e.kind==="fecha"&&e.tipoLabel?e.tipoLabel+(e.raw.title?" · "+e.raw.title:""):e.title)+'</div>'+
+      '<div class="cal-ev-dates">'+fmtRange(e.startDate,e.endDate)+"</div></div></div>";
+  }).join("");
+  var mrows=(dayMatches||[]).map(function(x){
+    return'<div class="cal-ev-item"><span class="cal-ev-flag">'+matchIcon(x.match.matchType)+'</span>'+
+      '<div class="cal-ev-info"><div class="cal-ev-title">'+(x.match.matchType==="entrenamiento"?"":"vs ")+esc(x.match.rival||"Por confirmar")+'</div>'+
+      '<div class="cal-ev-dates">'+esc(x.conv.title)+(x.match.time?" · "+x.match.time+"h":"")+"</div></div></div>";
+  }).join("");
+  return'<div class="cal-panel-date">'+dt.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"})+"</div>"+rows+mrows;
+}
+
+function renderCalVertical(events,season){
+  var startYear=parseInt(season.split("-")[0]);
   var today=new Date();var ty=today.getFullYear(),tm=today.getMonth(),td=today.getDate();
   var monthNames=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
   var months=[];
   for(var m=6;m<18;m++){var y=startYear+(m>=12?1:0);var mo=m%12;months.push({year:y,month:mo});}
-  var h='<div class="vh"><h1 class="vt">Calendario</h1><span class="vs">'+season+"</span></div>";
+  var callupIds={};events.forEach(function(e){if(e.kind==="callup")callupIds[e.raw.id]=true;});
+  var h="";
   months.forEach(function(mn){
     var y=mn.year,mo=mn.month;
     var first=new Date(y,mo,1).getDay();var fd=(first+6)%7;
@@ -1637,46 +1756,77 @@ function renderCalendario(){
     for(var i=0;i<fd;i++)h+='<div class="cal-empty"></div>';
     for(var d=1;d<=days;d++){
       var ds=y+"-"+String(mo+1).padStart(2,"0")+"-"+String(d).padStart(2,"0");
-      var evs=allEvs.filter(function(e){return e.startDate<=ds&&(e.endDate||e.startDate)>=ds;});
-      var ms=[];rmCallups.forEach(function(c){if(c.matches)c.matches.forEach(function(m){if(m.date===ds)ms.push({conv:c,match:m});});});
+      var dayEvs=events.filter(function(e){return e.startDate<=ds&&e.endDate>=ds;});
+      var ms=[];getCallups_raw().forEach(function(c){if(!callupIds[c.id]||!c.matches)return;c.matches.forEach(function(mt){if(mt.date===ds)ms.push({conv:c,match:mt});});});
       var isToday=(y===ty&&mo===tm&&d===td);
-      var classes="cal-day"+(isToday?" cal-today":"")+(evs.length?" cal-has-ev":"")+(ms.length?" cal-has-match":"");
-      var dots=evs.map(function(e){var k=selKey(e.selectionType||e.type||"");var cls=k==="madrilena"?"cal-dot-mad":k==="espanola"?"cal-dot-esp":"cal-dot-int";return'<div class="cal-dot '+cls+'"></div>';}).join("");
-      var matchDot=ms.length?'<div class="cal-match-dot">⚽</div>':"";
+      var classes="cal-day"+(isToday?" cal-today":"")+(dayEvs.length?" cal-has-ev":"")+(ms.length?" cal-has-match":"");
+      var bars=dayEvs.length?'<div class="cal-bars">'+dayEvs.map(function(e){
+        return'<div class="cal-bar" style="background:'+e.color+'" title="'+esc(e.title)+'"></div>';
+      }).join("")+"</div>":"";
+      var matchDot=ms.length?'<div class="cal-dots"><div class="cal-match-dot">⚽</div></div>':"";
       h+='<div class="'+classes+'" data-ds="'+ds+'">'+
-        '<span class="cal-dn">'+d+"</span>"+
-        (dots||matchDot?'<div class="cal-dots">'+dots+matchDot+"</div>":"")+
+        '<span class="cal-dn">'+d+"</span>"+matchDot+bars+
         "</div>";
     }
     h+="</div></div>";
   });
   h+='<div id="cal-panel" class="cal-panel" style="display:none"></div>';
-  var calTarget=$("cpt-content");if(!calTarget)return;
-  calTarget.innerHTML=h;
-  calTarget.querySelectorAll(".cal-day").forEach(function(el){
+  var target=$("cal-body");if(!target)return;
+  target.innerHTML=h;
+  target.querySelectorAll(".cal-day").forEach(function(el){
     el.addEventListener("click",function(){
       var ds=el.dataset.ds;if(!ds)return;
-      var evs=allEvs.filter(function(e){return e.startDate<=ds&&(e.endDate||e.startDate)>=ds;});
-      var ms=[];rmCallups.forEach(function(c){if(c.matches)c.matches.forEach(function(m){if(m.date===ds)ms.push({conv:c,match:m});});});
+      var dayEvs=events.filter(function(e){return e.startDate<=ds&&e.endDate>=ds;});
+      var ms=[];getCallups_raw().forEach(function(c){if(!callupIds[c.id]||!c.matches)return;c.matches.forEach(function(mt){if(mt.date===ds)ms.push({conv:c,match:mt});});});
       var panel=$("cal-panel");
-      if(!evs.length&&!ms.length){panel.style.display="none";return;}
-      var dt=new Date(ds+"T12:00:00");
-      var rows=evs.map(function(e){
-        return'<div class="cal-ev-item" data-id="'+(e.id||"")+'">'+
-          '<span class="cal-ev-flag">'+getSelFlag(e.selectionType||e.type,e.pais)+'</span>'+
-          '<div class="cal-ev-info"><div class="cal-ev-title">'+esc(e.title)+'</div>'+
-          '<div class="cal-ev-dates">'+fmtRange(e.startDate,e.endDate)+"</div></div></div>";
-      }).join("");
-      var mrows=ms.map(function(x){
-        return'<div class="cal-ev-item"><span class="cal-ev-flag">'+matchIcon(x.match.matchType)+'</span>'+
-          '<div class="cal-ev-info"><div class="cal-ev-title">'+(x.match.matchType==="entrenamiento"?"":"vs ")+esc(x.match.rival||"Por confirmar")+'</div>'+
-          '<div class="cal-ev-dates">'+esc(x.conv.title)+(x.match.time?" · "+x.match.time+"h":"")+"</div></div></div>";
-      }).join("");
-      panel.innerHTML='<div class="cal-panel-date">'+dt.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"})+"</div>"+rows+mrows;
+      if(!dayEvs.length&&!ms.length){panel.style.display="none";return;}
+      panel.innerHTML=calDayPanelHtml(ds,dayEvs,ms);
       panel.style.display="block";
-      panel.querySelectorAll(".cal-ev-item[data-id]").forEach(function(ei){if(ei.dataset.id)ei.addEventListener("click",function(){openDetail(ei.dataset.id);});});
+      panel.querySelectorAll(".cal-ev-item[data-kind='callup']").forEach(function(ei){ei.addEventListener("click",function(){openDetail(ei.dataset.id);});});
     });
   });
+}
+
+function renderCalClasico(events){
+  if(S.calClasicoYear==null){var t0=new Date();S.calClasicoYear=t0.getFullYear();S.calClasicoMonth=t0.getMonth();}
+  var y=S.calClasicoYear,mo=S.calClasicoMonth;
+  var monthNames=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+  var today=new Date();var ty=today.getFullYear(),tm=today.getMonth(),td=today.getDate();
+  var first=new Date(y,mo,1).getDay();var fd=(first+6)%7;
+  var days=new Date(y,mo+1,0).getDate();
+  var h='<div class="cal-nav"><button class="cal-navbtn" id="cal-prev">←</button>'+
+    '<span class="cal-navlabel">'+monthNames[mo]+" "+y+"</span>"+
+    '<button class="cal-navbtn" id="cal-next">→</button>'+
+    '<button class="btn btn-ghost btn-sm" id="cal-hoy">Hoy</button></div>';
+  h+='<div class="cal-grid-big"><div class="cal-dow">L</div><div class="cal-dow">M</div><div class="cal-dow">X</div>'+
+    '<div class="cal-dow">J</div><div class="cal-dow">V</div><div class="cal-dow">S</div><div class="cal-dow">D</div>';
+  for(var i=0;i<fd;i++)h+='<div class="cal-day-big"></div>';
+  for(var d=1;d<=days;d++){
+    var ds=y+"-"+String(mo+1).padStart(2,"0")+"-"+String(d).padStart(2,"0");
+    var dayEvs=events.filter(function(e){return e.startDate<=ds&&e.endDate>=ds;});
+    var isToday=(y===ty&&mo===tm&&d===td);
+    var shown=dayEvs.slice(0,3);
+    var chips=shown.map(function(e){return'<div class="cal-chip" style="background:'+e.color+'" data-kind="'+e.kind+'" data-id="'+(e.raw.id||"")+'" title="'+esc(e.title)+'">'+esc(e.title)+"</div>";}).join("");
+    var more=dayEvs.length>3?'<div class="cal-chip-more" data-ds="'+ds+'">+'+(dayEvs.length-3)+" más</div>":"";
+    h+='<div class="cal-day-big'+(isToday?" cal-today":"")+'" data-ds="'+ds+'"><span class="cal-dn-big">'+d+"</span>"+chips+more+"</div>";
+  }
+  h+='<div id="cal-panel" class="cal-panel" style="display:none"></div>';
+  var target=$("cal-body");if(!target)return;
+  target.innerHTML=h;
+  $("cal-prev").addEventListener("click",function(){S.calClasicoMonth--;if(S.calClasicoMonth<0){S.calClasicoMonth=11;S.calClasicoYear--;}renderCalMain();});
+  $("cal-next").addEventListener("click",function(){S.calClasicoMonth++;if(S.calClasicoMonth>11){S.calClasicoMonth=0;S.calClasicoYear++;}renderCalMain();});
+  $("cal-hoy").addEventListener("click",function(){var t=new Date();S.calClasicoYear=t.getFullYear();S.calClasicoMonth=t.getMonth();renderCalMain();});
+  target.querySelectorAll(".cal-chip[data-kind='callup']").forEach(function(el){el.addEventListener("click",function(e){e.stopPropagation();openDetail(el.dataset.id);});});
+  target.querySelectorAll(".cal-chip[data-kind='fecha']").forEach(function(el){el.addEventListener("click",function(e){e.stopPropagation();toast("🗓️ "+el.title);});});
+  target.querySelectorAll(".cal-chip-more").forEach(function(el){el.addEventListener("click",function(e){
+    e.stopPropagation();
+    var ds=el.dataset.ds;
+    var dayEvs=events.filter(function(ev){return ev.startDate<=ds&&ev.endDate>=ds;});
+    var panel=$("cal-panel");
+    panel.innerHTML=calDayPanelHtml(ds,dayEvs,[]);
+    panel.style.display="block";
+    panel.querySelectorAll(".cal-ev-item[data-kind='callup']").forEach(function(ei){ei.addEventListener("click",function(){openDetail(ei.dataset.id);});});
+  });});
 }
 
 function renderPlanificacion(){
@@ -1774,8 +1924,8 @@ function renderFechas(){
     h+=emptyState("Sin fechas"+(filtro?' de "'+filtro+'"':""),"🗓️");
   } else {
     h+='<div class="cl">'+list.map(function(r){
-      return'<article class="cc" style="--ca:#5a6170;cursor:default">'+
-        '<div class="cc-hdr"><div class="cc-badges"><span class="badge" style="background:#5a6170;color:#fff">'+esc(r.tipo||"—")+"</span></div>"+
+      return'<article class="cc" style="--ca:'+(r.color||"#5a6170")+';cursor:default">'+
+        '<div class="cc-hdr"><div class="cc-badges"><span class="badge" style="background:'+(r.color||"#5a6170")+';color:#fff">'+esc(r.tipo||"—")+"</span></div>"+
         (editable?'<button class="jug-edit-btn fecha-del-btn" data-id="'+r.id+'" title="Eliminar">🗑</button>':"")+
         "</div>"+
         '<h3 class="cc-title">'+esc(r.title||r.tipo||"")+"</h3>"+
@@ -1801,6 +1951,7 @@ function openFechaAdd(tipos){
   mo.innerHTML='<div class="modal"><button class="mcl" id="fa-close">×</button>'+
     '<div class="mtitle">Nueva fecha</div>'+
     '<div class="fg"><label class="fl">Tipo</label><input class="fi" id="fa-tipo" list="fecha-tipos-dl" type="text" placeholder="FIFA, RFFM sub14..." autocomplete="off"/>'+dl+"</div>"+
+    '<div class="fg"><label class="fl">Color</label><input class="fi" id="fa-color" type="color" value="#F5B301" style="height:40px;padding:4px;cursor:pointer"/></div>'+
     '<div class="fg"><label class="fl">Título (opcional)</label><input class="fi" id="fa-title" type="text" placeholder="Ventana marzo"/></div>'+
     '<div class="fg"><label class="fl">Desde</label><input class="fi" id="fa-start" type="date"/></div>'+
     '<div class="fg"><label class="fl">Hasta</label><input class="fi" id="fa-end" type="date"/></div>'+
@@ -1817,9 +1968,10 @@ function openFechaAdd(tipos){
   $("fa-save").addEventListener("click",function(){
     var tipo=($("fa-tipo").value||"").trim();
     var title=($("fa-title").value||"").trim();
+    var color=($("fa-color").value||"#F5B301");
     var start=$("fa-start").value;var end=$("fa-end").value||start;
     if(!tipo||!start){$("fa-err").style.display="block";$("fa-err").textContent="Tipo y fecha de inicio son obligatorios.";return;}
-    addRefDate({tipo:tipo,title:title,startDate:start,endDate:end},function(){toast("✅ Fecha añadida");closeMo();renderFechas();});
+    addRefDate({tipo:tipo,title:title,color:color,startDate:start,endDate:end},function(){toast("✅ Fecha añadida");closeMo();renderFechas();});
   });
 }
 
@@ -1830,6 +1982,7 @@ function openFechaAddBulk(tipos){
     '<div class="mtitle">Añadir fechas en lista</div>'+
     '<p class="msub">Una por línea: AAAA-MM-DD,AAAA-MM-DD,Título opcional</p>'+
     '<div class="fg"><label class="fl">Tipo (aplica a toda la lista)</label><input class="fi" id="fab-tipo" list="fecha-tipos-dl2" type="text" placeholder="FIFA" autocomplete="off"/>'+dl+"</div>"+
+    '<div class="fg"><label class="fl">Color (aplica a toda la lista)</label><input class="fi" id="fab-color" type="color" value="#F5B301" style="height:40px;padding:4px;cursor:pointer"/></div>'+
     '<div class="fg"><label class="fl">Fechas</label><textarea class="fi" id="fab-list" rows="8" placeholder="2026-03-16,2026-03-24,Ventana marzo\n2026-06-01,2026-06-09" style="resize:vertical;font-family:inherit"></textarea></div>'+
     '<div id="fab-err" class="ferr" style="display:none"></div>'+
     '<div style="display:flex;gap:8px;margin-top:8px">'+
@@ -1843,6 +1996,7 @@ function openFechaAddBulk(tipos){
   mo.addEventListener("click",function(e){if(e.target===mo)closeMo();});
   $("fab-save").addEventListener("click",function(){
     var tipo=($("fab-tipo").value||"").trim();
+    var color=($("fab-color").value||"#F5B301");
     if(!tipo){$("fab-err").style.display="block";$("fab-err").textContent="Indica un tipo.";return;}
     var lines=($("fab-list").value||"").split("\n").map(function(s){return s.trim();}).filter(function(s){return s.length>0;});
     if(!lines.length){$("fab-err").style.display="block";$("fab-err").textContent="Pega al menos una fecha.";return;}
@@ -1852,7 +2006,7 @@ function openFechaAddBulk(tipos){
       var parts=line.split(",").map(function(s){return s.trim();});
       var start=parts[0],end=parts[1]||parts[0],title=parts[2]||"";
       if(!dateRe.test(start)||!dateRe.test(end)){bad.push(line);return;}
-      toAdd.push({tipo:tipo,title:title,startDate:start,endDate:end});
+      toAdd.push({tipo:tipo,title:title,color:color,startDate:start,endDate:end});
     });
     if(!toAdd.length){$("fab-err").style.display="block";$("fab-err").textContent="Ningún formato válido. Usa AAAA-MM-DD,AAAA-MM-DD.";return;}
     var saveBtn=$("fab-save");saveBtn.disabled=true;saveBtn.textContent="Añadiendo...";
