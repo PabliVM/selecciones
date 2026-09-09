@@ -1801,7 +1801,7 @@ function renderCalVertical(events,season){
     for(var d=1;d<=daysInMonth;d++){
       var dow=(new Date(y,mo,d).getDay()+6)%7;
       var isToday=(y===ty&&mo===tm&&d===td);
-      rowsHtml+='<div class="calv-row'+(isToday?" calv-today":"")+'" style="height:'+ROWH+'px"><span class="calv-dow">'+dowLetters[dow]+"</span><span>"+d+"</span></div>";
+      rowsHtml+='<div class="calv-row'+(isToday?" calv-today":"")+'" style="height:'+ROWH+'px"><span class="calv-dow">'+dowLetters[dow]+'</span><span class="calv-dn2">'+d+"</span></div>";
     }
     var monthEvents=events.filter(function(e){return e.startDate<=monthEnd&&e.endDate>=monthStart;}).slice().sort(function(a,b){return a.startDate.localeCompare(b.startDate);});
     var lanes=[];
