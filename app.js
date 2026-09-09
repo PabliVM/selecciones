@@ -2247,18 +2247,21 @@ function renderFechas(){
   });
   groups.sort(function(a,b){return getTipoOrder(a.tipo)-getTipoOrder(b.tipo);});
 
+  if(!S.fechaCollapsed)S.fechaCollapsed={};
   var h='<div class="vh"><h1 class="vt">Fechas</h1><span class="vs">'+list.length+' registradas</span></div>';
   h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">'+
     '<div class="fb" style="margin-bottom:0;flex:1">'+
     '<button class="fbtn'+(filtro===""?" on":"")+'" data-ft="">Todas</button>'+
     tipos.map(function(t){return'<button class="fbtn'+(filtro===t?" on":"")+'" data-ft="'+esc(t)+'">'+esc(t)+"</button>";}).join("")+
     "</div>"+
+    (groups.length?'<button class="fecha-add-icon" id="btn-toggle-all" title="Expandir/contraer todas" style="background:var(--surface);color:var(--text-mid)">⇅</button>':"")+
     (editable?'<button class="fecha-add-icon" id="btn-add-fecha" title="Añadir lista">+</button>':"")+
     "</div>";
   if(!groups.length){
     h+=emptyState("Sin fechas"+(filtro?' de "'+filtro+'"':""),"🗓️");
   } else {
     h+='<div class="cl">'+groups.map(function(g,gi){
+      var collapsed=!!S.fechaCollapsed[g.tipo];
       var realCount=g.items.filter(function(r){return!!r.startDate;}).length;
       var realItems=g.items.filter(function(r){return!!r.startDate;});
       function rowHtml(r){
@@ -2289,14 +2292,16 @@ function renderFechas(){
         '<button class="jug-edit-btn fecha-order-btn" data-tipo="'+esc(g.tipo)+'" data-dir="1" title="Bajar"'+(gi===groups.length-1?" disabled":"")+'>▼</button>'+
         "</span>":"";
       return'<article class="cc" style="--ca:'+g.color+';cursor:default">'+
-        '<div class="cc-hdr"><div class="cc-badges"><span class="badge" style="background:'+g.color+";color:"+contrastText(g.color)+'">'+esc(g.tipo)+"</span>"+
+        '<div class="cc-hdr"><div class="cc-badges">'+
+        '<button class="fecha-chevron" data-toggle="'+esc(g.tipo)+'" title="'+(collapsed?"Expandir":"Contraer")+'">'+(collapsed?"▶":"▼")+"</button>"+
+        '<span class="badge" style="background:'+g.color+";color:"+contrastText(g.color)+'">'+esc(g.tipo)+"</span>"+
         '<span class="vs" style="margin-left:6px">'+realCount+(realCount===1?" fecha":" fechas")+"</span></div>"+
         '<div style="display:flex;gap:6px;align-items:center">'+moveBtns+
         (editable?'<button class="jug-edit-btn tipo-edit-btn"'+gdata+' title="Editar tipo (nombre/color/subcategorías)">✏️</button>':"")+
         "</div></div>"+
-        catsLine+emptyMsg+
+        (collapsed?"":catsLine+emptyMsg+
         '<div class="fecha-range-list">'+rows+"</div>"+
-        (editable?'<button class="btn btn-ghost btn-sm fecha-addrange-btn"'+gdata+' style="width:100%;margin-top:8px">+ Añadir fecha</button>':"")+
+        (editable?'<button class="btn btn-ghost btn-sm fecha-addrange-btn"'+gdata+' style="width:100%;margin-top:8px">+ Añadir fecha</button>':""))+
         "</article>";
     }).join("")+"</div>";
   }
@@ -2304,6 +2309,17 @@ function renderFechas(){
   target.innerHTML=h;
   target.querySelectorAll("[data-ft]").forEach(function(b){b.addEventListener("click",function(){S.fechaTipo=b.dataset.ft;renderFechas();});});
   var addBtn=$("btn-add-fecha");if(addBtn)addBtn.addEventListener("click",function(){openFechaAdd(tipos);});
+  target.querySelectorAll(".fecha-chevron").forEach(function(b){b.addEventListener("click",function(e){
+    e.stopPropagation();
+    var t=b.dataset.toggle;
+    S.fechaCollapsed[t]=!S.fechaCollapsed[t];
+    renderFechas();
+  });});
+  var toggleAllBtn=$("btn-toggle-all");if(toggleAllBtn)toggleAllBtn.addEventListener("click",function(){
+    var anyExpanded=groups.some(function(g){return!S.fechaCollapsed[g.tipo];});
+    groups.forEach(function(g){S.fechaCollapsed[g.tipo]=anyExpanded;});
+    renderFechas();
+  });
   target.querySelectorAll(".fecha-order-btn").forEach(function(b){b.addEventListener("click",function(e){
     e.stopPropagation();
     if(b.disabled)return;
