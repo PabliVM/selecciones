@@ -1646,7 +1646,8 @@ function calAvailableTipos(events){
   events.forEach(function(e){
     var key=e.kind==="callup"?"conv":e.tipoKey;
     var label=e.kind==="callup"?"Convocatorias":(e.tipoLabel||key);
-    if(key&&!seen[key]){seen[key]=1;list.push({key:key,label:label});}
+    var color=e.kind==="callup"?"#1A3A8F":e.color;
+    if(key&&!seen[key]){seen[key]=1;list.push({key:key,label:label,color:color});}
   });
   list.sort(function(a,b){return a.key==="conv"?-1:b.key==="conv"?1:a.label.localeCompare(b.label);});
   return list;
@@ -1657,7 +1658,7 @@ function calAvailableSels(events){
     if(e.kind!=="callup")return;
     var key=calEventSelKey(e);if(!key)return;
     var label=e.selType==="madrilena"?"Selecciones territoriales":e.selType==="internacional"?"Internacional":"España "+(CAT[e.selCat]||e.selCat);
-    if(!seen[key]){seen[key]=1;list.push({key:key,label:label});}
+    if(!seen[key]){seen[key]=1;list.push({key:key,label:label,color:e.color});}
   });
   list.sort(function(a,b){return a.label.localeCompare(b.label);});
   return list;
@@ -1700,12 +1701,12 @@ function renderCalMain(){
   h+='<div class="fb"><button class="fbtn'+(!anyFilter?" on":"")+'" id="cal-todos">Todos</button></div>';
   if(tipos.length){
     h+='<div class="cal-fgroup"><span class="cal-fglabel">Tipo</span><div class="fb">'+
-      tipos.map(function(t){return'<button class="fbtn'+(S.calFilterTipo.indexOf(t.key)!==-1?" on":"")+'" data-tipo="'+esc(t.key)+'">'+esc(t.label)+"</button>";}).join("")+
+      tipos.map(function(t){return'<button class="fbtn'+(S.calFilterTipo.indexOf(t.key)!==-1?" on":"")+'" data-tipo="'+esc(t.key)+'"><span class="fbtn-dot" style="background:'+(t.color||"#999")+'"></span>'+esc(t.label)+"</button>";}).join("")+
       "</div></div>";
   }
   if(sels.length){
     h+='<div class="cal-fgroup"><span class="cal-fglabel">Selección</span><div class="fb">'+
-      sels.map(function(s){return'<button class="fbtn'+(S.calFilterSel.indexOf(s.key)!==-1?" on":"")+'" data-sel="'+esc(s.key)+'">'+esc(s.label)+"</button>";}).join("")+
+      sels.map(function(s){return'<button class="fbtn'+(S.calFilterSel.indexOf(s.key)!==-1?" on":"")+'" data-sel="'+esc(s.key)+'"><span class="fbtn-dot" style="background:'+(s.color||"#999")+'"></span>'+esc(s.label)+"</button>";}).join("")+
       "</div></div>";
   }
   if(anyFilter)h+='<button class="btn btn-ghost btn-sm" id="cal-clear" style="margin-bottom:12px">Limpiar filtros</button>';
