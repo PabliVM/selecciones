@@ -2183,8 +2183,9 @@ function renderCalVertical(events,season){
       var lw=100/laneCount;
       var key=e.raw.id||e.id;
       var isOneDay=e.raw.startDate&&e.raw.startDate===e.raw.endDate;
-      if(isOneDay){
-        return'<div class="calv-bar calv-bar-oneday" data-kind="'+e.kind+'" data-id="'+(e.raw.id||"")+'" style="top:'+top+'px;height:'+height+'px;left:'+(seg.lane*lw)+'%;width:'+(lw-1)+'%;background:'+e.color+'" title="'+esc(e.title)+" · "+fmtRange(e.startDate,e.endDate)+'"><span class="calv-bar-label-h" style="color:'+contrastText(e.color)+'">'+esc(e.title)+"</span></div>";
+      var isAlone=isOneDay&&!layout.segments.some(function(other,j){return j!==i&&other.sd<=seg.sd&&other.ed>=seg.sd;});
+      if(isAlone){
+        return'<div class="calv-bar calv-bar-oneday" data-kind="'+e.kind+'" data-id="'+(e.raw.id||"")+'" style="top:'+top+'px;height:'+height+'px;left:0%;width:99%;background:'+e.color+'" title="'+esc(e.title)+" · "+fmtRange(e.startDate,e.endDate)+'"><span class="calv-bar-label-h" style="color:'+contrastText(e.color)+'">'+esc(e.title)+"</span></div>";
       }
       var showLabel=height>=ROWH*3&&tallestSeg[key]&&tallestSeg[key].i===i;
       return'<div class="calv-bar" data-kind="'+e.kind+'" data-id="'+(e.raw.id||"")+'" style="top:'+top+'px;height:'+height+'px;left:'+(seg.lane*lw)+'%;width:'+(lw-1)+'%;background:'+e.color+'" title="'+esc(e.title)+" · "+fmtRange(e.startDate,e.endDate)+'">'+(showLabel?'<span class="calv-bar-label" style="color:'+contrastText(e.color)+'">'+esc(e.title)+"</span>":"")+"</div>";
