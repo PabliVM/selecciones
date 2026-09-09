@@ -30,6 +30,14 @@ function updateRefDate(id,data,cb){
   }
   if(cb)cb();
 }
+function contrastText(hex){
+  if(!hex)return"#fff";
+  var h=hex.replace("#","");
+  if(h.length===3)h=h.split("").map(function(c){return c+c;}).join("");
+  var r=parseInt(h.substr(0,2),16),g=parseInt(h.substr(2,2),16),b=parseInt(h.substr(4,2),16);
+  var yiq=(r*299+g*587+b*114)/1000;
+  return yiq>=160?"#111":"#fff";
+}
 function syncGroupColor(tipo,color){
   var t=(tipo||"").trim();if(!t)return;
   getRefDates_raw().forEach(function(r){
@@ -1805,7 +1813,7 @@ function renderCalVertical(events,season){
       var sd=parseInt(s.split("-")[2],10),ed=parseInt(en.split("-")[2],10);
       var top=(sd-1)*ROWH,height=(ed-sd+1)*ROWH-2;
       var lw=100/laneCount;
-      return'<div class="calv-bar" data-kind="'+e.kind+'" data-id="'+(e.raw.id||"")+'" style="top:'+top+'px;height:'+height+'px;left:'+(e._lane*lw)+'%;width:'+(lw-1)+'%;background:'+e.color+'" title="'+esc(e.title)+" · "+fmtRange(e.startDate,e.endDate)+'">'+(height>=ROWH-2?'<span class="calv-bar-label">'+esc(e.title)+"</span>":"")+"</div>";
+      return'<div class="calv-bar" data-kind="'+e.kind+'" data-id="'+(e.raw.id||"")+'" style="top:'+top+'px;height:'+height+'px;left:'+(e._lane*lw)+'%;width:'+(lw-1)+'%;background:'+e.color+'" title="'+esc(e.title)+" · "+fmtRange(e.startDate,e.endDate)+'">'+(height>=ROWH-2?'<span class="calv-bar-label" style="color:'+contrastText(e.color)+'">'+esc(e.title)+"</span>":"")+"</div>";
     }).join("");
     return'<div class="calv-col"><div class="calv-mhdr">'+mn.label+" "+y+'</div><div class="calv-body" style="height:'+(daysInMonth*ROWH)+'px">'+rowsHtml+'<div class="calv-bars-layer">'+barsHtml+"</div></div></div>";
   }).join("");
@@ -1836,7 +1844,7 @@ function renderCalClasico(events){
     var dayEvs=events.filter(function(e){return e.startDate<=ds&&e.endDate>=ds;});
     var isToday=(y===ty&&mo===tm&&d===td);
     var shown=dayEvs.slice(0,3);
-    var chips=shown.map(function(e){return'<div class="cal-chip" style="background:'+e.color+'" data-kind="'+e.kind+'" data-id="'+(e.raw.id||"")+'" title="'+esc(e.title)+'">'+esc(e.title)+"</div>";}).join("");
+    var chips=shown.map(function(e){return'<div class="cal-chip" style="background:'+e.color+";color:"+contrastText(e.color)+'" data-kind="'+e.kind+'" data-id="'+(e.raw.id||"")+'" title="'+esc(e.title)+'">'+esc(e.title)+"</div>";}).join("");
     var more=dayEvs.length>3?'<div class="cal-chip-more" data-ds="'+ds+'">+'+(dayEvs.length-3)+" más</div>":"";
     h+='<div class="cal-day-big'+(isToday?" cal-today":"")+'" data-ds="'+ds+'"><span class="cal-dn-big">'+d+"</span>"+chips+more+"</div>";
   }
@@ -1971,7 +1979,7 @@ function renderFechas(){
           "</div>";
       }).join("");
       return'<article class="cc" style="--ca:'+g.color+';cursor:default">'+
-        '<div class="cc-hdr"><div class="cc-badges"><span class="badge" style="background:'+g.color+';color:#fff">'+esc(g.tipo)+"</span>"+
+        '<div class="cc-hdr"><div class="cc-badges"><span class="badge" style="background:'+g.color+";color:"+contrastText(g.color)+'">'+esc(g.tipo)+"</span>"+
         '<span class="vs" style="margin-left:6px">'+realCount+(realCount===1?" fecha":" fechas")+"</span></div></div>"+
         '<div class="fecha-range-list">'+rows+"</div>"+
         (editable?'<button class="btn btn-ghost btn-sm fecha-addrange-btn" data-tipo="'+esc(g.tipo)+'" data-color="'+esc(g.color)+'" style="width:100%;margin-top:8px">+ Añadir fecha a '+esc(g.tipo)+"</button>":"")+
