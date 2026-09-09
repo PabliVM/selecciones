@@ -473,8 +473,8 @@ details[open] .fin-summary__label::before{transform:rotate(90deg)}
 .cal-chip{font-size:10px;padding:2px 5px;border-radius:4px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
 .cal-chip-more{font-size:10px;color:var(--text-muted);padding:1px 4px;cursor:pointer}
 .calv-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:8px;padding:8px;background:var(--surface)}
-.calv-grid{display:flex;gap:0;min-width:1320px;border-left:1px solid var(--border);border-top:1px solid var(--border)}
-.calv-col{flex:1;min-width:105px;position:relative}
+.calv-grid{display:flex;gap:0;min-width:1560px;border-left:1px solid var(--border);border-top:1px solid var(--border)}
+.calv-col{flex:1;min-width:130px;position:relative}
 .calv-mhdr{text-align:center;font-weight:700;padding:6px 0;background:var(--surface-alt,var(--off-white-3));font-size:11px;text-transform:uppercase;letter-spacing:.4px;border-right:1px solid var(--border);border-bottom:1px solid var(--border)}
 .calv-body{position:relative;border-right:1px solid var(--border)}
 .calv-row{display:flex;align-items:center;gap:3px;padding:0 4px;font-size:9px;color:var(--text-muted);border-bottom:1px solid var(--border);box-sizing:border-box}
