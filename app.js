@@ -148,7 +148,7 @@ SELS["madrilena"] = {
 };SELS["espanola"]  = {label:"Española",short:"ESP",cats:["sub14","sub15","sub16","sub17","sub18","sub19","sub20","sub21","abs"],colors:{sub14:{badge:"#DC2626"},sub15:{badge:"#DC2626"},sub16:{badge:"#B91C1C"},sub17:{badge:"#B91C1C"},sub18:{badge:"#991B1B"},sub19:{badge:"#7F1D1D"},sub20:{badge:"#7F1D1D"},sub21:{badge:"#450A0A"},abs:{badge:"#1A0000"}}};
 SELS["internacional"]={label:"Internacional",short:"INT",cats:["sub16","sub17","sub18","sub19","sub20","sub21","abs"],colors:{sub16:{badge:"#10B981"},sub17:{badge:"#10B981"},sub18:{badge:"#047857"},sub19:{badge:"#047857"},sub20:{badge:"#065F46"},sub21:{badge:"#065F46"},abs:{badge:"#064E3B"}}};
 
-var CAT={todas:"Todas",sub12:"Sub-12",sub14:"Sub-14",sub15:"Sub-15",sub16:"Sub-16",sub17:"Sub-17",sub18:"Sub-18",sub19:"Sub-19",sub20:"Sub-20",sub21:"Sub-21",abs:"Absoluta"};
+var CAT={todas:"Todas",sub12:"U12",sub14:"U14",sub15:"U15",sub16:"U16",sub17:"U17",sub18:"U18",sub19:"U19",sub20:"U20",sub21:"U21",abs:"Absoluta"};
 var STATUS={proxima:{c:"s-prox",i:"⏰",l:"PRÓXIMA"},en_curso:{c:"s-cur",i:"●",l:"EN CURSO"},finalizada:{c:"s-fin",i:"✓",l:"FINALIZADA"}};
 
 var TEAMS=[
@@ -1114,7 +1114,7 @@ function renderNueva(){
     "</div></div>"+
     '<div class="fg" id="pais-g" style="display:none"><label class="fl">País *</label><div id="pais-pills" class="pais-pills"></div><input class="fi" type="text" id="f-pais" name="pais" placeholder="Escribe el país..." style="display:none;margin-top:6px"/></div>'+
     '<div class="fg" id="cat-g" style="display:none"><label class="fl">Categoría *</label><select class="fsel" id="sel-cat" name="selCat"><option value="">Selecciona categoría</option></select></div>'+
-    '<div class="fg"><label class="fl">Título *</label><input class="fi" type="text" name="title" placeholder="Ej: Concentración Sub-17 Marzo"/></div>'+
+    '<div class="fg"><label class="fl">Título *</label><input class="fi" type="text" name="title" placeholder="Ej: Concentración U17 Marzo"/></div>'+
     '<div class="fg"><label class="fl">Rival / Torneo</label><input class="fi" type="text" name="rival" placeholder="Ej: Portugal, Francia"/></div>'+
     '<div class="fg"><label class="fl">Tipo de convocatoria</label><select class="fsel" name="convType"><option value="provisional">⏳ Provisional</option><option value="definitiva">✅ Definitiva</option></select></div>'+
     '<div class="fg" id="limit-date-g"><label class="fl">Fecha límite confirmación</label><input class="fi" type="date" name="limitDate"/><p style="font-size:11px;color:var(--text-muted);margin-top:4px">Si no se confirma antes de esta fecha, se descartará automáticamente</p></div>'+
