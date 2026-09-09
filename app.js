@@ -35,6 +35,23 @@ function getCatsForTipo(tipo){
   var rec=getRefDates_raw().find(function(x){return(x.tipo||"").trim()===t&&x.cats&&x.cats.length;});
   return rec?rec.cats:[];
 }
+function lightenHex(hex,amt){
+  if(!hex)return hex;
+  var h=hex.replace("#","");
+  if(h.length===3)h=h.split("").map(function(c){return c+c;}).join("");
+  var r=parseInt(h.substr(0,2),16),g=parseInt(h.substr(2,2),16),b=parseInt(h.substr(4,2),16);
+  r=Math.round(r+(255-r)*amt);g=Math.round(g+(255-g)*amt);b=Math.round(b+(255-b)*amt);
+  return"#"+[r,g,b].map(function(x){return Math.max(0,Math.min(255,x)).toString(16).padStart(2,"0");}).join("");
+}
+function shadeColorForCat(baseColor,catKey,catsList){
+  if(!catKey||!catsList||catsList.length<2)return baseColor;
+  var order=Object.keys(CAT).filter(function(k){return k!=="todas";});
+  var sortedCats=catsList.slice().sort(function(a,b){return order.indexOf(a)-order.indexOf(b);});
+  var idx=sortedCats.indexOf(catKey);
+  if(idx===-1)return baseColor;
+  var frac=idx/(sortedCats.length-1);
+  return lightenHex(baseColor,(1-frac)*0.55);
+}
 function contrastText(hex){
   if(!hex)return"#fff";
   var h=hex.replace("#","");
@@ -1761,8 +1778,10 @@ function getCalEvents(season){
     var parts=[r.tipo];
     if(r.cat)parts.push(CAT[r.cat]||r.cat);
     if(r.title)parts.push(r.title);
+    var baseColor=r.color||"#888";
+    var shaded=r.cat?shadeColorForCat(baseColor,r.cat,getCatsForTipo(r.tipo)):baseColor;
     events.push({id:"f_"+r.id,kind:"fecha",tipoKey:tipoKey,tipoLabel:r.tipo,selType:null,selCat:null,
-      title:parts.join(" · "),startDate:r.startDate,endDate:r.endDate||r.startDate,color:r.color||"#888",raw:r});
+      title:parts.join(" · "),startDate:r.startDate,endDate:r.endDate||r.startDate,color:shaded,raw:r});
   });
   return events;
 }
@@ -1777,7 +1796,7 @@ function calAvailableTipos(events){
   events.forEach(function(e){
     var key=e.kind==="callup"?"conv":e.tipoKey;
     var label=e.kind==="callup"?"Convocatorias":(e.tipoLabel||key);
-    var color=e.kind==="callup"?"#1A3A8F":e.color;
+    var color=e.kind==="callup"?"#1A3A8F":e.raw.color;
     if(key&&!seen[key]){seen[key]=1;list.push({key:key,label:label,color:color,tipoLabel:e.tipoLabel||""});}
   });
   list.sort(function(a,b){
@@ -2200,7 +2219,8 @@ function renderFechas(){
         var catsPresent=catsDesc(g.cats.filter(function(c){return withCat.some(function(r){return r.cat===c;});}));
         rows=catsPresent.map(function(c){
           var itemsC=withCat.filter(function(r){return r.cat===c;});
-          return'<div class="fecha-cat-group"><div class="fecha-cat-group-hdr">'+esc(CAT[c]||c)+"</div>"+itemsC.map(rowHtml).join("")+"</div>";
+          var shade=shadeColorForCat(g.color,c,g.cats);
+          return'<div class="fecha-cat-group"><div class="fecha-cat-group-hdr" style="background:'+shade+";color:"+contrastText(shade)+'">'+esc(CAT[c]||c)+"</div>"+itemsC.map(rowHtml).join("")+"</div>";
         }).join("");
         if(noCat.length)rows+='<div class="fecha-cat-group"><div class="fecha-cat-group-hdr">Sin subcategoría</div>'+noCat.map(rowHtml).join("")+"</div>";
       } else {
