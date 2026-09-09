@@ -2111,19 +2111,46 @@ function calDayPanelHtml(ds,dayEvents,dayMatches){
   return'<div class="cal-panel-date">'+dt.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"})+"</div>"+rows+mrows;
 }
 
+var FIXED_LANE_ORDER=[
+  {label:"FIFA",match:function(e){return e.kind==="fecha"&&(e.tipoLabel||"").trim().toLowerCase()==="fifa";}},
+  {label:"España Absoluta",match:function(e){return e.kind==="callup"&&e.raw.selectionType==="espanola"&&e.raw.selectionCategory==="abs";}},
+  {label:"España U21",match:function(e){return e.kind==="callup"&&e.raw.selectionType==="espanola"&&e.raw.selectionCategory==="sub21";}},
+  {label:"España U20",match:function(e){return e.kind==="callup"&&e.raw.selectionType==="espanola"&&e.raw.selectionCategory==="sub20";}},
+  {label:"España U19",match:function(e){return e.kind==="callup"&&e.raw.selectionType==="espanola"&&e.raw.selectionCategory==="sub19";}},
+  {label:"España U18",match:function(e){return e.kind==="callup"&&e.raw.selectionType==="espanola"&&e.raw.selectionCategory==="sub18";}},
+  {label:"España U17",match:function(e){return e.kind==="callup"&&e.raw.selectionType==="espanola"&&e.raw.selectionCategory==="sub17";}},
+  {label:"España U16",match:function(e){return e.kind==="callup"&&e.raw.selectionType==="espanola"&&e.raw.selectionCategory==="sub16";}},
+  {label:"España U15",match:function(e){return e.kind==="callup"&&e.raw.selectionType==="espanola"&&e.raw.selectionCategory==="sub15";}},
+  {label:"España U14",match:function(e){return e.kind==="callup"&&e.raw.selectionType==="espanola"&&e.raw.selectionCategory==="sub14";}},
+  {label:"Madrileña U16",match:function(e){return e.kind==="callup"&&e.raw.selectionType==="madrilena"&&e.raw.selectionCategory==="sub16";}},
+  {label:"Madrileña U14",match:function(e){return e.kind==="callup"&&e.raw.selectionType==="madrilena"&&e.raw.selectionCategory==="sub14";}},
+  {label:"Madrileña U12",match:function(e){return e.kind==="callup"&&e.raw.selectionType==="madrilena"&&e.raw.selectionCategory==="sub12";}}
+];
 function calGroupKey(e){
   if(e.kind==="callup")return"c|"+(e.raw.selectionType||"")+"|"+(e.raw.selectionCategory||"");
   return"f|"+(e.tipoLabel||"")+"|"+(e.raw.cat||"");
 }
+function fixedLaneIndex(e){
+  for(var i=0;i<FIXED_LANE_ORDER.length;i++){if(FIXED_LANE_ORDER[i].match(e))return i;}
+  return-1;
+}
 function computeGlobalLanes(allEvents){
-  var seen={};var keys=[];
+  var base=FIXED_LANE_ORDER.length;
+  var seen={};var extra=[];
   allEvents.slice().sort(function(a,b){return calEventOrderCompare(a,b)||a.startDate.localeCompare(b.startDate);}).forEach(function(e){
+    if(fixedLaneIndex(e)!==-1)return;
     var k=calGroupKey(e);
-    if(!seen[k]){seen[k]=1;keys.push(k);}
+    if(!seen[k]){seen[k]=1;extra.push(e);}
   });
-  var laneOfKey={};
-  keys.forEach(function(k,i){laneOfKey[k]=i;});
-  return{laneOfKey:laneOfKey,laneCount:Math.max(1,keys.length)};
+  var laneOfExtraKey={};
+  extra.forEach(function(e,i){laneOfExtraKey[calGroupKey(e)]=base+i;});
+  return{laneOfExtraKey:laneOfExtraKey,laneCount:base+extra.length};
+}
+function laneForEvent(e,global){
+  var fi=fixedLaneIndex(e);
+  if(fi!==-1)return fi;
+  var k=calGroupKey(e);
+  return global.laneOfExtraKey[k]!==undefined?global.laneOfExtraKey[k]:global.laneCount-1;
 }
 function renderCalVertical(events,season){
   var startYear=parseInt(season.split("-")[0]);
@@ -2133,9 +2160,11 @@ function renderCalVertical(events,season){
   var months=[];
   for(var m=6;m<18;m++){var y=startYear+(m>=12?1:0);var mo=m%12;months.push({year:y,month:mo,label:monthNames[m-6]});}
   var ROWH=20;
+  var LANEW=42;
   var pad2=function(n){return String(n).padStart(2,"0");};
   var global=computeGlobalLanes(events);
   var laneCount=global.laneCount;
+  var colWidth=36+laneCount*LANEW;
   var colsHtml=months.map(function(mn){
     var y=mn.year,mo=mn.month;
     var daysInMonth=new Date(y,mo+1,0).getDate();
@@ -2153,11 +2182,11 @@ function renderCalVertical(events,season){
       var en=e.endDate>monthEnd?monthEnd:e.endDate;
       var sd=parseInt(s.split("-")[2],10),ed=parseInt(en.split("-")[2],10);
       var top=(sd-1)*ROWH,height=(ed-sd+1)*ROWH-2;
-      var lw=100/laneCount;
-      var lane=global.laneOfKey[calGroupKey(e)]||0;
-      return'<div class="calv-bar" data-kind="'+e.kind+'" data-id="'+(e.raw.id||"")+'" style="top:'+top+'px;height:'+height+'px;left:'+(lane*lw)+'%;width:'+(lw-1)+'%;background:'+e.color+'" title="'+esc(e.title)+" · "+fmtRange(e.startDate,e.endDate)+'"><span class="calv-bar-label" style="color:'+contrastText(e.color)+'">'+esc(e.title)+"</span></div>";
+      var lane=laneForEvent(e,global);
+      var leftPx=36+lane*LANEW;
+      return'<div class="calv-bar" data-kind="'+e.kind+'" data-id="'+(e.raw.id||"")+'" style="top:'+top+'px;height:'+height+'px;left:'+leftPx+'px;width:'+(LANEW-2)+'px;background:'+e.color+'" title="'+esc(e.title)+" · "+fmtRange(e.startDate,e.endDate)+'"><span class="calv-bar-label" style="color:'+contrastText(e.color)+'">'+esc(e.title)+"</span></div>";
     }).join("");
-    return'<div class="calv-col"><div class="calv-mhdr">'+mn.label+" "+y+'</div><div class="calv-body" style="height:'+(daysInMonth*ROWH)+'px">'+rowsHtml+'<div class="calv-bars-layer">'+barsHtml+"</div></div></div>";
+    return'<div class="calv-col" style="min-width:'+colWidth+'px;width:'+colWidth+'px;flex:0 0 '+colWidth+'px"><div class="calv-mhdr">'+mn.label+" "+y+'</div><div class="calv-body" style="height:'+(daysInMonth*ROWH)+'px">'+rowsHtml+'<div class="calv-bars-layer" style="left:0">'+barsHtml+"</div></div></div>";
   }).join("");
   var h='<div class="calv-wrap"><div class="calv-grid">'+colsHtml+"</div></div>"+
     '<div id="cal-panel" class="cal-panel" style="display:none"></div>';
