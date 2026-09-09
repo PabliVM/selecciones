@@ -1988,6 +1988,11 @@ function openFechaAddToGroup(tipo,color){
     "</div></div>";
   document.body.appendChild(mo);
   setTimeout(function(){var n=$("fag-start");if(n)n.focus();},100);
+  $("fag-start").addEventListener("change",function(){
+    var v=this.value;var endEl=$("fag-end");
+    endEl.min=v;
+    if(!endEl.value||endEl.value<v)endEl.value=v;
+  });
   function closeMo(){if(mo.parentNode)mo.parentNode.removeChild(mo);}
   $("fag-close").addEventListener("click",closeMo);$("fag-cancel").addEventListener("click",closeMo);
   mo.addEventListener("click",function(e){if(e.target===mo)closeMo();});
@@ -2016,6 +2021,11 @@ function openFechaAdd(tipos){
     "</div></div>";
   document.body.appendChild(mo);
   setTimeout(function(){var n=$("fa-tipo");if(n)n.focus();},100);
+  $("fa-start").addEventListener("change",function(){
+    var v=this.value;var endEl=$("fa-end");
+    endEl.min=v;
+    if(!endEl.value||endEl.value<v)endEl.value=v;
+  });
   function closeMo(){if(mo.parentNode)mo.parentNode.removeChild(mo);}
   $("fa-close").addEventListener("click",closeMo);$("fa-cancel").addEventListener("click",closeMo);
   mo.addEventListener("click",function(e){if(e.target===mo)closeMo();});
@@ -2045,6 +2055,12 @@ function openFechaEdit(r,tipos){
     '<button class="btn btn-primary btn-sm" id="fee-save" style="flex:1">Guardar</button>'+
     "</div></div>";
   document.body.appendChild(mo);
+  $("fee-end").min=r.startDate||"";
+  $("fee-start").addEventListener("change",function(){
+    var v=this.value;var endEl=$("fee-end");
+    endEl.min=v;
+    if(!endEl.value||endEl.value<v)endEl.value=v;
+  });
   function closeMo(){if(mo.parentNode)mo.parentNode.removeChild(mo);}
   $("fee-close").addEventListener("click",closeMo);$("fee-cancel").addEventListener("click",closeMo);
   mo.addEventListener("click",function(e){if(e.target===mo)closeMo();});
