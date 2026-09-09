@@ -860,7 +860,7 @@ function agendaBannerHtml(){
       (a.kind==="callup"?-1:b.kind==="callup"?1:getTipoOrder(a.tipo)-getTipoOrder(b.tipo));
   });
 
-  var tipoFilterHtml=tipoList.length?'<div class="agenda-tipo-filter agenda-tipo-filter-in">'+
+  var tipoFilterHtml=tipoList.length?'<div class="agenda-tipo-filter">'+
     tipoList.map(function(t){
       var rec=getRefDates_raw().find(function(r){return(r.tipo||"").trim()===t;});
       var col=rec?rec.color:"#888";
@@ -871,15 +871,19 @@ function agendaBannerHtml(){
     "</div>":"";
 
   var monthLabel=S.agendaMonths===1?"el próximo mes":"los próximos "+S.agendaMonths+" meses";
-  var listHtml='<div class="agenda-upcoming"><div class="agenda-upcoming-hdr" style="display:flex;align-items:center;justify-content:space-between;gap:8px">'+
-    '<span>📅 En '+monthLabel+"</span>"+
+  var rightBlock='<div class="agenda-hdr-right">'+
     '<div class="agenda-months-sel">'+
     [1,2,3].map(function(n){return'<button class="agenda-months-btn'+(S.agendaMonths===n?" on":"")+'" data-months="'+n+'">'+n+"m</button>";}).join("")+
-    "</div></div>"+
+    "</div>"+
     tipoFilterHtml+
+    "</div>";
+  var listHtml='<div class="agenda-upcoming"><div class="agenda-upcoming-hdr" style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">'+
+    '<span style="padding-top:6px">📅 En '+monthLabel+"</span>"+
+    rightBlock+
+    "</div>"+
     (items.length?items.map(function(it,idx){
       var isNow=it.startDate<=todayStr&&it.endDate>=todayStr;
-      return'<div class="agenda-upcoming-row'+(idx===0?" agenda-upcoming-first":"")+'"'+(it.kind==="callup"?' data-openid="'+it.id+'"':"")+'>'+
+      return'<div class="agenda-upcoming-row"'+(it.kind==="callup"?' data-openid="'+it.id+'"':"")+'>'+
         '<span class="agenda-banner-dot" style="background:'+it.color+'"></span>'+
         '<span class="agenda-upcoming-title">'+esc(it.title)+(isNow?' <b class="agenda-upcoming-now">EN CURSO</b>':"")+"</span>"+
         '<span class="agenda-upcoming-date">'+fmtRange(it.startDate,it.endDate)+"</span>"+
