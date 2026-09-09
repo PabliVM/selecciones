@@ -2107,26 +2107,34 @@ function calDayPanelHtml(ds,dayEvents,dayMatches){
   return'<div class="cal-panel-date">'+dt.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"})+"</div>"+rows+mrows;
 }
 
+function calGroupKey(e){
+  if(e.kind==="callup")return"c|"+(e.raw.selectionType||"")+"|"+(e.raw.selectionCategory||"");
+  return"f|"+(e.tipoLabel||"")+"|"+(e.raw.cat||"");
+}
 function computeMonthSegments(monthEvents,monthStart,monthEnd,daysInMonth){
   var evs=monthEvents.map(function(e){
     var s=e.startDate<monthStart?monthStart:e.startDate;
     var en=e.endDate>monthEnd?monthEnd:e.endDate;
     var sd=parseInt(s.split("-")[2],10),ed=parseInt(en.split("-")[2],10);
-    return{ev:e,sd:sd,ed:ed,lane:-1};
+    return{ev:e,sd:sd,ed:ed,groupKey:calGroupKey(e),lane:-1};
   });
-  var byPriority=evs.slice().sort(function(a,b){return calEventOrderCompare(a.ev,b.ev)||a.sd-b.sd;});
-  var laneIntervals=[];
-  byPriority.forEach(function(x){
-    var lane=-1;
-    for(var li=0;li<laneIntervals.length;li++){
-      var conflict=laneIntervals[li].some(function(iv){return!(x.ed<iv.sd||x.sd>iv.ed);});
-      if(!conflict){lane=li;break;}
-    }
-    if(lane===-1){lane=laneIntervals.length;laneIntervals.push([]);}
-    laneIntervals[lane].push({sd:x.sd,ed:x.ed});
-    x.lane=lane;
+  var byStart=evs.slice().sort(function(a,b){return a.sd-b.sd;});
+  var clusters=[];
+  var curCluster=null,curEnd=-1;
+  byStart.forEach(function(x){
+    if(curCluster&&x.sd<=curEnd){curCluster.push(x);curEnd=Math.max(curEnd,x.ed);}
+    else{curCluster=[x];curEnd=x.ed;clusters.push(curCluster);}
   });
-  var laneCount=Math.max(1,laneIntervals.length);
+  var laneCount=1;
+  clusters.forEach(function(cluster){
+    var keys=[];var seen={};
+    cluster.forEach(function(x){if(!seen[x.groupKey]){seen[x.groupKey]=1;keys.push(x);}});
+    keys.sort(function(a,b){return calEventOrderCompare(a.ev,b.ev);});
+    var laneOfKey={};
+    keys.forEach(function(k,i){laneOfKey[k.groupKey]=i;});
+    cluster.forEach(function(x){x.lane=laneOfKey[x.groupKey];});
+    laneCount=Math.max(laneCount,keys.length);
+  });
   var segments=evs.map(function(x){return{ev:x.ev,lane:x.lane,sd:x.sd,ed:x.ed};});
   return{segments:segments,laneCount:laneCount};
 }
