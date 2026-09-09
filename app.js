@@ -2182,8 +2182,7 @@ function renderCalVertical(events,season){
       var top=(seg.sd-1)*ROWH,height=(seg.ed-seg.sd+1)*ROWH-2;
       var lw=100/laneCount;
       var key=e.raw.id||e.id;
-      var isOneDay=e.raw.startDate&&e.raw.startDate===e.raw.endDate;
-      var isAlone=isOneDay&&!layout.segments.some(function(other,j){return j!==i&&other.sd<=seg.sd&&other.ed>=seg.sd;});
+      var isAlone=!layout.segments.some(function(other,j){return j!==i&&(other.ev.raw.id||other.ev.id)!==key&&!(other.ed<seg.sd||other.sd>seg.ed);});
       if(isAlone){
         return'<div class="calv-bar calv-bar-oneday" data-kind="'+e.kind+'" data-id="'+(e.raw.id||"")+'" style="top:'+top+'px;height:'+height+'px;left:0%;width:99%;background:'+e.color+'" title="'+esc(e.title)+" · "+fmtRange(e.startDate,e.endDate)+'"><span class="calv-bar-label-h" style="color:'+contrastText(e.color)+'">'+esc(e.title)+"</span></div>";
       }
