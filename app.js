@@ -758,6 +758,40 @@ if(c.llegada){var lf={llegadaDate:c.llegada.date,llegadaTime:c.llegada.time,lleg
 }
 
 // ── AGENDA ──
+function agendaBannerHtml(){
+  var today=new Date();today.setHours(0,0,0,0);
+  var todayStr=today.getFullYear()+"-"+String(today.getMonth()+1).padStart(2,"0")+"-"+String(today.getDate()).padStart(2,"0");
+  var allCallups=getCallups({season:S.season});
+  var allFechas=getRefDates_raw().filter(function(r){return!!r.startDate;});
+  var activeFechas=allFechas.filter(function(r){return r.startDate<=todayStr&&(r.endDate||r.startDate)>=todayStr;});
+  var nextFecha=allFechas.filter(function(r){return r.startDate>todayStr;}).sort(function(a,b){return a.startDate.localeCompare(b.startDate);})[0];
+  var nextCallup=allCallups.filter(function(c){return c.status!=="finalizada";}).sort(function(a,b){return(a.startDate||"").localeCompare(b.startDate||"");})[0];
+
+  var chips=[];
+  activeFechas.forEach(function(r){
+    var label=(r.tipo||"Fecha")+(r.cat?" · "+(CAT[r.cat]||r.cat):"");
+    chips.push('<div class="agenda-banner-chip agenda-banner-active" style="border-color:'+(r.color||"#888")+'">'+
+      '<span class="agenda-banner-dot" style="background:'+(r.color||"#888")+'"></span>'+
+      '<div><b>🔴 Ahora mismo: '+esc(label)+"</b>"+
+      '<span class="agenda-banner-sub">'+fmtRange(r.startDate,r.endDate)+"</span></div></div>");
+  });
+  if(nextCallup){
+    chips.push('<div class="agenda-banner-chip" data-openid="'+nextCallup.id+'">'+
+      '<span class="agenda-banner-dot" style="background:#1A3A8F"></span>'+
+      '<div><b>📋 Próxima convocatoria</b>'+
+      '<span class="agenda-banner-sub">'+esc(nextCallup.title)+" · "+fmtRange(nextCallup.startDate,nextCallup.endDate)+"</span></div></div>");
+  }
+  if(nextFecha){
+    var label2=(nextFecha.tipo||"Fecha")+(nextFecha.cat?" · "+(CAT[nextFecha.cat]||nextFecha.cat):"");
+    chips.push('<div class="agenda-banner-chip" style="border-color:'+(nextFecha.color||"#888")+'">'+
+      '<span class="agenda-banner-dot" style="background:'+(nextFecha.color||"#888")+'"></span>'+
+      '<div><b>🗓️ Próxima '+esc(label2)+"</b>"+
+      '<span class="agenda-banner-sub">'+fmtRange(nextFecha.startDate,nextFecha.endDate)+"</span></div></div>");
+  }
+  if(!chips.length)return"";
+  return'<div class="agenda-banner">'+chips.join("")+"</div>";
+}
+
 function renderAgenda(viewMode){
   viewMode=viewMode||S.agendaView||"fichas";S.agendaView=viewMode;
   if(S.showDescartadas===undefined)S.showDescartadas=false;
@@ -789,6 +823,7 @@ function renderAgenda(viewMode){
     '</div>'+
     '<button class="btn-print" id="btn-print-agenda">🖨️</button>'+
     '</div></div></div>'+
+    agendaBannerHtml()+
     '<div class="fb">'+
     '<button class="fbtn'+(!S.filterType?" on":"")+'" data-f="">Todas</button>'+
     '<button class="fbtn fbtn-mad'+(S.filterType==="madrilena"?" on":"")+'" data-f="madrilena"><img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/MADRID.png" style="width:14px;height:10px;object-fit:cover;border-radius:1px;vertical-align:middle"/> RFFM</button>'+
@@ -813,6 +848,7 @@ function renderAgenda(viewMode){
   if(viewMode==="fichas")bindCards();
   else document.querySelectorAll(".trow").forEach(function(row){row.addEventListener("click",function(){openDetail(row.dataset.id);});});
   document.querySelectorAll("[data-f]").forEach(function(b){b.addEventListener("click",function(){S.filterType=b.dataset.f||null;S.filterCats=[];renderAgenda(S.agendaView);});});
+  document.querySelectorAll("[data-openid]").forEach(function(b){b.addEventListener("click",function(){openDetail(b.dataset.openid);});});
   document.querySelectorAll("[data-cat]").forEach(function(b){b.addEventListener("click",function(){var cat=b.dataset.cat;if(!cat)return;var idx=S.filterCats.indexOf(cat);if(idx===-1)S.filterCats.push(cat);else S.filterCats.splice(idx,1);renderAgenda(S.agendaView);});});
   document.querySelectorAll("[data-cat-clear]").forEach(function(b){b.addEventListener("click",function(){S.filterCats=[];renderAgenda(S.agendaView);});});
   document.querySelectorAll("[data-vm]").forEach(function(b){b.addEventListener("click",function(){renderAgenda(b.dataset.vm);});});
