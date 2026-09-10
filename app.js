@@ -322,11 +322,39 @@ function toast(msg){var t=document.createElement("div");t.className="toast";t.te
 function callupCard(c){
   var k=selKey(c.selectionType),sel=SELS[k];
   var col=(sel&&sel.colors&&sel.colors[c.selectionCategory])?sel.colors[c.selectionCategory]:{badge:"#1A3A8F"};
-  var pc=(c.players&&c.players.length)||0;
+  var activePlayers=(c.players||[]).filter(function(p){return!p.dropStatus||p.dropStatus==="active";});
+  var pc=activePlayers.length;
   var flag=getSelFlag(c.selectionType,c.pais);
-  var chips="";
-  for(var i=0;i<Math.min(pc,3);i++){var pts=c.players[i].fullName.split(" ");chips+='<span class="chip">'+esc(pts[0]+(pts[1]?" "+pts[1]:""))+"</span>";}
-  if(pc>3)chips+='<span class="chip chip-more">+'+(pc-3)+"</span>";
+  var playersList=activePlayers.map(function(p){
+    return'<div class="cc-plrow"><span class="cc-plrow-n">'+esc(p.fullName)+'</span><span class="cc-plrow-t">'+esc(p.teamName||"")+"</span></div>";
+  }).join("");
+  var tl=[];
+  if(c.conc&&(c.conc.date||c.conc.time||c.conc.lugar))
+    tl.push({s:c.conc.date||"0",type:"cite",label:"Citación",line:(c.conc.date?fmtDateShort(c.conc.date)+" ":"")+(c.conc.time?c.conc.time+"h ":"")+(c.conc.lugar?"· "+esc(c.conc.lugar):"")});
+  if(c.traslado&&(c.traslado.date||c.traslado.transporte||c.traslado.desde))
+    tl.push({s:c.traslado.date||"1",type:"trasl",label:"Traslado",line:(c.traslado.date?fmtDateShort(c.traslado.date)+" ":"")+(c.traslado.time?c.traslado.time+"h ":"")+(c.traslado.desde&&c.traslado.hasta?esc(c.traslado.desde)+" → "+esc(c.traslado.hasta):(c.traslado.transporte?esc(c.traslado.transporte):""))});
+  if(c.matches&&c.matches.length)c.matches.forEach(function(m){
+    tl.push({s:m.date||"5",type:"match",label:matchIcon(m.matchType)+" "+(m.rival?esc(m.rival):"TBD"),line:(m.date?fmtDateShort(m.date)+" ":"")+(m.time?m.time+"h":"")});
+  });
+  if(c.vuelta&&(c.vuelta.date||c.vuelta.time||c.vuelta.desde))
+    tl.push({s:c.vuelta.date||"9",type:"vuelta",label:"Vuelta",line:(c.vuelta.date?fmtDateShort(c.vuelta.date)+" ":"")+(c.vuelta.time?c.vuelta.time+"h ":"")+(c.vuelta.desde&&c.vuelta.hasta?esc(c.vuelta.desde)+" → "+esc(c.vuelta.hasta):"")});
+  if(c.llegada&&(c.llegada.date||c.llegada.time||c.llegada.lugar))
+    tl.push({s:(c.llegada.date||"9")+"z",type:"llegada",label:"🏁 Llegada",line:(c.llegada.date?fmtDateShort(c.llegada.date)+" ":"")+(c.llegada.time?c.llegada.time+"h ":"")+(c.llegada.lugar?esc(c.llegada.lugar):"")});
+  var tlHtml="";
+  if(tl.length){
+    tl.sort(function(a,b){return a.s.localeCompare(b.s);});
+    var colors={cite:"var(--navy)",trasl:"#3B82F6",match:"var(--gold)",vuelta:"var(--text-muted)",llegada:"#10B981"};
+    var bgColors={cite:"rgba(26,58,143,.12)",trasl:"rgba(59,130,246,.12)",match:"rgba(200,169,110,.15)",vuelta:"rgba(107,114,128,.12)",llegada:"rgba(16,185,129,.12)"};
+    tlHtml='<div class="cc-tl" style="position:relative;padding-left:18px;margin-top:6px">'+
+      '<div style="position:absolute;left:5px;top:4px;bottom:4px;width:1.5px;background:var(--border-strong)"></div>'+
+      tl.map(function(t){
+        return'<div style="position:relative;margin-bottom:6px;padding-left:2px">'+
+          '<div style="position:absolute;left:-18px;top:3px;width:12px;height:12px;border-radius:50%;border:1.5px solid '+colors[t.type]+';background:'+bgColors[t.type]+'"></div>'+
+          '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:'+colors[t.type]+'">'+t.label+'</div>'+
+          (t.line?'<div style="font-size:12px;color:var(--text-mid)">'+t.line+'</div>':"")+
+          '</div>';
+      }).join("")+'</div>';
+  }
   return'<article class="cc'+(c.convType==="descartada"?" cc-descartada":"")+'" style="--ca:'+col.badge+'" data-id="'+c.id+'" tabindex="0" role="button">'+
     '<div class="cc-convtype" style="display:flex;align-items:center;gap:8px;margin:-16px -16px 10px;padding:8px 16px;border-radius:var(--r) var(--r) 0 0;background:rgba(255,255,255,.03)">'+
     '<span style="font-size:24px;line-height:1">'+(c.convType==="definitiva"?"✅":(c.convType==="descartada"?"❌":"⏳"))+'</span>'+
@@ -337,34 +365,9 @@ function callupCard(c){
     '<h3 class="cc-title">'+esc(c.title)+"</h3>"+
     '<div class="cc-meta">'+
     '<div class="cc-mi"><span class="mi">📅</span><span>'+fmtRange(c.startDate,c.endDate)+"</span></div>"+
-    (function(){
-      var tl=[];
-      if(c.conc&&(c.conc.date||c.conc.time||c.conc.lugar))
-        tl.push({s:c.conc.date||"0",type:"cite",label:"Citación",line:(c.conc.date?fmtDateShort(c.conc.date)+" ":"")+(c.conc.time?c.conc.time+"h ":"")+(c.conc.lugar?"· "+esc(c.conc.lugar):"")});
-      if(c.traslado&&(c.traslado.date||c.traslado.transporte||c.traslado.desde))
-        tl.push({s:c.traslado.date||"1",type:"trasl",label:"Traslado",line:(c.traslado.date?fmtDateShort(c.traslado.date)+" ":"")+(c.traslado.time?c.traslado.time+"h ":"")+(c.traslado.desde&&c.traslado.hasta?esc(c.traslado.desde)+" → "+esc(c.traslado.hasta):(c.traslado.transporte?esc(c.traslado.transporte):""))});
-      if(c.matches&&c.matches.length)c.matches.forEach(function(m){
-        tl.push({s:m.date||"5",type:"match",label:matchIcon(m.matchType)+" "+(m.rival?esc(m.rival):"TBD"),line:(m.date?fmtDateShort(m.date)+" ":"")+(m.time?m.time+"h":"")});
-      });
-      if(c.vuelta&&(c.vuelta.date||c.vuelta.time||c.vuelta.desde))
-        tl.push({s:c.vuelta.date||"9",type:"vuelta",label:"Vuelta",line:(c.vuelta.date?fmtDateShort(c.vuelta.date)+" ":"")+(c.vuelta.time?c.vuelta.time+"h ":"")+(c.vuelta.desde&&c.vuelta.hasta?esc(c.vuelta.desde)+" → "+esc(c.vuelta.hasta):"")});
-      if(c.llegada&&(c.llegada.date||c.llegada.time||c.llegada.lugar))
-        tl.push({s:(c.llegada.date||"9")+"z",type:"llegada",label:"🏁 Llegada",line:(c.llegada.date?fmtDateShort(c.llegada.date)+" ":"")+(c.llegada.time?c.llegada.time+"h ":"")+(c.llegada.lugar?esc(c.llegada.lugar):"")});
-      if(!tl.length)return"";
-      tl.sort(function(a,b){return a.s.localeCompare(b.s);});
-      var colors={cite:"var(--navy)",trasl:"#3B82F6",match:"var(--gold)",vuelta:"var(--text-muted)",llegada:"#10B981"};
-      var bgColors={cite:"rgba(26,58,143,.12)",trasl:"rgba(59,130,246,.12)",match:"rgba(200,169,110,.15)",vuelta:"rgba(107,114,128,.12)",llegada:"rgba(16,185,129,.12)"};
-      return'<div class="cc-tl" style="position:relative;padding-left:18px;margin-top:6px">'+
-        '<div style="position:absolute;left:5px;top:4px;bottom:4px;width:1.5px;background:var(--border-strong)"></div>'+
-        tl.map(function(t){
-          return'<div style="position:relative;margin-bottom:6px;padding-left:2px">'+
-            '<div style="position:absolute;left:-18px;top:3px;width:12px;height:12px;border-radius:50%;border:1.5px solid '+colors[t.type]+';background:'+bgColors[t.type]+'"></div>'+
-            '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:'+colors[t.type]+'">'+t.label+'</div>'+
-            (t.line?'<div style="font-size:12px;color:var(--text-mid)">'+t.line+'</div>':"")+
-            '</div>';
-        }).join("")+'</div>';
-    })()+
-    "</div>"+(pc>0?'<div class="cc-players">'+chips+"</div>":"")+
+    "</div>"+
+    (pc>0?'<div class="cc-plrows">'+playersList+"</div>":"")+
+    (tlHtml?'<button type="button" class="cc-more-btn" data-more-toggle="1">+ Ver más</button><div class="cc-tl-wrap" style="display:none">'+tlHtml+"</div>":"")+
     "</article>";
 }
 
@@ -579,6 +582,16 @@ document.querySelector(".nav").addEventListener("click",function(e){
 function bindCards(){
   document.querySelectorAll(".cc[data-id]").forEach(function(el){
     el.addEventListener("click",function(){openDetail(el.dataset.id);});
+  });
+  document.querySelectorAll("[data-more-toggle]").forEach(function(btn){
+    btn.addEventListener("click",function(e){
+      e.stopPropagation();
+      var wrap=btn.nextElementSibling;
+      if(!wrap)return;
+      var open=wrap.style.display!=="none";
+      wrap.style.display=open?"none":"";
+      btn.textContent=open?"+ Ver más":"− Ver menos";
+    });
   });
 }
 
@@ -1439,77 +1452,12 @@ function bindAiParser(){
       }
 
       fetchPromise.then(function(data){
-
-  // Error devuelto por Anthropic
-  if(data && data.error){
-    throw new Error(
-      "API: " + (
-        data.error.message ||
-        JSON.stringify(data.error)
-      )
-    );
-  }
-
-  console.log("RESPUESTA ANTHROPIC COMPLETA:", data);
-
-  var raw = "";
-
-  // Por si en el futuro el backend devuelve directamente { text: "..." }
-  if(data && typeof data.text === "string"){
-    raw = data.text;
-  }
-
-  // Respuesta estándar de Anthropic:
-  // buscar bloques type === "text", no asumir content[0]
-  else if(data && Array.isArray(data.content)){
-    raw = data.content
-      .filter(function(block){
-        return block &&
-               block.type === "text" &&
-               typeof block.text === "string";
-      })
-      .map(function(block){
-        return block.text;
-      })
-      .join("\n");
-  }
-
-  raw = raw.trim();
-
-  if(!raw){
-    console.error("Anthropic no devolvió ningún bloque de texto:", data);
-
-    throw new Error(
-      "La IA respondió, pero no devolvió contenido de texto."
-    );
-  }
-
-  // Eliminar posibles bloques Markdown
-  raw = raw
-    .replace(/```json/gi, "")
-    .replace(/```/g, "")
-    .trim();
-
-  // Extraer únicamente el objeto JSON
-  var first = raw.indexOf("{");
-  var last = raw.lastIndexOf("}");
-
-  if(first !== -1 && last !== -1 && last > first){
-    raw = raw.slice(first, last + 1);
-  }
-
-  var parsed;
-
-  try{
-    parsed = JSON.parse(raw);
-  }catch(e){
-    console.error("Respuesta IA no parseable:", raw);
-    console.error("Respuesta Anthropic completa:", data);
-
-    throw new Error(
-      "Claude respondió, pero el JSON recibido no es válido."
-    );
-  }
+        if(data&&data.error){throw new Error("API: "+(data.error.message||JSON.stringify(data.error)));}
+        var raw=(data.content&&data.content[0]&&data.content[0].text)||"";
+        raw=raw.replace(/```json|```/g,"").trim();
+        var first=raw.indexOf("{"),last=raw.lastIndexOf("}");
+        if(first!==-1&&last!==-1&&last>first)raw=raw.slice(first,last+1);
+        var parsed;try{parsed=JSON.parse(raw);}catch(e){console.error("Respuesta IA no parseable:",raw);throw new Error("JSON inválido (revisa la consola para ver la respuesta completa)");}
         var form=$("cf");if(!form)throw new Error("Formulario no encontrado");
         if(parsed.selectionType){var rb=form.querySelector('[name="selType"][value="'+parsed.selectionType+'"]');if(rb){rb.checked=true;rb.dispatchEvent(new Event("change"));}}
         setTimeout(function(){
