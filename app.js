@@ -525,8 +525,10 @@ var S={view:_savedView,season:"2025-26",filterType:null,agendaView:"fichas",finO
 
 function renderSeasonSel(){
   var opts=_seasons.filter(function(s){return s!=="2025-26";}).slice().reverse().map(function(s){return'<option value="'+s+'"'+(s===S.season?" selected":"")+">"+s+"</option>";}).join("");
-  $("season-sel").innerHTML='<select class="season-sel" id="ss">'+opts+"</select>";
+  $("season-sel").innerHTML='<div style="display:flex;align-items:center;gap:6px"><select class="season-sel" id="ss">'+opts+'</select>'+
+    (canEdit()?'<button class="hdr-newseason-btn" id="hdr-newseason" title="Nueva temporada">+</button>':"")+"</div>";
   $("ss").addEventListener("change",function(e){S.season=e.target.value;route(S.view);});
+  var nb=$("hdr-newseason");if(nb)nb.addEventListener("click",function(){openNewSeasonWizard(S.season,nextSea(S.season));});
 }
 
 function makeTabs(cats,activeCat){
@@ -1523,16 +1525,14 @@ function renderJugadores(){
   var callupCount={};
   callups.forEach(function(c){if(c.players)c.players.forEach(function(cp){callupCount[cp.playerId]=(callupCount[cp.playerId]||0)+1;});});
   var allTeams=TEAMS.slice();
-  var teamPills='<div class="jug-team-bar">'+
-    '<button class="fbtn'+(S.jugTeam===""?" on":"")+'" data-jt="">Todos</button>'+
-    allTeams.map(function(t){return'<button class="fbtn'+(S.jugTeam===t.name?" on":"")+'" data-jt="'+esc(t.name)+'">'+esc(t.name)+'</button>';}).join("")+
+  var teamPills='<div class="view-toggle" style="flex-wrap:wrap;height:auto">'+
+    '<button class="vtbtn'+(S.jugTeam===""?" on":"")+'" data-jt="">Todos</button>'+
+    allTeams.map(function(t){return'<button class="vtbtn'+(S.jugTeam===t.name?" on":"")+'" data-jt="'+esc(t.name)+'">'+esc(t.name)+'</button>';}).join("")+
     '</div>';
   var h='<div class="vh"><h1 class="vt">Plantillas</h1><span class="vs">'+filtered.filter(function(p){return p.active;}).length+" activos</span></div>"+
     '<input class="fi" id="jug-search" type="text" placeholder="🔍 Buscar jugador..." value="'+esc(S.jugSearch||"")+'" style="margin-bottom:8px" autocomplete="off"/>'+
     teamPills+
-    '<button class="btn btn-gold" id="btn-add-player" style="width:100%;margin-bottom:8px;margin-top:10px">+ Añadir jugador</button>'+
-    '<button class="btn btn-ghost" id="btn-add-player-bulk" style="width:100%;margin-bottom:8px">+ Añadir en lista</button>'+
-    '<button class="btn btn-ghost" id="btn-new-season" style="width:100%;margin-bottom:12px">📅 Nueva temporada '+nextSea(S.season)+'</button>';
+    '<button class="btn btn-gold" id="btn-add-player" style="width:100%;margin-bottom:12px;margin-top:10px">+ Añadir jugador</button>';
   h+=sortedTeams.map(function(team){
     var ps=byTeam[team];
     return'<div class="tb"><div class="tb-hdr"><span class="tb-name">'+esc(team)+'</span><span class="tb-cnt">'+ps.filter(function(p){return p.active;}).length+'</span></div>'+
@@ -1551,9 +1551,7 @@ function renderJugadores(){
   if(inp){inp.addEventListener("input",function(){S.jugSearch=inp.value;renderJugadores();});if(S.jugSearch)setTimeout(function(){inp.focus();inp.setSelectionRange(9999,9999);},50);}
   document.querySelectorAll("[data-jt]").forEach(function(btn){btn.addEventListener("click",function(){S.jugTeam=btn.dataset.jt;S.jugSearch="";renderJugadores();});});
   document.querySelectorAll(".jug-edit-btn").forEach(function(btn){btn.addEventListener("click",function(e){e.stopPropagation();openPlayerEdit(btn.dataset.pid);});});
-  var addBtn=$("btn-add-player");if(addBtn)addBtn.addEventListener("click",openPlayerAdd);
-  var addBulkBtn=$("btn-add-player-bulk");if(addBulkBtn)addBulkBtn.addEventListener("click",openPlayerAddBulk);
-  var nsBtn=$("btn-new-season");if(nsBtn)nsBtn.addEventListener("click",function(){openNewSeasonWizard(S.season,nextSea(S.season));});
+  var addBtn=$("btn-add-player");if(addBtn)addBtn.addEventListener("click",openPlayerAddChoice);
 }
 
 function deletePlayer(id,cb){
@@ -1604,6 +1602,21 @@ function openPlayerEdit(pid){
   });
 }
 
+function openPlayerAddChoice(){
+  var mo=document.createElement("div");mo.className="mo";
+  mo.innerHTML='<div class="modal"><button class="mcl" id="pac-close">×</button>'+
+    '<div class="mtitle">Añadir jugador</div>'+
+    '<div style="display:flex;gap:8px;margin-top:12px">'+
+    '<button class="btn btn-primary" id="pac-single" style="flex:1">Uno solo</button>'+
+    '<button class="btn btn-ghost" id="pac-list" style="flex:1">En lista</button>'+
+    "</div></div>";
+  document.body.appendChild(mo);
+  function closeMo(){if(mo.parentNode)mo.parentNode.removeChild(mo);}
+  $("pac-close").addEventListener("click",closeMo);
+  mo.addEventListener("click",function(e){if(e.target===mo)closeMo();});
+  $("pac-single").addEventListener("click",function(){closeMo();openPlayerAdd();});
+  $("pac-list").addEventListener("click",function(){closeMo();openPlayerAddBulk();});
+}
 function openPlayerAdd(){
   var teamOpts=TEAMS.map(function(t){return'<option value="'+t.id+'">'+esc(t.name)+"</option>";}).join("");
   var mo=document.createElement("div");mo.className="mo";
