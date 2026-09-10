@@ -326,7 +326,7 @@ function callupCard(c){
   var pc=activePlayers.length;
   var flag=getSelFlag(c.selectionType,c.pais);
   var playersList=activePlayers.map(function(p){
-    return'<div class="cc-plrow"><span class="cc-plrow-n">'+esc(p.fullName)+'</span><span class="cc-plrow-t">'+esc(p.teamName||"")+"</span></div>";
+    return'<div class="cc-plrow"><span class="cc-plrow-n">'+esc(p.fullName)+"</span>"+(p.teamName?'<span class="cc-plrow-t">('+esc(p.teamName)+")</span>":"")+"</div>";
   }).join("");
   var tl=[];
   if(c.conc&&(c.conc.date||c.conc.time||c.conc.lugar))
