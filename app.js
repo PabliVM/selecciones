@@ -1873,37 +1873,27 @@ function calEventSelKey(e){
 function calAvailableTipos(events){
   var seen={};var list=[];
   events.forEach(function(e){
-    var key=e.kind==="callup"?"conv":e.tipoKey;
-    var label=e.kind==="callup"?"Convocatorias":(e.tipoLabel||key);
-    var color=e.kind==="callup"?"#1A3A8F":e.raw.color;
+    if(e.kind==="callup")return;
+    var key=e.tipoKey;
+    var label=e.tipoLabel||key;
+    var color=e.raw.color;
     if(key&&!seen[key]){seen[key]=1;list.push({key:key,label:label,color:color,tipoLabel:e.tipoLabel||""});}
   });
-  list.sort(function(a,b){
-    if(a.key==="conv")return-1;if(b.key==="conv")return 1;
-    return getTipoOrder(a.tipoLabel)-getTipoOrder(b.tipoLabel);
-  });
+  list.sort(function(a,b){return getTipoOrder(a.tipoLabel)-getTipoOrder(b.tipoLabel);});
   return list;
 }
-function calAvailableSels(events){
-  var seen={};var list=[];
-  events.forEach(function(e){
-    if(e.kind!=="callup")return;
-    var key=calEventSelKey(e);if(!key)return;
-    var label=e.selType==="madrilena"?"Selecciones territoriales":e.selType==="internacional"?"Internacional":"España "+(CAT[e.selCat]||e.selCat);
-    if(!seen[key]){seen[key]=1;list.push({key:key,label:label,color:e.color});}
-  });
-  list.sort(function(a,b){return a.label.localeCompare(b.label);});
-  return list;
-}
-function calAvailableCats(){
+function calAvailableCatsByTipo(){
   var activeTipos=S.calFilterTipo.filter(function(k){return k!=="conv";});
   if(!activeTipos.length)return[];
-  var set={};
+  var groups=[];
   activeTipos.forEach(function(tk){
-    var cats=getRefDates_raw().find(function(r){return(r.tipo||"").trim().toLowerCase()===tk&&r.cats&&r.cats.length;});
-    if(cats)cats.cats.forEach(function(c){if(c!=="abs")set[c]=1;});
+    var rec=getRefDates_raw().find(function(r){return(r.tipo||"").trim().toLowerCase()===tk&&r.cats&&r.cats.length;});
+    if(!rec)return;
+    var cats=catsDesc(rec.cats.filter(function(c){return c!=="abs";}));
+    if(cats.length)groups.push({tipo:rec.tipo,cats:cats});
   });
-  return catsDesc(Object.keys(set));
+  groups.sort(function(a,b){return getTipoOrder(a.tipo)-getTipoOrder(b.tipo);});
+  return groups;
 }
 function calEventOrderKey(e){
   if(e.kind==="callup")return[-1,0];
@@ -2082,26 +2072,20 @@ function renderCalMain(){
 
   var events=getCalEvents(season);
   var tipos=calAvailableTipos(events);
-  var sels=calAvailableSels(events);
-  var cats=calAvailableCats();
-  var anyFilter=S.calFilterTipo.length||S.calFilterSel.length||S.calFilterCat.length;
+  var catGroups=calAvailableCatsByTipo();
+  var anyFilter=S.calFilterTipo.length||S.calFilterCat.length;
 
-  h+='<div class="fb"><button class="fbtn'+(!anyFilter?" on":"")+'" id="cal-todos">Todos</button></div>';
   if(tipos.length){
     h+='<div class="cal-fgroup"><span class="cal-fglabel">Tipo</span><div class="fb">'+
+      '<button class="fbtn'+(!anyFilter?" on":"")+'" id="cal-todos">Todos</button>'+
       tipos.map(function(t){return'<button class="fbtn'+(S.calFilterTipo.indexOf(t.key)!==-1?" on":"")+'" data-tipo="'+esc(t.key)+'"><span class="fbtn-dot" style="background:'+(t.color||"#999")+'"></span>'+esc(t.label)+"</button>";}).join("")+
       "</div></div>";
   }
-  if(cats.length){
-    h+='<div class="cal-fgroup"><span class="cal-fglabel">Subcategoría</span><div class="fb">'+
-      cats.map(function(c){return'<button class="fbtn'+(S.calFilterCat.indexOf(c)!==-1?" on":"")+'" data-cat="'+esc(c)+'">'+esc(CAT[c]||c)+"</button>";}).join("")+
+  catGroups.forEach(function(g){
+    h+='<div class="cal-fgroup"><span class="cal-fglabel">'+esc(g.tipo)+'</span><div class="fb">'+
+      g.cats.map(function(c){return'<button class="fbtn'+(S.calFilterCat.indexOf(c)!==-1?" on":"")+'" data-cat="'+esc(c)+'">'+esc(CAT[c]||c)+"</button>";}).join("")+
       "</div></div>";
-  }
-  if(sels.length){
-    h+='<div class="cal-fgroup"><span class="cal-fglabel">Selección</span><div class="fb">'+
-      sels.map(function(s){return'<button class="fbtn'+(S.calFilterSel.indexOf(s.key)!==-1?" on":"")+'" data-sel="'+esc(s.key)+'"><span class="fbtn-dot" style="background:'+(s.color||"#999")+'"></span>'+esc(s.label)+"</button>";}).join("")+
-      "</div></div>";
-  }
+  });
   if(anyFilter)h+='<button class="btn btn-ghost btn-sm" id="cal-clear" style="margin-bottom:12px">Limpiar filtros</button>';
   h+='<div id="cal-body"></div>';
 
@@ -2112,8 +2096,8 @@ function renderCalMain(){
   $("cm-vertical").addEventListener("click",function(){calSwitchMode("vertical");});
   $("cm-fechas").addEventListener("click",function(){calSwitchMode("fechas");});
   var exportBtn=$("cm-export");if(exportBtn)exportBtn.addEventListener("click",function(){exportCalendarPNG(season);});
-  $("cal-todos").addEventListener("click",function(){S.calFilterTipo=[];S.calFilterSel=[];S.calFilterCat=[];renderCalMain();});
-  var clearBtn=$("cal-clear");if(clearBtn)clearBtn.addEventListener("click",function(){S.calFilterTipo=[];S.calFilterSel=[];S.calFilterCat=[];renderCalMain();});
+  var calTodosBtn=$("cal-todos");if(calTodosBtn)calTodosBtn.addEventListener("click",function(){S.calFilterTipo=[];S.calFilterCat=[];renderCalMain();});
+  var clearBtn=$("cal-clear");if(clearBtn)clearBtn.addEventListener("click",function(){S.calFilterTipo=[];S.calFilterCat=[];renderCalMain();});
   target.querySelectorAll("[data-tipo]").forEach(function(b){b.addEventListener("click",function(){
     var k=b.dataset.tipo;var i=S.calFilterTipo.indexOf(k);
     if(i===-1)S.calFilterTipo.push(k);else S.calFilterTipo.splice(i,1);
@@ -2123,11 +2107,6 @@ function renderCalMain(){
   target.querySelectorAll("[data-cat]").forEach(function(b){b.addEventListener("click",function(){
     var k=b.dataset.cat;var i=S.calFilterCat.indexOf(k);
     if(i===-1)S.calFilterCat.push(k);else S.calFilterCat.splice(i,1);
-    renderCalMain();
-  });});
-  target.querySelectorAll("[data-sel]").forEach(function(b){b.addEventListener("click",function(){
-    var k=b.dataset.sel;var i=S.calFilterSel.indexOf(k);
-    if(i===-1)S.calFilterSel.push(k);else S.calFilterSel.splice(i,1);
     renderCalMain();
   });});
 
