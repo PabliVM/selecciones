@@ -918,9 +918,9 @@ function renderAgenda(viewMode){
   if(S.showDescartadas===undefined)S.showDescartadas=false;
   if(!S.filterCats)S.filterCats=[];
 
-  var tabsHtml='<div class="pill-tabs" style="margin-bottom:14px">'+
-    '<button class="pill-btn'+(S.agendaTab==="conv"?" on":"")+'" id="atab-conv">📋 Convocatorias</button>'+
-    '<button class="pill-btn'+(S.agendaTab==="fechas"?" on":"")+'" id="atab-fechas">🗓️ Fechas</button>'+
+  var tabsHtml='<div class="view-toggle" style="margin-bottom:14px">'+
+    '<button class="vtbtn'+(S.agendaTab==="conv"?" on":"")+'" id="atab-conv">📋 Convocatorias</button>'+
+    '<button class="vtbtn'+(S.agendaTab==="fechas"?" on":"")+'" id="atab-fechas">🗓️ Fechas</button>'+
     "</div>";
 
   if(S.agendaTab==="fechas"){
@@ -962,10 +962,6 @@ function renderAgenda(viewMode){
   }
   var h='<div class="vh" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:8px;justify-content:space-between">'+
     '<h1 class="vt">Agenda</h1>'+
-    '<div class="view-toggle">'+
-    '<button class="vtbtn'+(viewMode==="fichas"?" on":"")+'" data-vm="fichas">⊢□ Fichas</button>'+
-    '<button class="vtbtn'+(viewMode==="tabla"?" on":"")+'" data-vm="tabla">≡ Tabla</button>'+
-    '</div>'+
     '<button class="btn-print" id="btn-print-agenda">🖨️</button>'+
     '</div></div>'+tabsHtml+
     '<div class="fb">'+
@@ -976,13 +972,18 @@ function renderAgenda(viewMode){
     (descartadas.length?'<button class="fbtn'+(S.showDescartadas?" on":"")+'" id="btn-show-desc" style="border-color:rgba(239,68,68,.4);'+(S.showDescartadas?"background:rgba(239,68,68,.15);color:#EF4444":"")+'">❌ Descartadas ('+descartadas.length+')</button>':"")+
     '</div>'+catPills;
 
+  var miniToggle='<div class="mini-toggle"><button class="mini-toggle-btn'+(viewMode==="fichas"?" on":"")+'" data-vm="fichas">⊢□ Fichas</button>'+
+    '<button class="mini-toggle-btn'+(viewMode==="tabla"?" on":"")+'" data-vm="tabla">≡ Tabla</button></div>';
+
   if(!filtered.length){h+=emptyState("Sin convocatorias en "+S.season,"📋");}
   else if(viewMode==="tabla"){
+    h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><h2 class="st" style="margin:0">Próximas y en curso</h2>'+miniToggle+"</div>";
     var thead='<thead><tr><th style="width:44px"></th><th>Cat.</th><th>Estado</th><th>Jugadores</th><th class="th-ida">📍 Citación</th><th class="th-ida">✈️ Traslado</th><th class="th-vuelta">🔙 Vuelta</th><th class="th-matches">⚽ Partidos</th></tr></thead>';
     if(up.length)h+='<div class="tabla-wrap"><table class="tabla">'+thead+'<tbody>'+up.map(callupTableRow).join("")+"</tbody></table></div>";
     if(done.length)h+='<details class="fin-details"'+(S.finOpen?" open":"")+'><summary class="fin-summary"><span class="fin-summary__label">Finalizadas</span><span class="fin-summary__count">'+done.length+'</span></summary><div style="margin-top:8px"><div class="tabla-wrap"><table class="tabla">'+thead+'<tbody>'+done.map(callupTableRow).join("")+"</tbody></table></div></div></details>";
   } else {
-    if(up.length)h+='<h2 class="st">Próximas y en curso</h2><div class="cl">'+up.map(callupCard).join("")+"</div>";
+    h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><h2 class="st" style="margin:0">Próximas y en curso</h2>'+miniToggle+"</div>";
+    if(up.length)h+='<div class="cl">'+up.map(callupCard).join("")+"</div>";
     if(done.length)h+='<details class="fin-details"'+(S.finOpen?" open":"")+'><summary class="fin-summary"><span class="fin-summary__label">Finalizadas</span><span class="fin-summary__count">'+done.length+'</span></summary><div class="cl cl-past" style="margin-top:10px">'+done.map(callupCard).join("")+"</div></details>";
   }
   $("main").innerHTML=h;
@@ -1436,6 +1437,7 @@ function bindAiParser(){
       }
 
       fetchPromise.then(function(data){
+        if(data&&data.error){throw new Error("API: "+(data.error.message||JSON.stringify(data.error)));}
         var raw=(data.content&&data.content[0]&&data.content[0].text)||"";
         raw=raw.replace(/```json|```/g,"").trim();
         var first=raw.indexOf("{"),last=raw.lastIndexOf("}");
