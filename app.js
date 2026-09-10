@@ -191,8 +191,52 @@ function getFlag(p){
 }
 function getSelFlag(type,pais){var k=selKey(type);if(k==="madrilena")return"📍";if(k==="espanola")return"🇪🇸";if(k==="internacional")return pais?getFlag(pais):"🌍";return"🏴";}
 
-function canEdit(){return !!window._fbUser;}
-function canWrite(){return !!window._fbUser;}
+function canEdit(){return !!window._fbUser&&myRole()==="editor";}
+function canWrite(){return !!window._fbUser&&myRole()==="editor";}
+function isLoggedIn(){return !!window._fbUser;}
+function myRole(){
+  if(!window._fbUser)return null;
+  var email=(window._fbUser.email||"").toLowerCase();
+  var roles=window._userRoles||{};
+  if(roles[email])return roles[email];
+  return Object.keys(roles).length===0?"editor":"lector";
+}
+function getUserRoles_raw(){return window._userRolesList||[];}
+function setUserRole(email,role,cb){
+  email=(email||"").trim().toLowerCase();if(!email)return;
+  if(window._db&&window._fbUser){
+    var fns=window._fbFns;
+    fns.setDoc(fns.doc(window._db,"userRoles",email),{email:email,role:role}).then(function(){
+      loadUserRoles(cb);
+    }).catch(function(e){console.error(e);alert("Error guardando rol: "+e.message);});
+  } else {
+    if(!window._userRolesList)window._userRolesList=[];
+    var idx=window._userRolesList.findIndex(function(r){return r.email===email;});
+    if(idx===-1)window._userRolesList.push({email:email,role:role});else window._userRolesList[idx].role=role;
+    window._userRoles=window._userRolesList.reduce(function(a,r){a[r.email]=r.role;return a;},{});
+    if(cb)cb();
+  }
+}
+function deleteUserRole(email,cb){
+  if(window._db&&window._fbUser){
+    var fns=window._fbFns;
+    fns.deleteDoc(fns.doc(window._db,"userRoles",email)).then(function(){loadUserRoles(cb);}).catch(function(e){console.error(e);});
+  } else {
+    window._userRolesList=(window._userRolesList||[]).filter(function(r){return r.email!==email;});
+    window._userRoles=window._userRolesList.reduce(function(a,r){a[r.email]=r.role;return a;},{});
+    if(cb)cb();
+  }
+}
+function loadUserRoles(cb){
+  if(!(window._db&&window._fbUser)){if(cb)cb();return;}
+  var fns=window._fbFns;
+  fns.getDocs(fns.collection(window._db,"userRoles")).then(function(snap){
+    var list=[];snap.forEach(function(d){list.push(d.data());});
+    window._userRolesList=list;
+    window._userRoles=list.reduce(function(a,r){a[r.email]=r.role;return a;},{});
+    if(cb)cb();
+  }).catch(function(e){console.error("loadUserRoles:",e);if(cb)cb();});
+}
 function esc(s){if(!s)return"";return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
 function calcStatus(s,e){var n=new Date();n.setHours(0,0,0,0);var a=new Date(s+"T00:00:00"),b=new Date(e+"T23:59:59");return n<a?"proxima":n>b?"finalizada":"en_curso";}
 function daysUntil(dateStr){if(!dateStr)return 999;var now=new Date();now.setHours(0,0,0,0);var d=new Date(dateStr+"T00:00:00");return Math.ceil((d-now)/(1000*60*60*24));}
@@ -370,7 +414,7 @@ function callupCard(c){
     '<div class="cc-meta">'+
     '<div class="cc-mi"><span class="mi">📅</span><span>'+fmtRange(c.startDate,c.endDate)+"</span></div>"+
     "</div>"+
-    (pc>0?'<div class="cc-plrows">'+playersList+"</div>":"")+
+    (pc>0?'<div class="cc-plcount">👕 '+pc+(pc===1?" jugador convocado":" jugadores convocados")+'</div><div class="cc-plrows">'+playersList+"</div>":"")+
     (tlHtml?'<button type="button" class="cc-more-btn" data-more-toggle="1">+ Ver más</button><div class="cc-tl-wrap" style="display:none">'+tlHtml+"</div>":"")+
     "</article>";
 }
@@ -1006,8 +1050,8 @@ function renderAgenda(viewMode){
     '</div></div>'+tabsHtml+
     '<div class="fb">'+
     '<button class="fbtn'+(!S.filterType?" on":"")+'" data-f="">Todas</button>'+
-    '<button class="fbtn fbtn-mad'+(S.filterType==="madrilena"?" on":"")+'" data-f="madrilena"><img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/MADRID.png" style="width:14px;height:10px;object-fit:cover;border-radius:1px;vertical-align:middle"/> RFFM</button>'+
     '<button class="fbtn fbtn-esp'+(S.filterType==="espanola"?" on":"")+'" data-f="espanola"><img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/Espa%C3%B1a.png" style="width:14px;height:10px;object-fit:cover;border-radius:1px;vertical-align:middle"/> RFEF</button>'+
+    '<button class="fbtn fbtn-mad'+(S.filterType==="madrilena"?" on":"")+'" data-f="madrilena"><img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/MADRID.png" style="width:14px;height:10px;object-fit:cover;border-radius:1px;vertical-align:middle"/> RFFM</button>'+
     '<button class="fbtn fbtn-int'+(S.filterType==="internacional"?" on":"")+'" data-f="internacional">🌍 OTRAS</button>'+
     (descartadas.length?'<button class="fbtn'+(S.showDescartadas?" on":"")+'" id="btn-show-desc" style="border-color:rgba(239,68,68,.4);'+(S.showDescartadas?"background:rgba(239,68,68,.15);color:#EF4444":"")+'">❌ Descartadas ('+descartadas.length+')</button>':"")+
     '</div>'+catPills;
@@ -1924,6 +1968,13 @@ function calEventSelKey(e){
   if(e.selType==="espanola")return"esp:"+e.selCat;
   return null;
 }
+function tipoIconHtml(tipoLabel,color){
+  var t=(tipoLabel||"").trim().toLowerCase();
+  if(t==="fifa")return'<img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/fifa.png" style="width:14px;height:14px;object-fit:contain;vertical-align:middle;margin-right:4px"/>';
+  if(t==="rfef")return'<img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/Espa%C3%B1a.png" style="width:14px;height:10px;object-fit:cover;border-radius:1px;vertical-align:middle;margin-right:4px"/>';
+  if(t==="rffm")return'<img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/MADRID.png" style="width:14px;height:10px;object-fit:cover;border-radius:1px;vertical-align:middle;margin-right:4px"/>';
+  return'<span class="fbtn-dot" style="background:'+(color||"#999")+'"></span>';
+}
 function calAvailableTipos(events){
   var seen={};var list=[];
   events.forEach(function(e){
@@ -2142,7 +2193,7 @@ function renderCalMain(){
   if(tipos.length){
     h+='<div class="cal-fgroup"><span class="cal-fglabel">Tipo</span><div class="fb">'+
       '<button class="fbtn'+(!anyFilter?" on":"")+'" id="cal-todos">Todos</button>'+
-      tipos.map(function(t){return'<button class="fbtn'+(S.calFilterTipo.indexOf(t.key)!==-1?" on":"")+'" data-tipo="'+esc(t.key)+'"><span class="fbtn-dot" style="background:'+(t.color||"#999")+'"></span>'+esc(t.label)+"</button>";}).join("")+
+      tipos.map(function(t){return'<button class="fbtn'+(S.calFilterTipo.indexOf(t.key)!==-1?" on":"")+'" data-tipo="'+esc(t.key)+'">'+tipoIconHtml(t.tipoLabel,t.color)+esc(t.label)+"</button>";}).join("")+
       "</div></div>";
   }
   catGroups.forEach(function(g){
@@ -2765,6 +2816,57 @@ function openFechaAddBulk(tipos){
 }
 
 // ── LOGIN ──
+function renderUsersBtn(){
+  var slot=$("hdr-users-slot");if(!slot)return;
+  if(!canEdit()){slot.innerHTML="";return;}
+  slot.innerHTML='<button id="hdr-users-btn" class="hdr-login-btn" title="Gestionar usuarios">👥</button>';
+  $("hdr-users-btn").addEventListener("click",openUsersModal);
+}
+function openUsersModal(){
+  var roles=getUserRoles_raw().slice().sort(function(a,b){return a.email.localeCompare(b.email);});
+  var myEmail=(window._fbUser&&window._fbUser.email||"").toLowerCase();
+  var rowsHtml=roles.length?roles.map(function(r){
+    return'<div class="ur-row" data-email="'+esc(r.email)+'">'+
+      '<span class="ur-email">'+esc(r.email)+(r.email===myEmail?" (tú)":"")+"</span>"+
+      '<select class="fsel ur-role-sel" data-email="'+esc(r.email)+'" style="min-height:32px;font-size:12px;flex-shrink:0;width:110px">'+
+      '<option value="editor"'+(r.role==="editor"?" selected":"")+'>✏️ Editor</option>'+
+      '<option value="lector"'+(r.role==="lector"?" selected":"")+'>👁️ Lectura</option>'+
+      "</select>"+
+      '<button class="jug-edit-btn ur-del" data-email="'+esc(r.email)+'" title="Quitar">🗑</button>'+
+      "</div>";
+  }).join(""):'<p class="msub" style="padding:8px 0">Sin usuarios configurados todavía. Como no hay ninguno, cualquiera que inicie sesión es editor por ahora.</p>';
+  var mo=document.createElement("div");mo.className="mo";
+  mo.innerHTML='<div class="modal" style="padding-bottom:40px"><button class="mcl" id="ur-close">×</button>'+
+    '<div class="mtitle">👥 Usuarios y roles</div>'+
+    '<p class="msub">Editor puede crear/editar/borrar. Lectura solo puede ver.</p>'+
+    '<div id="ur-list" style="margin:12px 0">'+rowsHtml+"</div>"+
+    '<div style="border-top:1px solid var(--border);padding-top:12px">'+
+    '<div class="fg"><label class="fl">Añadir usuario por email</label><input class="fi" id="ur-new-email" type="email" placeholder="nombre@email.com" autocomplete="off"/></div>'+
+    '<div class="fg"><label class="fl">Rol</label><select class="fsel" id="ur-new-role"><option value="editor">✏️ Editor</option><option value="lector">👁️ Lectura</option></select></div>'+
+    '<button class="btn btn-primary btn-sm" id="ur-add" style="width:100%">+ Añadir</button>'+
+    "</div>"+
+    '<p class="msub" style="margin-top:12px;font-size:11px">⚠️ Esto solo guarda el rol para cuando esa persona inicie sesión con ese email. La cuenta en sí (email+contraseña) hay que crearla aparte, desde Firebase Authentication.</p>'+
+    "</div>";
+  document.body.appendChild(mo);
+  function closeMo(){if(mo.parentNode)mo.parentNode.removeChild(mo);}
+  $("ur-close").addEventListener("click",closeMo);
+  mo.addEventListener("click",function(e){if(e.target===mo)closeMo();});
+  mo.querySelectorAll(".ur-role-sel").forEach(function(sel){
+    sel.addEventListener("change",function(){setUserRole(sel.dataset.email,sel.value,function(){toast("✅ Rol actualizado");renderUsersBtn();if(sel.dataset.email===myEmail)route(S.view);});});
+  });
+  mo.querySelectorAll(".ur-del").forEach(function(btn){
+    btn.addEventListener("click",function(){
+      if(!confirm("¿Quitar a "+btn.dataset.email+"?"))return;
+      deleteUserRole(btn.dataset.email,function(){toast("🗑 Usuario quitado");closeMo();openUsersModal();renderUsersBtn();});
+    });
+  });
+  $("ur-add").addEventListener("click",function(){
+    var email=($("ur-new-email").value||"").trim().toLowerCase();
+    var role=$("ur-new-role").value;
+    if(!email||email.indexOf("@")===-1){$("ur-new-email").style.borderColor="red";return;}
+    setUserRole(email,role,function(){toast("✅ Usuario añadido");closeMo();openUsersModal();renderUsersBtn();});
+  });
+}
 function bindLoginBtn(){
   var btn=$("hdr-login-btn");if(!btn)return;
   btn.addEventListener("click",function(){
@@ -2805,8 +2907,14 @@ window._onAuthChange = function(user){
     if(user){lb.textContent="🔓";lb.title="Sesión: "+user.email;lb.classList.add("logged");}
     else{lb.textContent="🔒";lb.title="Iniciar sesión";lb.classList.remove("logged");}
   }
+  if(!user){window._userRoles={};window._userRolesList=[];}
   document.querySelectorAll(".nb-new,.nb[data-v='jugadores']").forEach(function(b){b.style.display=user?"":"none";});
-  route(S.view||"agenda");
+  renderUsersBtn();
+  if(user){
+    loadUserRoles(function(){renderUsersBtn();route(S.view||"agenda");});
+  } else {
+    route(S.view||"agenda");
+  }
 };
 
 window._callups = window._callups || [];
@@ -2838,6 +2946,7 @@ window._onMetaLoaded = function(){
 
 renderSeasonSel();
 bindLoginBtn();
+renderUsersBtn();
 route(S.view || "agenda");
 
 if(window._fbCallupsFlag) { renderSeasonSel(); route(S.view || "agenda"); }
