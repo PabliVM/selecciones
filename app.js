@@ -129,7 +129,7 @@ function fifaBadge(c){
   var hit=getRefDates_raw().some(function(r){
     return r.tipo&&r.tipo.toLowerCase().indexOf("fifa")!==-1&&r.startDate<=end&&(r.endDate||r.startDate)>=c.startDate;
   });
-  return hit?'<span class="badge" style="background:#111827;color:#fff" title="Coincide con ventana FIFA">🌍 FIFA</span>':"";
+  return hit?'<span class="badge" style="background:#111827;color:#fff" title="Coincide con ventana FIFA"><img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/fifa.png" style="width:14px;height:14px;object-fit:contain;vertical-align:middle;margin-right:3px"/>FIFA</span>':"";
 }
 
 var _seasons = [];
@@ -184,7 +184,11 @@ var PAIS_ADJ={
 
 function selKey(type){if(!type)return"";var t=type.toLowerCase();if(t.indexOf("madril")!==-1)return"madrilena";if(t.indexOf("espa")!==-1)return"espanola";if(t.indexOf("intern")!==-1)return"internacional";return t;}
 function paisAdj(p){return PAIS_ADJ[p]||p;}
-function getFlag(p){return FLAGS[p]||"🏴";}
+var FLAG_IMAGES={"Argentina":"Argentina.png","España":"Espa%C3%B1a.png","Francia":"Franica.png","Marruecos":"Marruecos.png","Rumania":"rumania.png"};
+function getFlag(p){
+  if(FLAG_IMAGES[p])return'<img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/'+FLAG_IMAGES[p]+'" style="width:16px;height:12px;object-fit:cover;border-radius:2px;vertical-align:middle"/>';
+  return FLAGS[p]||"🏴";
+}
 function getSelFlag(type,pais){var k=selKey(type);if(k==="madrilena")return"📍";if(k==="espanola")return"🇪🇸";if(k==="internacional")return pais?getFlag(pais):"🌍";return"🏴";}
 
 function canEdit(){return !!window._fbUser;}
@@ -860,11 +864,18 @@ function agendaBannerHtml(){
   var allFechas=S.agendaFilterTipos.length?allFechasRaw.filter(function(r){return S.agendaFilterTipos.indexOf((r.tipo||"").trim())!==-1;}):allFechasRaw;
   var activeFechas=allFechas.filter(function(r){return r.startDate<=todayStr&&(r.endDate||r.startDate)>=todayStr;}).sort(function(a,b){return getTipoOrder(a.tipo)-getTipoOrder(b.tipo);});
 
+  function callupSelLabel(c){
+    var k=selKey(c.selectionType);var sel=SELS[k];
+    var col=(sel&&sel.colors&&sel.colors[c.selectionCategory])?sel.colors[c.selectionCategory].badge:"#1A3A8F";
+    var catLabel=(CAT[c.selectionCategory]||c.selectionCategory||"")+(sel?" "+sel.short:"");
+    return{label:catLabel,color:col};
+  }
   var activeCallups=allCallups.filter(function(c){var end=c.endDate||c.startDate;return c.status!=="finalizada"&&c.startDate<=todayStr&&end>=todayStr;});
   var cursoRows=activeCallups.map(function(c){
+    var sl=callupSelLabel(c);
     return'<div class="agenda-upcoming-row" data-openid="'+c.id+'">'+
-      '<span class="agenda-banner-dot" style="background:#1A3A8F"></span>'+
-      '<span class="agenda-upcoming-title">'+esc(c.title)+"</span>"+
+      '<span class="agenda-banner-dot" style="background:'+sl.color+'"></span>'+
+      '<span class="agenda-upcoming-title"><b style="color:'+sl.color+'">'+esc(sl.label)+"</b> · "+esc(c.title)+"</span>"+
       '<span class="agenda-upcoming-date">'+fmtRange(c.startDate,c.endDate)+"</span>"+
       "</div>";
   }).join("")+activeFechas.map(function(r){
@@ -888,7 +899,8 @@ function agendaBannerHtml(){
     var end=c.endDate||c.startDate;
     if(!c.startDate||end<todayStr||c.startDate>monthEndStr)return;
     if(c.startDate<=todayStr&&end>=todayStr)return;
-    items.push({kind:"callup",startDate:c.startDate,endDate:end,title:c.title,id:c.id,color:"#1A3A8F"});
+    var sl=callupSelLabel(c);
+    items.push({kind:"callup",startDate:c.startDate,endDate:end,title:'<b style="color:'+sl.color+'">'+esc(sl.label)+"</b> · "+esc(c.title),id:c.id,color:sl.color,_raw:true});
   });
   allFechas.forEach(function(r){
     var end=r.endDate||r.startDate;
@@ -929,7 +941,7 @@ function agendaBannerHtml(){
     (S.agendaCollapseProx?"":(items.length?items.map(function(it){
       return'<div class="agenda-upcoming-row"'+(it.kind==="callup"?' data-openid="'+it.id+'"':"")+'>'+
         '<span class="agenda-banner-dot" style="background:'+it.color+'"></span>'+
-        '<span class="agenda-upcoming-title">'+esc(it.title)+"</span>"+
+        '<span class="agenda-upcoming-title">'+(it._raw?it.title:esc(it.title))+"</span>"+
         '<span class="agenda-upcoming-date">'+fmtRange(it.startDate,it.endDate)+"</span>"+
         "</div>";
     }).join(""):'<p class="msub" style="padding:10px 14px">Nada próximamente</p>'))+
