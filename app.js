@@ -2145,19 +2145,29 @@ function calDayPanelHtml(ds,dayEvents,dayMatches){
   return'<div class="cal-panel-date">'+dt.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"})+"</div>"+rows+mrows;
 }
 
+function isEspanolaEvent(e,cat){
+  if(e.kind==="callup")return e.raw.selectionType==="espanola"&&e.raw.selectionCategory===cat;
+  var t=(e.tipoLabel||"").trim().toLowerCase();
+  return t==="rfef"&&e.raw.cat===cat;
+}
+function isMadrilenaEvent(e,cat){
+  if(e.kind==="callup")return e.raw.selectionType==="madrilena"&&e.raw.selectionCategory===cat;
+  var t=(e.tipoLabel||"").trim().toLowerCase();
+  return t==="rffm"&&e.raw.cat===cat;
+}
 var FIXED_LANE_ORDER=[
   {label:"FIFA",match:function(e){return e.kind==="fecha"&&(e.tipoLabel||"").trim().toLowerCase()==="fifa";}},
-  {label:"España U21",match:function(e){return e.kind==="callup"&&e.raw.selectionType==="espanola"&&e.raw.selectionCategory==="sub21";}},
-  {label:"España U20",match:function(e){return e.kind==="callup"&&e.raw.selectionType==="espanola"&&e.raw.selectionCategory==="sub20";}},
-  {label:"España U19",match:function(e){return e.kind==="callup"&&e.raw.selectionType==="espanola"&&e.raw.selectionCategory==="sub19";}},
-  {label:"España U18",match:function(e){return e.kind==="callup"&&e.raw.selectionType==="espanola"&&e.raw.selectionCategory==="sub18";}},
-  {label:"España U17",match:function(e){return e.kind==="callup"&&e.raw.selectionType==="espanola"&&e.raw.selectionCategory==="sub17";}},
-  {label:"España U16",match:function(e){return e.kind==="callup"&&e.raw.selectionType==="espanola"&&e.raw.selectionCategory==="sub16";}},
-  {label:"España U15",match:function(e){return e.kind==="callup"&&e.raw.selectionType==="espanola"&&e.raw.selectionCategory==="sub15";}},
-  {label:"España U14",match:function(e){return e.kind==="callup"&&e.raw.selectionType==="espanola"&&e.raw.selectionCategory==="sub14";}},
-  {label:"Madrileña U16",match:function(e){return e.kind==="callup"&&e.raw.selectionType==="madrilena"&&e.raw.selectionCategory==="sub16";}},
-  {label:"Madrileña U14",match:function(e){return e.kind==="callup"&&e.raw.selectionType==="madrilena"&&e.raw.selectionCategory==="sub14";}},
-  {label:"Madrileña U12",match:function(e){return e.kind==="callup"&&e.raw.selectionType==="madrilena"&&e.raw.selectionCategory==="sub12";}}
+  {label:"España U21",match:function(e){return isEspanolaEvent(e,"sub21");}},
+  {label:"España U20",match:function(e){return isEspanolaEvent(e,"sub20");}},
+  {label:"España U19",match:function(e){return isEspanolaEvent(e,"sub19");}},
+  {label:"España U18",match:function(e){return isEspanolaEvent(e,"sub18");}},
+  {label:"España U17",match:function(e){return isEspanolaEvent(e,"sub17");}},
+  {label:"España U16",match:function(e){return isEspanolaEvent(e,"sub16");}},
+  {label:"España U15",match:function(e){return isEspanolaEvent(e,"sub15");}},
+  {label:"España U14",match:function(e){return isEspanolaEvent(e,"sub14");}},
+  {label:"Madrileña U16",match:function(e){return isMadrilenaEvent(e,"sub16");}},
+  {label:"Madrileña U14",match:function(e){return isMadrilenaEvent(e,"sub14");}},
+  {label:"Madrileña U12",match:function(e){return isMadrilenaEvent(e,"sub12");}}
 ];
 function calGroupKey(e){
   if(e.kind==="callup")return"c|"+(e.raw.selectionType||"")+"|"+(e.raw.selectionCategory||"");
@@ -2192,8 +2202,8 @@ function renderCalVertical(events,season){
   var dowLetters=["L","M","X","J","V","S","D"];
   var months=[];
   for(var m=6;m<18;m++){var y=startYear+(m>=12?1:0);var mo=m%12;months.push({year:y,month:mo,label:monthNames[m-6]});}
-  var ROWH=18;
-  var LANEW=18;
+  var ROWH=25;
+  var LANEW=16;
   var pad2=function(n){return String(n).padStart(2,"0");};
   var global=computeGlobalLanes(events);
   var laneCount=global.laneCount;
