@@ -418,7 +418,7 @@ function callupCard(c){
     '<div class="cc-meta">'+
     '<div class="cc-mi"><span class="mi">📅</span><span>'+fmtRange(c.startDate,c.endDate)+"</span></div>"+
     "</div>"+
-    (pc>0?'<div class="cc-plcount">👕 '+pc+(pc===1?" jugador convocado":" jugadores convocados")+'</div><div class="cc-plrows">'+playersList+"</div>":"")+
+    (pc>0?'<button type="button" class="cc-plcount" data-players-toggle="1"><span class="cc-plcount-chev">▸</span>👕 '+pc+(pc===1?" jugador seleccionado":" jugadores seleccionados")+'</button><div class="cc-plrows" style="display:none">'+playersList+"</div>":"")+
     (tlHtml?'<button type="button" class="cc-more-btn" data-more-toggle="1">+ Ver más</button><div class="cc-tl-wrap" style="display:none">'+tlHtml+"</div>":"")+
     "</article>";
 }
@@ -680,6 +680,17 @@ function bindCards(){
       var open=wrap.style.display!=="none";
       wrap.style.display=open?"none":"";
       btn.textContent=open?"+ Ver más":"− Ver menos";
+    });
+  });
+  document.querySelectorAll("[data-players-toggle]").forEach(function(btn){
+    btn.addEventListener("click",function(e){
+      e.stopPropagation();
+      var wrap=btn.nextElementSibling;
+      if(!wrap)return;
+      var open=wrap.style.display!=="none";
+      wrap.style.display=open?"none":"";
+      var chev=btn.querySelector(".cc-plcount-chev");
+      if(chev)chev.textContent=open?"▸":"▾";
     });
   });
 }
