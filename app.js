@@ -1,4 +1,3 @@
-
 function toggleDark(){
   document.body.classList.toggle('dark');
   var isDark=document.body.classList.contains('dark');
@@ -826,6 +825,8 @@ if(c.llegada){var lf={llegadaDate:c.llegada.date,llegadaTime:c.llegada.time,lleg
 function agendaBannerHtml(){
   if(!S.agendaMonths)S.agendaMonths=1;
   if(!S.agendaFilterTipos)S.agendaFilterTipos=[];
+  if(S.agendaCollapseCurso===undefined)S.agendaCollapseCurso=false;
+  if(S.agendaCollapseProx===undefined)S.agendaCollapseProx=false;
   var today=new Date();today.setHours(0,0,0,0);
   var todayStr=today.getFullYear()+"-"+String(today.getMonth()+1).padStart(2,"0")+"-"+String(today.getDate()).padStart(2,"0");
   var monthEnd=new Date(today);monthEnd.setDate(monthEnd.getDate()+30*S.agendaMonths);
@@ -837,25 +838,40 @@ function agendaBannerHtml(){
   var allFechas=S.agendaFilterTipos.length?allFechasRaw.filter(function(r){return S.agendaFilterTipos.indexOf((r.tipo||"").trim())!==-1;}):allFechasRaw;
   var activeFechas=allFechas.filter(function(r){return r.startDate<=todayStr&&(r.endDate||r.startDate)>=todayStr;}).sort(function(a,b){return getTipoOrder(a.tipo)-getTipoOrder(b.tipo);});
 
-  var chips=[];
-  activeFechas.forEach(function(r){
+  var activeCallups=allCallups.filter(function(c){var end=c.endDate||c.startDate;return c.status!=="finalizada"&&c.startDate<=todayStr&&end>=todayStr;});
+  var cursoRows=activeCallups.map(function(c){
+    return'<div class="agenda-upcoming-row" data-openid="'+c.id+'">'+
+      '<span class="agenda-banner-dot" style="background:#1A3A8F"></span>'+
+      '<span class="agenda-upcoming-title">'+esc(c.title)+"</span>"+
+      '<span class="agenda-upcoming-date">'+fmtRange(c.startDate,c.endDate)+"</span>"+
+      "</div>";
+  }).join("")+activeFechas.map(function(r){
     var label=r.cat?(CAT[r.cat]||r.cat):(r.tipo||"Fecha");
-    chips.push('<div class="agenda-banner-chip agenda-banner-active" style="border-color:'+(r.color||"#888")+'">'+
+    return'<div class="agenda-upcoming-row">'+
       '<span class="agenda-banner-dot" style="background:'+(r.color||"#888")+'"></span>'+
-      '<div><b>🔴 Ahora mismo: '+esc(label)+"</b>"+
-      '<span class="agenda-banner-sub">'+fmtRange(r.startDate,r.endDate)+"</span></div></div>");
-  });
+      '<span class="agenda-upcoming-title">'+esc(label)+"</span>"+
+      '<span class="agenda-upcoming-date">'+fmtRange(r.startDate,r.endDate)+"</span>"+
+      "</div>";
+  }).join("");
+  var cursoHtml=(activeCallups.length||activeFechas.length)?'<div class="agenda-upcoming" style="margin-bottom:10px">'+
+    '<div class="agenda-upcoming-hdr" data-toggle-curso="1" style="cursor:pointer;display:flex;align-items:center;gap:6px">'+
+    '<span class="fecha-cat-group-chev">'+(S.agendaCollapseCurso?"▶":"▼")+"</span>"+
+    '<span>🔴 EN CURSO</span></div>'+
+    (S.agendaCollapseCurso?"":cursoRows)+
+    "</div>":"";
 
   var items=[];
   allCallups.forEach(function(c){
     if(c.status==="finalizada")return;
     var end=c.endDate||c.startDate;
     if(!c.startDate||end<todayStr||c.startDate>monthEndStr)return;
+    if(c.startDate<=todayStr&&end>=todayStr)return;
     items.push({kind:"callup",startDate:c.startDate,endDate:end,title:c.title,id:c.id,color:"#1A3A8F"});
   });
   allFechas.forEach(function(r){
     var end=r.endDate||r.startDate;
     if(end<todayStr||r.startDate>monthEndStr)return;
+    if(r.startDate<=todayStr&&end>=todayStr)return;
     var label=r.cat?(CAT[r.cat]||r.cat):(r.tipo||"Fecha");
     items.push({kind:"fecha",tipo:r.tipo,startDate:r.startDate,endDate:end,title:label,color:r.color||"#888"});
   });
@@ -872,7 +888,6 @@ function agendaBannerHtml(){
     '<button class="agenda-tipo-btn agenda-tipo-clear" data-agtipo-clear="1"'+(S.agendaFilterTipos.length?"":' style="visibility:hidden;pointer-events:none"')+'>✕</button>'+
     "</div>":"";
 
-  var monthLabel=S.agendaMonths===1?"el próximo mes":"los próximos "+S.agendaMonths+" meses";
   var rightBlock='<div class="agenda-hdr-right">'+
     '<div class="agenda-months-sel">'+
     [1,2,3].map(function(n){return'<button class="agenda-months-btn'+(S.agendaMonths===n?" on":"")+'" data-months="'+n+'">'+n+"m</button>";}).join("")+
@@ -880,21 +895,21 @@ function agendaBannerHtml(){
     tipoFilterHtml+
     "</div>";
   var listHtml='<div class="agenda-upcoming"><div class="agenda-upcoming-hdr" style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">'+
-    '<span style="padding-top:6px">📅 En '+monthLabel+"</span>"+
+    '<span style="padding-top:6px;cursor:pointer;display:flex;align-items:center;gap:6px" data-toggle-prox="1">'+
+    '<span class="fecha-cat-group-chev">'+(S.agendaCollapseProx?"▶":"▼")+"</span>PRÓXIMAMENTE</span>"+
     rightBlock+
     "</div>"+
-    (items.length?items.map(function(it,idx){
-      var isNow=it.startDate<=todayStr&&it.endDate>=todayStr;
+    (S.agendaCollapseProx?"":(items.length?items.map(function(it){
       return'<div class="agenda-upcoming-row"'+(it.kind==="callup"?' data-openid="'+it.id+'"':"")+'>'+
         '<span class="agenda-banner-dot" style="background:'+it.color+'"></span>'+
-        '<span class="agenda-upcoming-title">'+esc(it.title)+(isNow?' <b class="agenda-upcoming-now">EN CURSO</b>':"")+"</span>"+
+        '<span class="agenda-upcoming-title">'+esc(it.title)+"</span>"+
         '<span class="agenda-upcoming-date">'+fmtRange(it.startDate,it.endDate)+"</span>"+
         "</div>";
-    }).join(""):'<p class="msub" style="padding:10px 14px">Nada en '+monthLabel+"</p>")+
+    }).join(""):'<p class="msub" style="padding:10px 14px">Nada próximamente</p>'))+
     "</div>";
 
-  if(!chips.length&&!listHtml)return"";
-  return'<div class="agenda-banner">'+chips.join("")+"</div>"+listHtml;
+  if(!cursoHtml&&!listHtml)return"";
+  return cursoHtml+listHtml;
 }
 
 function renderAgenda(viewMode){
@@ -905,7 +920,7 @@ function renderAgenda(viewMode){
 
   var tabsHtml='<div class="pill-tabs" style="margin-bottom:14px">'+
     '<button class="pill-btn'+(S.agendaTab==="conv"?" on":"")+'" id="atab-conv">📋 Convocatorias</button>'+
-    '<button class="pill-btn'+(S.agendaTab==="fechas"?" on":"")+'" id="atab-fechas">🗓️ Fechas y próximamente</button>'+
+    '<button class="pill-btn'+(S.agendaTab==="fechas"?" on":"")+'" id="atab-fechas">🗓️ Fechas</button>'+
     "</div>";
 
   if(S.agendaTab==="fechas"){
@@ -919,6 +934,8 @@ function renderAgenda(viewMode){
       renderAgenda(S.agendaView);
     });});
     var agClear=document.querySelector("[data-agtipo-clear]");if(agClear)agClear.addEventListener("click",function(){S.agendaFilterTipos=[];renderAgenda(S.agendaView);});
+    var toggleCurso=document.querySelector("[data-toggle-curso]");if(toggleCurso)toggleCurso.addEventListener("click",function(){S.agendaCollapseCurso=!S.agendaCollapseCurso;renderAgenda(S.agendaView);});
+    var toggleProx=document.querySelector("[data-toggle-prox]");if(toggleProx)toggleProx.addEventListener("click",function(){S.agendaCollapseProx=!S.agendaCollapseProx;renderAgenda(S.agendaView);});
     $("atab-conv").addEventListener("click",function(){S.agendaTab="conv";renderAgenda(S.agendaView);});
     $("atab-fechas").addEventListener("click",function(){S.agendaTab="fechas";renderAgenda(S.agendaView);});
     return;
