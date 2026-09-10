@@ -129,7 +129,7 @@ function fifaBadge(c){
   var hit=getRefDates_raw().some(function(r){
     return r.tipo&&r.tipo.toLowerCase().indexOf("fifa")!==-1&&r.startDate<=end&&(r.endDate||r.startDate)>=c.startDate;
   });
-  return hit?'<span class="badge" style="background:#111827;color:#fff" title="Coincide con ventana FIFA"><img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/fifa.png" style="width:14px;height:14px;object-fit:contain;vertical-align:middle;margin-right:3px"/>FIFA</span>':"";
+  return hit?'<span class="badge" style="background:#111827;color:#fff" title="Coincide con ventana FIFA"><img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/flags/fifa.png" style="width:14px;height:14px;object-fit:contain;vertical-align:middle;margin-right:3px"/>FIFA</span>':"";
 }
 
 var _seasons = [];
@@ -187,7 +187,7 @@ function paisAdj(p){return PAIS_ADJ[p]||p;}
 var FLAG_IMAGES={"España":"Espa%C3%B1a.png","Francia":"Franica.png"};
 function getFlag(p){
   var emoji=FLAGS[p]||"🏴";
-  var base="https://raw.githubusercontent.com/PabliVM/selecciones/main/";
+  var base="https://raw.githubusercontent.com/PabliVM/selecciones/main/flags/";
   if(FLAG_IMAGES[p])return'<img src="'+base+FLAG_IMAGES[p]+'" style="width:16px;height:12px;object-fit:cover;border-radius:2px;vertical-align:middle"/>';
   var cap=base+encodeURIComponent(p)+".png";
   var low=base+encodeURIComponent(p.toLowerCase())+".png";
@@ -357,7 +357,7 @@ function selBadge(type,cat,pais){
   var k=selKey(type);var s=SELS[k];if(!s)return"";
   if(!cat)cat="abs";
   var c=(s.colors&&s.colors[cat])?s.colors[cat]:{badge:"#666"};
-  var flag=k==="madrilena"?'<img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/MADRID.png" style="width:16px;height:12px;object-fit:cover;border-radius:2px;vertical-align:middle"/>':k==="espanola"?'<img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/Espa%C3%B1a.png" style="width:16px;height:12px;object-fit:cover;border-radius:2px;vertical-align:middle"/>':(pais?getFlag(pais):"🌍");
+  var flag=k==="madrilena"?'<img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/flags/MADRID.png" style="width:16px;height:12px;object-fit:cover;border-radius:2px;vertical-align:middle"/>':k==="espanola"?'<img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/flags/Espa%C3%B1a.png" style="width:16px;height:12px;object-fit:cover;border-radius:2px;vertical-align:middle"/>':(pais?getFlag(pais):"🌍");
   var label=k==="internacional"&&pais?(CAT[cat]||cat)+" "+paisAdj(pais):(CAT[cat]||cat)+" "+s.short;
   return'<span class="badge" style="background:'+c.badge+';color:#fff">'+flag+" "+label+"</span>";
 }
@@ -1054,8 +1054,8 @@ function renderAgenda(viewMode){
     '</div></div>'+tabsHtml+
     '<div class="fb">'+
     '<button class="fbtn'+(!S.filterType?" on":"")+'" data-f="">Todas</button>'+
-    '<button class="fbtn fbtn-esp'+(S.filterType==="espanola"?" on":"")+'" data-f="espanola"><img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/Espa%C3%B1a.png" style="width:14px;height:10px;object-fit:cover;border-radius:1px;vertical-align:middle"/> RFEF</button>'+
-    '<button class="fbtn fbtn-mad'+(S.filterType==="madrilena"?" on":"")+'" data-f="madrilena"><img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/MADRID.png" style="width:14px;height:10px;object-fit:cover;border-radius:1px;vertical-align:middle"/> RFFM</button>'+
+    '<button class="fbtn fbtn-esp'+(S.filterType==="espanola"?" on":"")+'" data-f="espanola"><img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/flags/Espa%C3%B1a.png" style="width:14px;height:10px;object-fit:cover;border-radius:1px;vertical-align:middle"/> RFEF</button>'+
+    '<button class="fbtn fbtn-mad'+(S.filterType==="madrilena"?" on":"")+'" data-f="madrilena"><img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/flags/MADRID.png" style="width:14px;height:10px;object-fit:cover;border-radius:1px;vertical-align:middle"/> RFFM</button>'+
     '<button class="fbtn fbtn-int'+(S.filterType==="internacional"?" on":"")+'" data-f="internacional">🌍 OTRAS</button>'+
     (descartadas.length?'<button class="fbtn'+(S.showDescartadas?" on":"")+'" id="btn-show-desc" style="border-color:rgba(239,68,68,.4);'+(S.showDescartadas?"background:rgba(239,68,68,.15);color:#EF4444":"")+'">❌ Descartadas ('+descartadas.length+')</button>':"")+
     '</div>'+catPills;
@@ -1234,8 +1234,8 @@ function renderNueva(){
     '<div class="fblock fblock-info">'+
     '<div class="fsec fsec-info"><span class="fsec-ico">📋</span><span class="fsec-lbl">Información general</span></div>'+
     '<div class="fg"><label class="fl">Tipo de selección *</label><div class="rc-group">'+
-    '<label class="rc"><input type="radio" name="selType" value="madrilena"/><span class="rc-ico"><img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/MADRID.png" style="width:24px;height:16px;object-fit:cover;border-radius:2px"/></span><span class="rc-lbl">Madrileña</span></label>'+
-    '<label class="rc"><input type="radio" name="selType" value="espanola"/><span class="rc-ico"><img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/Espa%C3%B1a.png" style="width:24px;height:16px;object-fit:cover;border-radius:2px"/></span><span class="rc-lbl">Española</span></label>'+
+    '<label class="rc"><input type="radio" name="selType" value="madrilena"/><span class="rc-ico"><img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/flags/MADRID.png" style="width:24px;height:16px;object-fit:cover;border-radius:2px"/></span><span class="rc-lbl">Madrileña</span></label>'+
+    '<label class="rc"><input type="radio" name="selType" value="espanola"/><span class="rc-ico"><img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/flags/Espa%C3%B1a.png" style="width:24px;height:16px;object-fit:cover;border-radius:2px"/></span><span class="rc-lbl">Española</span></label>'+
     '<label class="rc"><input type="radio" name="selType" value="internacional"/><span class="rc-ico">🌍</span><span class="rc-lbl">Internacional</span></label>'+
     "</div></div>"+
     '<div class="fg" id="pais-g" style="display:none"><label class="fl">País *</label><div id="pais-pills" class="pais-pills"></div><input class="fi" type="text" id="f-pais" name="pais" placeholder="Escribe el país..." style="display:none;margin-top:6px"/></div>'+
@@ -1974,9 +1974,9 @@ function calEventSelKey(e){
 }
 function tipoIconHtml(tipoLabel,color){
   var t=(tipoLabel||"").trim().toLowerCase();
-  if(t==="fifa")return'<img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/fifa.png" style="width:14px;height:14px;object-fit:contain;vertical-align:middle;margin-right:4px"/>';
-  if(t==="rfef")return'<img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/Espa%C3%B1a.png" style="width:14px;height:10px;object-fit:cover;border-radius:1px;vertical-align:middle;margin-right:4px"/>';
-  if(t==="rffm")return'<img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/MADRID.png" style="width:14px;height:10px;object-fit:cover;border-radius:1px;vertical-align:middle;margin-right:4px"/>';
+  if(t==="fifa")return'<img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/flags/fifa.png" style="width:14px;height:14px;object-fit:contain;vertical-align:middle;margin-right:4px"/>';
+  if(t==="rfef")return'<img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/flags/Espa%C3%B1a.png" style="width:14px;height:10px;object-fit:cover;border-radius:1px;vertical-align:middle;margin-right:4px"/>';
+  if(t==="rffm")return'<img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/flags/MADRID.png" style="width:14px;height:10px;object-fit:cover;border-radius:1px;vertical-align:middle;margin-right:4px"/>';
   return'<span class="fbtn-dot" style="background:'+(color||"#999")+'"></span>';
 }
 function calAvailableTipos(events){
