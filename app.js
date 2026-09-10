@@ -2202,7 +2202,7 @@ function renderCalVertical(events,season){
   var dowLetters=["L","M","X","J","V","S","D"];
   var months=[];
   for(var m=6;m<18;m++){var y=startYear+(m>=12?1:0);var mo=m%12;months.push({year:y,month:mo,label:monthNames[m-6]});}
-  var ROWH=25;
+  var ROWH=16;
   var LANEW=16;
   var pad2=function(n){return String(n).padStart(2,"0");};
   var global=computeGlobalLanes(events);
