@@ -1438,7 +1438,9 @@ function bindAiParser(){
       fetchPromise.then(function(data){
         var raw=(data.content&&data.content[0]&&data.content[0].text)||"";
         raw=raw.replace(/```json|```/g,"").trim();
-        var parsed;try{parsed=JSON.parse(raw);}catch(e){throw new Error("JSON inválido");}
+        var first=raw.indexOf("{"),last=raw.lastIndexOf("}");
+        if(first!==-1&&last!==-1&&last>first)raw=raw.slice(first,last+1);
+        var parsed;try{parsed=JSON.parse(raw);}catch(e){console.error("Respuesta IA no parseable:",raw);throw new Error("JSON inválido (revisa la consola para ver la respuesta completa)");}
         var form=$("cf");if(!form)throw new Error("Formulario no encontrado");
         if(parsed.selectionType){var rb=form.querySelector('[name="selType"][value="'+parsed.selectionType+'"]');if(rb){rb.checked=true;rb.dispatchEvent(new Event("change"));}}
         setTimeout(function(){
