@@ -142,11 +142,11 @@ var SELS = {};
 SELS["madrilena"] = {
   label:"Madrileña",
   short:"MAD",
-  cats:["sub12","sub14","sub15"],
+  cats:["sub12","sub14","sub16"],
   colors:{
     sub12:{badge:"#2563EB"},
     sub14:{badge:"#1D4ED8"},
-    sub15:{badge:"#1E40AF"}
+    sub16:{badge:"#1E40AF"}
   }
 };SELS["espanola"]  = {label:"Española",short:"ESP",cats:["sub14","sub15","sub16","sub17","sub18","sub19","sub20","sub21","abs"],colors:{sub14:{badge:"#DC2626"},sub15:{badge:"#DC2626"},sub16:{badge:"#B91C1C"},sub17:{badge:"#B91C1C"},sub18:{badge:"#991B1B"},sub19:{badge:"#7F1D1D"},sub20:{badge:"#7F1D1D"},sub21:{badge:"#450A0A"},abs:{badge:"#1A0000"}}};
 SELS["internacional"]={label:"Internacional",short:"INT",cats:["sub16","sub17","sub18","sub19","sub20","sub21","abs"],colors:{sub16:{badge:"#10B981"},sub17:{badge:"#10B981"},sub18:{badge:"#047857"},sub19:{badge:"#047857"},sub20:{badge:"#065F46"},sub21:{badge:"#065F46"},abs:{badge:"#064E3B"}}};
@@ -2075,13 +2075,18 @@ function exportCalendarPDF(season){
 
 function renderCalMain(){
   var season=S.season;
+  if(!S.calDataMode)S.calDataMode="planificadas";
   var h='<div class="vh"><h1 class="vt">Calendario</h1></div>';
+  h+='<div class="view-toggle" style="margin-bottom:8px">'+
+    '<button class="vtbtn'+(S.calDataMode==="planificadas"?" on":"")+'" id="cm-planificadas">📋 Planificadas</button>'+
+    '<button class="vtbtn'+(S.calDataMode==="reales"?" on":"")+'" id="cm-reales">✅ Reales</button>'+
+    "</div>";
   h+='<div class="view-toggle">'+
     '<button class="vtbtn'+(S.calMode==="vertical"?" on":"")+'" id="cm-vertical">📊 Temporada</button>'+
     '<button class="vtbtn'+(S.calMode==="clasico"?" on":"")+'" id="cm-clasico">🗓️ Mensual</button>'+
     "</div>";
   h+='<div style="display:flex;gap:8px;align-items:center;margin:8px 0 12px;flex-wrap:wrap">'+
-    '<button class="btn btn-ghost btn-sm" id="cm-fechas">'+(S.calMode==="fechas"?"× Cerrar":"+ Nuevas fechas")+"</button>"+
+    (S.calDataMode==="planificadas"?'<button class="btn btn-ghost btn-sm" id="cm-fechas">'+(S.calMode==="fechas"?"× Cerrar":"+ Nuevas fechas")+"</button>":"")+
     (S.calMode==="vertical"?'<button class="btn btn-ghost btn-sm" id="cm-export">📷 Exportar PNG</button>':"")+
     "</div>";
 
@@ -2092,11 +2097,13 @@ function renderCalMain(){
     $("cm-clasico").addEventListener("click",function(){calSwitchMode("clasico");});
     $("cm-vertical").addEventListener("click",function(){calSwitchMode("vertical");});
     $("cm-fechas").addEventListener("click",function(){calSwitchMode("vertical");});
+    $("cm-planificadas").addEventListener("click",function(){S.calDataMode="planificadas";S.calMode="vertical";renderCalMain();});
+    $("cm-reales").addEventListener("click",function(){S.calDataMode="reales";S.calFilterTipo=[];S.calFilterCat=[];renderCalMain();});
     renderFechas();
     return;
   }
 
-  var events=getCalEvents(season);
+  var events=getCalEvents(season).filter(function(e){return S.calDataMode==="reales"?e.kind==="callup":e.kind==="fecha";});
   var tipos=calAvailableTipos(events);
   var catGroups=calAvailableCatsByTipo();
   var anyFilter=S.calFilterTipo.length||S.calFilterCat.length;
@@ -2120,7 +2127,9 @@ function renderCalMain(){
 
   $("cm-clasico").addEventListener("click",function(){calSwitchMode("clasico");});
   $("cm-vertical").addEventListener("click",function(){calSwitchMode("vertical");});
-  $("cm-fechas").addEventListener("click",function(){calSwitchMode("fechas");});
+  var fechasBtn=$("cm-fechas");if(fechasBtn)fechasBtn.addEventListener("click",function(){calSwitchMode("fechas");});
+  $("cm-planificadas").addEventListener("click",function(){S.calDataMode="planificadas";S.calFilterTipo=[];S.calFilterCat=[];renderCalMain();});
+  $("cm-reales").addEventListener("click",function(){S.calDataMode="reales";S.calFilterTipo=[];S.calFilterCat=[];renderCalMain();});
   var exportBtn=$("cm-export");if(exportBtn)exportBtn.addEventListener("click",function(){exportCalendarPNG(season);});
   var calTodosBtn=$("cal-todos");if(calTodosBtn)calTodosBtn.addEventListener("click",function(){S.calFilterTipo=[];S.calFilterCat=[];renderCalMain();});
   var clearBtn=$("cal-clear");if(clearBtn)clearBtn.addEventListener("click",function(){S.calFilterTipo=[];S.calFilterCat=[];renderCalMain();});
