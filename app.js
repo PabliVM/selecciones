@@ -184,10 +184,14 @@ var PAIS_ADJ={
 
 function selKey(type){if(!type)return"";var t=type.toLowerCase();if(t.indexOf("madril")!==-1)return"madrilena";if(t.indexOf("espa")!==-1)return"espanola";if(t.indexOf("intern")!==-1)return"internacional";return t;}
 function paisAdj(p){return PAIS_ADJ[p]||p;}
-var FLAG_IMAGES={"Argentina":"Argentina.png","España":"Espa%C3%B1a.png","Francia":"Franica.png","Marruecos":"Marruecos.png","Rumania":"rumania.png"};
+var FLAG_IMAGES={"España":"Espa%C3%B1a.png","Francia":"Franica.png"};
 function getFlag(p){
-  if(FLAG_IMAGES[p])return'<img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/'+FLAG_IMAGES[p]+'" style="width:16px;height:12px;object-fit:cover;border-radius:2px;vertical-align:middle"/>';
-  return FLAGS[p]||"🏴";
+  var emoji=FLAGS[p]||"🏴";
+  var base="https://raw.githubusercontent.com/PabliVM/selecciones/main/";
+  if(FLAG_IMAGES[p])return'<img src="'+base+FLAG_IMAGES[p]+'" style="width:16px;height:12px;object-fit:cover;border-radius:2px;vertical-align:middle"/>';
+  var cap=base+encodeURIComponent(p)+".png";
+  var low=base+encodeURIComponent(p.toLowerCase())+".png";
+  return'<img src="'+cap+'" style="width:16px;height:12px;object-fit:cover;border-radius:2px;vertical-align:middle" onerror="if(!this.dataset.t2){this.dataset.t2=1;this.src=\''+low+'\';}else{this.outerHTML=\''+emoji+'\';}"/>';
 }
 function getSelFlag(type,pais){var k=selKey(type);if(k==="madrilena")return"📍";if(k==="espanola")return"🇪🇸";if(k==="internacional")return pais?getFlag(pais):"🌍";return"🏴";}
 
