@@ -608,19 +608,46 @@ function bindTabs(onSelect){
 }
 
 function renderLoginGate(){
-  $("main").innerHTML='<div class="empty" style="margin-top:60px">'+
-    '<span class="empty-ico">🔒</span>'+
-    '<p class="empty-t">Necesitas iniciar sesión para ver esta app</p>'+
-    '<button class="btn btn-primary" id="gate-login-btn" style="margin-top:12px">Iniciar sesión</button>'+
-    "</div>";
+  document.body.classList.add("gate-active");
+  $("main").innerHTML='<div class="login-gate">'+
+    '<div class="login-card">'+
+    '<img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/flags/Rm__.png" class="login-emblem" alt="Real Madrid"/>'+
+    '<h1 class="login-title">Selecciones - Convocatorias</h1>'+
+    '<p class="login-sub">Real Madrid · Cantera</p>'+
+    '<div class="fg"><input class="fi" id="gate-email" type="email" placeholder="Email" autocomplete="email"/></div>'+
+    '<div class="fg"><input class="fi" id="gate-pass" type="password" placeholder="Contraseña" autocomplete="current-password"/></div>'+
+    '<div id="gate-err" style="color:#EF4444;font-size:12px;margin-bottom:8px;display:none"></div>'+
+    '<button class="btn btn-primary" id="gate-login-btn" style="width:100%">Iniciar sesión</button>'+
+    '<a href="#" id="gate-forgot" class="login-forgot">¿Olvidaste tu contraseña?</a>'+
+    "</div></div>";
   document.querySelectorAll(".nb").forEach(function(b){b.style.display="none";});
-  var gb=$("gate-login-btn");if(gb)gb.addEventListener("click",function(){$("hdr-login-btn").click();});
+  var emailEl=$("gate-email"),passEl=$("gate-pass"),errEl=$("gate-err");
+  function doLogin(){
+    var email=(emailEl.value||"").trim(),pass=passEl.value||"";
+    if(!email||!pass){errEl.style.display="block";errEl.textContent="Introduce email y contraseña.";return;}
+    var btn=$("gate-login-btn");btn.disabled=true;btn.textContent="Entrando...";
+    window._fbFns.signInWithEmailAndPassword(window._auth,email,pass)
+      .then(function(){toast("🔓 Sesión iniciada");})
+      .catch(function(e){errEl.style.display="block";errEl.textContent=e.code==="auth/invalid-credential"?"Email o contraseña incorrectos.":"Error: "+e.message;btn.disabled=false;btn.textContent="Iniciar sesión";});
+  }
+  $("gate-login-btn").addEventListener("click",doLogin);
+  passEl.addEventListener("keydown",function(e){if(e.key==="Enter")doLogin();});
+  $("gate-forgot").addEventListener("click",function(e){
+    e.preventDefault();
+    var email=(emailEl.value||"").trim();
+    if(!email){errEl.style.display="block";errEl.textContent="Escribe tu email arriba primero, y vuelve a pulsar el enlace.";return;}
+    if(!window._fbFns.sendPasswordResetEmail){errEl.style.display="block";errEl.textContent="Función no disponible. Pide a un editor que te reinicie la contraseña desde Firebase.";return;}
+    window._fbFns.sendPasswordResetEmail(window._auth,email)
+      .then(function(){toast("📧 Correo de recuperación enviado");})
+      .catch(function(e){errEl.style.display="block";errEl.textContent="Error: "+e.message;});
+  });
 }
 function route(v){
   S.view=v;
   try{localStorage.setItem("rmconv_view",v);}catch(e){}
   document.querySelectorAll(".nb").forEach(function(b){b.classList.toggle("active",b.dataset.v===v);b.style.display="";});
   if(!isLoggedIn()){renderLoginGate();return;}
+  document.body.classList.remove("gate-active");
   document.querySelectorAll(".nb-new,.nb[data-v='jugadores']").forEach(function(b){b.style.display=canEdit()?"":"none";});
   var views={
     agenda:renderAgenda,
