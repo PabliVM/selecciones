@@ -1523,7 +1523,7 @@ function renderJugadores(){
     '<button class="fbtn'+(S.jugTeam===""?" on":"")+'" data-jt="">Todos</button>'+
     allTeams.map(function(t){return'<button class="fbtn'+(S.jugTeam===t.name?" on":"")+'" data-jt="'+esc(t.name)+'">'+esc(t.name)+'</button>';}).join("")+
     '</div>';
-  var h='<div class="vh"><h1 class="vt">Jugadores</h1><span class="vs">'+filtered.filter(function(p){return p.active;}).length+" activos</span></div>"+
+  var h='<div class="vh"><h1 class="vt">Plantillas</h1><span class="vs">'+filtered.filter(function(p){return p.active;}).length+" activos</span></div>"+
     '<input class="fi" id="jug-search" type="text" placeholder="🔍 Buscar jugador..." value="'+esc(S.jugSearch||"")+'" style="margin-bottom:8px" autocomplete="off"/>'+
     teamPills+
     '<button class="btn btn-gold" id="btn-add-player" style="width:100%;margin-bottom:8px;margin-top:10px">+ Añadir jugador</button>'+
@@ -1897,7 +1897,7 @@ function calAvailableCats(){
   var set={};
   activeTipos.forEach(function(tk){
     var cats=getRefDates_raw().find(function(r){return(r.tipo||"").trim().toLowerCase()===tk&&r.cats&&r.cats.length;});
-    if(cats)cats.cats.forEach(function(c){set[c]=1;});
+    if(cats)cats.cats.forEach(function(c){if(c!=="abs")set[c]=1;});
   });
   return catsDesc(Object.keys(set));
 }
@@ -1921,7 +1921,10 @@ function calMatchesFilters(e){
     if(!sk||S.calFilterSel.indexOf(sk)===-1)return false;
   }
   if(S.calFilterCat.length&&e.kind==="fecha"){
-    if(!e.raw.cat||S.calFilterCat.indexOf(e.raw.cat)===-1)return false;
+    var tCats=getCatsForTipo(e.tipoLabel);
+    if(tCats&&tCats.length){
+      if(!e.raw.cat||S.calFilterCat.indexOf(e.raw.cat)===-1)return false;
+    }
   }
   return true;
 }
@@ -1932,8 +1935,6 @@ function renderCalendarioPlan(){
 }
 
 function calSwitchMode(mode){
-  var cpt=$("cpt-content");
-  if(cpt)window.scrollTo({top:cpt.getBoundingClientRect().top+window.scrollY-8,behavior:"auto"});
   S.calMode=mode;
   renderCalMain();
 }
@@ -2054,7 +2055,8 @@ function exportCalendarPDF(season){
 
 function renderCalMain(){
   var season=S.season;
-  var h='<div class="view-toggle">'+
+  var h='<div class="vh"><h1 class="vt">Calendario</h1></div>';
+  h+='<div class="view-toggle">'+
     '<button class="vtbtn'+(S.calMode==="vertical"?" on":"")+'" id="cm-vertical">📊 Temporada</button>'+
     '<button class="vtbtn'+(S.calMode==="clasico"?" on":"")+'" id="cm-clasico">🗓️ Mensual</button>'+
     "</div>";
@@ -2202,7 +2204,7 @@ function renderCalVertical(events,season){
   var dowLetters=["L","M","X","J","V","S","D"];
   var months=[];
   for(var m=6;m<18;m++){var y=startYear+(m>=12?1:0);var mo=m%12;months.push({year:y,month:mo,label:monthNames[m-6]});}
-  var ROWH=16;
+  var ROWH=25;
   var LANEW=16;
   var pad2=function(n){return String(n).padStart(2,"0");};
   var global=computeGlobalLanes(events);
@@ -2578,7 +2580,7 @@ function openFechaAdd(tipos){
     '<div class="fg"><label class="fl">Nombre</label><input class="fi" id="fa-tipo" list="fecha-tipos-dl" type="text" placeholder="FIFA, RFFM sub14..." autocomplete="off"/>'+dl+"</div>"+
     '<div class="fg"><label class="fl">Color</label><input class="fi" id="fa-color" type="color" value="#F5B301" style="height:40px;padding:4px;cursor:pointer"/></div>'+
     '<div class="fg"><label class="fl">Subcategorías (opcional)</label><div class="fecha-cats-grid" id="fa-cats">'+
-    catsDesc(Object.keys(CAT).filter(function(k){return k!=="todas";})).map(function(k){return'<label class="fecha-cat-chk"><input type="checkbox" value="'+k+'"/>'+CAT[k]+"</label>";}).join("")+
+    catsDesc(Object.keys(CAT).filter(function(k){return k!=="todas"&&k!=="abs";})).map(function(k){return'<label class="fecha-cat-chk"><input type="checkbox" value="'+k+'"/>'+CAT[k]+"</label>";}).join("")+
     "</div></div>"+
     '<div id="fa-err" class="ferr" style="display:none"></div>'+
     '<div style="display:flex;gap:8px;margin-top:8px">'+
@@ -2639,7 +2641,7 @@ function openTipoEdit(tipo,color,cats){
     '<div class="fg"><label class="fl">Nombre</label><input class="fi" id="te-tipo" type="text" value="'+esc(tipo)+'"/></div>'+
     '<div class="fg"><label class="fl">Color</label><input class="fi" id="te-color" type="color" value="'+esc(color||"#F5B301")+'" style="height:40px;padding:4px;cursor:pointer"/></div>'+
     '<div class="fg"><label class="fl">Subcategorías (opcional)</label><div class="fecha-cats-grid" id="te-cats">'+
-    catsDesc(Object.keys(CAT).filter(function(k){return k!=="todas";})).map(function(k){return'<label class="fecha-cat-chk"><input type="checkbox" value="'+k+'"'+(cats.indexOf(k)!==-1?" checked":"")+"/>"+CAT[k]+"</label>";}).join("")+
+    catsDesc(Object.keys(CAT).filter(function(k){return k!=="todas"&&k!=="abs";})).map(function(k){return'<label class="fecha-cat-chk"><input type="checkbox" value="'+k+'"'+(cats.indexOf(k)!==-1?" checked":"")+"/>"+CAT[k]+"</label>";}).join("")+
     "</div></div>"+
     '<div id="te-err" class="ferr" style="display:none"></div>'+
     '<div style="display:flex;gap:8px;margin-top:8px">'+
