@@ -23,7 +23,7 @@ body.dark{
   --shadow-lg:0 4px 16px rgba(0,0,0,.4);
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{font-size:16px;-webkit-text-size-adjust:100%}
+html{font-size:16px;-webkit-text-size-adjust:100%;scrollbar-gutter:stable;overflow-y:scroll}
 body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100dvh;overflow-x:hidden;-webkit-font-smoothing:antialiased;line-height:1.45;padding-bottom:0}
 .app{display:flex;flex-direction:column;min-height:100dvh}
 
