@@ -607,10 +607,20 @@ function bindTabs(onSelect){
   });
 }
 
+function renderLoginGate(){
+  $("main").innerHTML='<div class="empty" style="margin-top:60px">'+
+    '<span class="empty-ico">🔒</span>'+
+    '<p class="empty-t">Necesitas iniciar sesión para ver esta app</p>'+
+    '<button class="btn btn-primary" id="gate-login-btn" style="margin-top:12px">Iniciar sesión</button>'+
+    "</div>";
+  document.querySelectorAll(".nb").forEach(function(b){b.style.display="none";});
+  var gb=$("gate-login-btn");if(gb)gb.addEventListener("click",function(){$("hdr-login-btn").click();});
+}
 function route(v){
   S.view=v;
   try{localStorage.setItem("rmconv_view",v);}catch(e){}
-  document.querySelectorAll(".nb").forEach(function(b){b.classList.toggle("active",b.dataset.v===v);});
+  document.querySelectorAll(".nb").forEach(function(b){b.classList.toggle("active",b.dataset.v===v);b.style.display="";});
+  if(!isLoggedIn()){renderLoginGate();return;}
   document.querySelectorAll(".nb-new,.nb[data-v='jugadores']").forEach(function(b){b.style.display=canEdit()?"":"none";});
   var views={
     agenda:renderAgenda,
