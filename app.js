@@ -1439,12 +1439,77 @@ function bindAiParser(){
       }
 
       fetchPromise.then(function(data){
-        if(data&&data.error){throw new Error("API: "+(data.error.message||JSON.stringify(data.error)));}
-        var raw=(data.content&&data.content[0]&&data.content[0].text)||"";
-        raw=raw.replace(/```json|```/g,"").trim();
-        var first=raw.indexOf("{"),last=raw.lastIndexOf("}");
-        if(first!==-1&&last!==-1&&last>first)raw=raw.slice(first,last+1);
-        var parsed;try{parsed=JSON.parse(raw);}catch(e){console.error("Respuesta IA no parseable:",raw);throw new Error("JSON inválido (revisa la consola para ver la respuesta completa)");}
+
+  // Error devuelto por Anthropic
+  if(data && data.error){
+    throw new Error(
+      "API: " + (
+        data.error.message ||
+        JSON.stringify(data.error)
+      )
+    );
+  }
+
+  console.log("RESPUESTA ANTHROPIC COMPLETA:", data);
+
+  var raw = "";
+
+  // Por si en el futuro el backend devuelve directamente { text: "..." }
+  if(data && typeof data.text === "string"){
+    raw = data.text;
+  }
+
+  // Respuesta estándar de Anthropic:
+  // buscar bloques type === "text", no asumir content[0]
+  else if(data && Array.isArray(data.content)){
+    raw = data.content
+      .filter(function(block){
+        return block &&
+               block.type === "text" &&
+               typeof block.text === "string";
+      })
+      .map(function(block){
+        return block.text;
+      })
+      .join("\n");
+  }
+
+  raw = raw.trim();
+
+  if(!raw){
+    console.error("Anthropic no devolvió ningún bloque de texto:", data);
+
+    throw new Error(
+      "La IA respondió, pero no devolvió contenido de texto."
+    );
+  }
+
+  // Eliminar posibles bloques Markdown
+  raw = raw
+    .replace(/```json/gi, "")
+    .replace(/```/g, "")
+    .trim();
+
+  // Extraer únicamente el objeto JSON
+  var first = raw.indexOf("{");
+  var last = raw.lastIndexOf("}");
+
+  if(first !== -1 && last !== -1 && last > first){
+    raw = raw.slice(first, last + 1);
+  }
+
+  var parsed;
+
+  try{
+    parsed = JSON.parse(raw);
+  }catch(e){
+    console.error("Respuesta IA no parseable:", raw);
+    console.error("Respuesta Anthropic completa:", data);
+
+    throw new Error(
+      "Claude respondió, pero el JSON recibido no es válido."
+    );
+  }
         var form=$("cf");if(!form)throw new Error("Formulario no encontrado");
         if(parsed.selectionType){var rb=form.querySelector('[name="selType"][value="'+parsed.selectionType+'"]');if(rb){rb.checked=true;rb.dispatchEvent(new Event("change"));}}
         setTimeout(function(){
