@@ -29,6 +29,15 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 
 /* HEADER */
 .app-topbar{position:sticky;top:0;z-index:100}
+body.gate-active .app-topbar,body.gate-active .app-footer{display:none}
+.login-gate{min-height:calc(100dvh - 32px);display:flex;align-items:center;justify-content:center;background:var(--navy);margin:-16px -24px -56px;padding:16px 24px 56px}
+.login-card{background:#fff;border-radius:16px;padding:32px 28px;width:100%;max-width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.login-emblem{width:64px;height:64px;object-fit:contain;margin-bottom:12px}
+.login-title{font-size:19px;font-weight:800;color:#111;margin-bottom:2px}
+.login-sub{font-size:12px;color:var(--navy);font-weight:600;margin-bottom:20px}
+.login-card .fg{text-align:left;margin-bottom:12px}
+.login-card .fi{width:100%}
+.login-forgot{display:block;margin-top:14px;font-size:12.5px;color:var(--navy);text-decoration:underline}
 .hdr{background:var(--navy);padding:12px 24px;display:flex;align-items:center;gap:14px;box-shadow:0 2px 8px rgba(0,0,0,.15)}
 .app-footer{position:fixed;left:0;right:0;bottom:0;z-index:100;background:var(--navy);color:rgba(255,255,255,.85);text-align:center;font-size:12px;font-weight:600;padding:14px 24px;letter-spacing:.2px;box-shadow:0 -2px 8px rgba(0,0,0,.15)}
 .hdr-logo{display:flex;align-items:center;gap:10px;flex-shrink:0}
