@@ -1,4 +1,3 @@
-
 function toggleDark(){
   document.body.classList.toggle('dark');
   var isDark=document.body.classList.contains('dark');
