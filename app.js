@@ -1466,7 +1466,10 @@ function bindAiParser(){
 
       fetchPromise.then(function(data){
         if(data&&data.error){throw new Error("API: "+(data.error.message||JSON.stringify(data.error)));}
-        var raw=(data.content&&data.content[0]&&data.content[0].text)||"";
+        if(!data||!data.content||!data.content.length){console.error("Respuesta completa de la API:",JSON.stringify(data));throw new Error("La IA no devolvió contenido (revisa la consola)");}
+        var textBlock=data.content.find(function(b){return b.type==="text";});
+        var raw=(textBlock&&textBlock.text)||"";
+        if(!raw){console.error("Respuesta completa de la API:",JSON.stringify(data));throw new Error("La IA no devolvió texto (revisa la consola). stop_reason: "+(data.stop_reason||"?"));}
         raw=raw.replace(/```json|```/g,"").trim();
         var first=raw.indexOf("{"),last=raw.lastIndexOf("}");
         if(first!==-1&&last!==-1&&last>first)raw=raw.slice(first,last+1);
