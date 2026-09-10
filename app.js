@@ -842,14 +842,21 @@ function agendaBannerHtml(){
   if(!S.agendaFilterTipos)S.agendaFilterTipos=[];
   if(S.agendaCollapseCurso===undefined)S.agendaCollapseCurso=false;
   if(S.agendaCollapseProx===undefined)S.agendaCollapseProx=false;
+  if(!S.calDataMode)S.calDataMode="planificadas";
+  var showFechas=S.calDataMode==="planificadas";
+  var showCallups=S.calDataMode==="reales";
   var today=new Date();today.setHours(0,0,0,0);
   var todayStr=today.getFullYear()+"-"+String(today.getMonth()+1).padStart(2,"0")+"-"+String(today.getDate()).padStart(2,"0");
   var monthEnd=new Date(today);monthEnd.setDate(monthEnd.getDate()+30*S.agendaMonths);
   var monthEndStr=monthEnd.getFullYear()+"-"+String(monthEnd.getMonth()+1).padStart(2,"0")+"-"+String(monthEnd.getDate()).padStart(2,"0");
 
-  var allCallups=getCallups({season:S.season});
-  var allFechasRaw=getRefDates_raw().filter(function(r){return!!r.startDate;});
-  var tipoList=getOrderedTipos();
+  var allCallups=showCallups?getCallups({season:S.season}):[];
+  var allFechasRaw=getRefDates_raw().filter(function(r){
+    if(!r.startDate)return false;
+    var isFifa=(r.tipo||"").trim().toLowerCase()==="fifa";
+    return isFifa||showFechas;
+  });
+  var tipoList=showFechas?getOrderedTipos():[];
   var allFechas=S.agendaFilterTipos.length?allFechasRaw.filter(function(r){return S.agendaFilterTipos.indexOf((r.tipo||"").trim())!==-1;}):allFechasRaw;
   var activeFechas=allFechas.filter(function(r){return r.startDate<=todayStr&&(r.endDate||r.startDate)>=todayStr;}).sort(function(a,b){return getTipoOrder(a.tipo)-getTipoOrder(b.tipo);});
 
@@ -895,6 +902,11 @@ function agendaBannerHtml(){
       (a.kind==="callup"?-1:b.kind==="callup"?1:getTipoOrder(a.tipo)-getTipoOrder(b.tipo));
   });
 
+  var dataModeToggle='<div class="view-toggle" style="margin-bottom:10px">'+
+    '<button class="vtbtn'+(S.calDataMode==="planificadas"?" on":"")+'" data-agdmode="planificadas">📋 Planificadas</button>'+
+    '<button class="vtbtn'+(S.calDataMode==="reales"?" on":"")+'" data-agdmode="reales">✅ Reales</button>'+
+    "</div>";
+
   var tipoFilterHtml=tipoList.length?'<div class="agenda-tipo-filter">'+
     tipoList.map(function(t){
       var on=S.agendaFilterTipos.indexOf(t)!==-1;
@@ -923,8 +935,8 @@ function agendaBannerHtml(){
     }).join(""):'<p class="msub" style="padding:10px 14px">Nada próximamente</p>'))+
     "</div>";
 
-  if(!cursoHtml&&!listHtml)return"";
-  return cursoHtml+listHtml;
+  if(!cursoHtml&&!listHtml)return dataModeToggle;
+  return dataModeToggle+cursoHtml+listHtml;
 }
 
 function renderAgenda(viewMode){
@@ -951,6 +963,7 @@ function renderAgenda(viewMode){
     var agClear=document.querySelector("[data-agtipo-clear]");if(agClear)agClear.addEventListener("click",function(){S.agendaFilterTipos=[];renderAgenda(S.agendaView);});
     var toggleCurso=document.querySelector("[data-toggle-curso]");if(toggleCurso)toggleCurso.addEventListener("click",function(){S.agendaCollapseCurso=!S.agendaCollapseCurso;renderAgenda(S.agendaView);});
     var toggleProx=document.querySelector("[data-toggle-prox]");if(toggleProx)toggleProx.addEventListener("click",function(){S.agendaCollapseProx=!S.agendaCollapseProx;renderAgenda(S.agendaView);});
+    document.querySelectorAll("[data-agdmode]").forEach(function(b){b.addEventListener("click",function(){S.calDataMode=b.dataset.agdmode;renderAgenda(S.agendaView);});});
     $("atab-conv").addEventListener("click",function(){S.agendaTab="conv";renderAgenda(S.agendaView);});
     $("atab-fechas").addEventListener("click",function(){S.agendaTab="fechas";renderAgenda(S.agendaView);});
     return;
@@ -2103,7 +2116,10 @@ function renderCalMain(){
     return;
   }
 
-  var events=getCalEvents(season).filter(function(e){return S.calDataMode==="reales"?e.kind==="callup":e.kind==="fecha";});
+  var events=getCalEvents(season).filter(function(e){
+    if(e.kind==="fecha"&&(e.tipoLabel||"").trim().toLowerCase()==="fifa")return true;
+    return S.calDataMode==="reales"?e.kind==="callup":e.kind==="fecha";
+  });
   var tipos=calAvailableTipos(events);
   var catGroups=calAvailableCatsByTipo();
   var anyFilter=S.calFilterTipo.length||S.calFilterCat.length;
