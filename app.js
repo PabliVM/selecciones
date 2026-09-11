@@ -1115,12 +1115,12 @@ function renderAgenda(viewMode){
     '<h1 class="vt">Agenda</h1>'+
     '<button class="btn-print" id="btn-print-agenda">🖨️</button>'+
     '</div></div>'+tabsHtml+
-    '<div class="fb">'+
-    '<button class="fbtn'+(!S.filterType?" on":"")+'" data-f="">Todas</button>'+
-    '<button class="fbtn fbtn-esp'+(S.filterType==="espanola"?" on":"")+'" data-f="espanola"><img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/flags/espa%C3%B1a.png" style="width:14px;height:10px;object-fit:cover;border-radius:1px;vertical-align:middle"/> RFEF</button>'+
-    '<button class="fbtn fbtn-mad'+(S.filterType==="madrilena"?" on":"")+'" data-f="madrilena"><img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/flags/madrid.png" style="width:14px;height:10px;object-fit:cover;border-radius:1px;vertical-align:middle"/> RFFM</button>'+
-    '<button class="fbtn fbtn-int'+(S.filterType==="internacional"?" on":"")+'" data-f="internacional">🌍 OTRAS</button>'+
-    (descartadas.length?'<button class="fbtn'+(S.showDescartadas?" on":"")+'" id="btn-show-desc" style="border-color:rgba(239,68,68,.4);'+(S.showDescartadas?"background:rgba(239,68,68,.15);color:#EF4444":"")+'">❌ Descartadas ('+descartadas.length+')</button>':"")+
+    '<div class="view-toggle" style="flex-wrap:wrap;height:auto;margin-bottom:10px">'+
+    '<button class="vtbtn'+(!S.filterType?" on":"")+'" data-f="">Todas</button>'+
+    '<button class="vtbtn'+(S.filterType==="espanola"?" on":"")+'" data-f="espanola"><img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/flags/espa%C3%B1a.png" style="width:14px;height:10px;object-fit:cover;border-radius:1px;vertical-align:middle"/> RFEF</button>'+
+    '<button class="vtbtn'+(S.filterType==="madrilena"?" on":"")+'" data-f="madrilena"><img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/flags/madrid.png" style="width:14px;height:10px;object-fit:cover;border-radius:1px;vertical-align:middle"/> RFFM</button>'+
+    '<button class="vtbtn'+(S.filterType==="internacional"?" on":"")+'" data-f="internacional">🌍 OTRAS</button>'+
+    (descartadas.length?'<button class="vtbtn"'+(S.showDescartadas?' style="color:#EF4444"':"")+' id="btn-show-desc">❌ Descartadas ('+descartadas.length+')</button>':"")+
     '</div>'+paisPills+catPills;
 
   var miniToggle='<div class="mini-toggle"><button class="mini-toggle-btn'+(viewMode==="fichas"?" on":"")+'" data-vm="fichas">⊢□ Fichas</button>'+
@@ -1132,16 +1132,24 @@ function renderAgenda(viewMode){
   if(!filtered.length){h+=emptyState("Sin convocatorias en "+S.season,"📋");}
   else if(viewMode==="tabla"){
     var thead='<thead><tr><th style="width:44px"></th><th>Cat.</th><th>Estado</th><th>Jugadores</th><th class="th-ida">📍 Citación</th><th class="th-ida">✈️ Traslado</th><th class="th-vuelta">🔙 Vuelta</th><th class="th-matches">⚽ Partidos</th></tr></thead>';
-    h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><span class="agenda-upcoming-hdr" data-toggle-curso="1" style="cursor:pointer;display:flex;align-items:center;gap:6px"><span class="fecha-cat-group-chev">'+(S.agendaCollapseCurso?"▶":"▼")+'</span><h2 class="st" style="margin:0">🔴 En curso</h2></span>'+miniToggle+"</div>";
-    if(!S.agendaCollapseCurso)h+=enCurso.length?'<div class="tabla-wrap"><table class="tabla">'+thead+'<tbody>'+enCurso.map(callupTableRow).join("")+"</tbody></table></div>":'<p class="msub">Nada en curso ahora mismo</p>';
-    h+='<div style="display:flex;align-items:center;justify-content:space-between;margin:16px 0 6px"><span class="agenda-upcoming-hdr" data-toggle-prox="1" style="cursor:pointer;display:flex;align-items:center;gap:6px"><span class="fecha-cat-group-chev">'+(S.agendaCollapseProx?"▶":"▼")+'</span><h2 class="st" style="margin:0">Próximas</h2></span></div>';
-    if(!S.agendaCollapseProx)h+=proximas.length?'<div class="tabla-wrap"><table class="tabla">'+thead+'<tbody>'+proximas.map(callupTableRow).join("")+"</tbody></table></div>":'<p class="msub">Nada próximo</p>';
+    h+='<div class="agenda-upcoming" style="margin-bottom:16px">'+
+      '<div class="agenda-upcoming-hdr" data-toggle-curso="1" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:6px"><span style="display:flex;align-items:center;gap:6px"><span class="fecha-cat-group-chev">'+(S.agendaCollapseCurso?"▶":"▼")+"</span>🔴 EN CURSO ("+enCurso.length+")</span>"+miniToggle+"</div>"+
+      (S.agendaCollapseCurso?"":'<div style="padding:'+(enCurso.length?"0":"14px")+'">'+(enCurso.length?'<div class="tabla-wrap"><table class="tabla">'+thead+'<tbody>'+enCurso.map(callupTableRow).join("")+"</tbody></table></div>":'<p class="msub" style="margin:0">Nada en curso ahora mismo</p>')+"</div>")+
+      "</div>";
+    h+='<div class="agenda-upcoming" style="margin-bottom:16px">'+
+      '<div class="agenda-upcoming-hdr" data-toggle-prox="1" style="cursor:pointer;display:flex;align-items:center;gap:6px"><span class="fecha-cat-group-chev">'+(S.agendaCollapseProx?"▶":"▼")+"</span>PRÓXIMAS ("+proximas.length+")</div>"+
+      (S.agendaCollapseProx?"":'<div style="padding:'+(proximas.length?"0":"14px")+'">'+(proximas.length?'<div class="tabla-wrap"><table class="tabla">'+thead+'<tbody>'+proximas.map(callupTableRow).join("")+"</tbody></table></div>":'<p class="msub" style="margin:0">Nada próximo</p>')+"</div>")+
+      "</div>";
     if(done.length)h+='<details class="fin-details"'+(S.finOpen?" open":"")+'><summary class="fin-summary"><span class="fin-summary__label">Finalizadas</span><span class="fin-summary__count">'+done.length+'</span></summary><div style="margin-top:8px"><div class="tabla-wrap"><table class="tabla">'+thead+'<tbody>'+done.map(callupTableRow).join("")+"</tbody></table></div></div></details>";
   } else {
-    h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><span class="agenda-upcoming-hdr" data-toggle-curso="1" style="cursor:pointer;display:flex;align-items:center;gap:6px"><span class="fecha-cat-group-chev">'+(S.agendaCollapseCurso?"▶":"▼")+'</span><h2 class="st" style="margin:0">🔴 En curso</h2></span>'+miniToggle+"</div>";
-    if(!S.agendaCollapseCurso)h+=enCurso.length?'<div class="cl">'+enCurso.map(callupCard).join("")+"</div>":'<p class="msub">Nada en curso ahora mismo</p>';
-    h+='<div style="display:flex;align-items:center;justify-content:space-between;margin:16px 0 6px"><span class="agenda-upcoming-hdr" data-toggle-prox="1" style="cursor:pointer;display:flex;align-items:center;gap:6px"><span class="fecha-cat-group-chev">'+(S.agendaCollapseProx?"▶":"▼")+'</span><h2 class="st" style="margin:0">Próximas</h2></span></div>';
-    if(!S.agendaCollapseProx)h+=proximas.length?'<div class="cl">'+proximas.map(callupCard).join("")+"</div>":'<p class="msub">Nada próximo</p>';
+    h+='<div class="agenda-upcoming" style="margin-bottom:16px">'+
+      '<div class="agenda-upcoming-hdr" data-toggle-curso="1" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:6px"><span style="display:flex;align-items:center;gap:6px"><span class="fecha-cat-group-chev">'+(S.agendaCollapseCurso?"▶":"▼")+"</span>🔴 EN CURSO ("+enCurso.length+")</span>"+miniToggle+"</div>"+
+      (S.agendaCollapseCurso?"":'<div style="padding:14px">'+(enCurso.length?'<div class="cl">'+enCurso.map(callupCard).join("")+"</div>":'<p class="msub" style="margin:0">Nada en curso ahora mismo</p>')+"</div>")+
+      "</div>";
+    h+='<div class="agenda-upcoming" style="margin-bottom:16px">'+
+      '<div class="agenda-upcoming-hdr" data-toggle-prox="1" style="cursor:pointer;display:flex;align-items:center;gap:6px"><span class="fecha-cat-group-chev">'+(S.agendaCollapseProx?"▶":"▼")+"</span>PRÓXIMAS ("+proximas.length+")</div>"+
+      (S.agendaCollapseProx?"":'<div style="padding:14px">'+(proximas.length?'<div class="cl">'+proximas.map(callupCard).join("")+"</div>":'<p class="msub" style="margin:0">Nada próximo</p>')+"</div>")+
+      "</div>";
     if(done.length)h+='<details class="fin-details"'+(S.finOpen?" open":"")+'><summary class="fin-summary"><span class="fin-summary__label">Finalizadas</span><span class="fin-summary__count">'+done.length+'</span></summary><div class="cl cl-past" style="margin-top:10px">'+done.map(callupCard).join("")+"</div></details>";
   }
   $("main").innerHTML=h;
