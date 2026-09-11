@@ -1081,8 +1081,11 @@ function renderAgenda(viewMode){
   var descartadas=all.filter(function(c){return c.convType==="descartada";});
   var visible=S.showDescartadas?all:all.filter(function(c){return c.convType!=="descartada";});
   var filtered=S.filterType?visible.filter(function(c){return selKey(c.selectionType)===S.filterType;}):visible;
+  if(!S.filterPais)S.filterPais=[];
+  if(S.filterType==="internacional"&&S.filterPais.length)filtered=filtered.filter(function(c){return S.filterPais.indexOf(c.pais)!==-1;});
   if(S.filterCats.length)filtered=filtered.filter(function(c){return S.filterCats.indexOf(c.selectionCategory)!==-1;});
-  var up=filtered.filter(function(c){return c.status!=="finalizada";});
+  var enCurso=filtered.filter(function(c){return c.status==="en_curso";});
+  var proximas=filtered.filter(function(c){return c.status==="proxima";});
   var done=sortDate(filtered.filter(function(c){return c.status==="finalizada";}),"asc");
   // Build category pills — always visible, collected from all visible convocatorias
   var allCatsSet={};
@@ -1096,6 +1099,18 @@ function renderAgenda(viewMode){
       (S.filterCats.length?'<button class="fbtn" data-cat-clear="" style="border-style:dashed;color:var(--text-muted)">✕ Limpiar</button>':"")+
       '</div>';
   }
+  var paisPills="";
+  if(S.filterType==="internacional"){
+    var paisSet={};
+    visible.filter(function(c){return selKey(c.selectionType)==="internacional"&&c.pais;}).forEach(function(c){paisSet[c.pais]=true;});
+    var allPaises=Object.keys(paisSet).sort();
+    if(allPaises.length){
+      paisPills='<div class="fb" style="margin-top:-8px">'+
+        allPaises.map(function(p){var isOn=S.filterPais.indexOf(p)!==-1;return'<button class="fbtn'+(isOn?" on":"")+'" data-pais-f="'+esc(p)+'">'+getFlag(p)+" "+esc(p)+"</button>";}).join("")+
+        (S.filterPais.length?'<button class="fbtn" data-pais-clear="" style="border-style:dashed;color:var(--text-muted)">✕ Limpiar</button>':"")+
+        '</div>';
+    }
+  }
   var h='<div class="vh" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:8px;justify-content:space-between">'+
     '<h1 class="vt">Agenda</h1>'+
     '<button class="btn-print" id="btn-print-agenda">🖨️</button>'+
@@ -1106,20 +1121,27 @@ function renderAgenda(viewMode){
     '<button class="fbtn fbtn-mad'+(S.filterType==="madrilena"?" on":"")+'" data-f="madrilena"><img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/flags/madrid.png" style="width:14px;height:10px;object-fit:cover;border-radius:1px;vertical-align:middle"/> RFFM</button>'+
     '<button class="fbtn fbtn-int'+(S.filterType==="internacional"?" on":"")+'" data-f="internacional">🌍 OTRAS</button>'+
     (descartadas.length?'<button class="fbtn'+(S.showDescartadas?" on":"")+'" id="btn-show-desc" style="border-color:rgba(239,68,68,.4);'+(S.showDescartadas?"background:rgba(239,68,68,.15);color:#EF4444":"")+'">❌ Descartadas ('+descartadas.length+')</button>':"")+
-    '</div>'+catPills;
+    '</div>'+paisPills+catPills;
 
   var miniToggle='<div class="mini-toggle"><button class="mini-toggle-btn'+(viewMode==="fichas"?" on":"")+'" data-vm="fichas">⊢□ Fichas</button>'+
     '<button class="mini-toggle-btn'+(viewMode==="tabla"?" on":"")+'" data-vm="tabla">≡ Tabla</button></div>';
 
+  if(S.agendaCollapseCurso===undefined)S.agendaCollapseCurso=false;
+  if(S.agendaCollapseProx===undefined)S.agendaCollapseProx=false;
+
   if(!filtered.length){h+=emptyState("Sin convocatorias en "+S.season,"📋");}
   else if(viewMode==="tabla"){
-    h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><h2 class="st" style="margin:0">Próximas y en curso</h2>'+miniToggle+"</div>";
     var thead='<thead><tr><th style="width:44px"></th><th>Cat.</th><th>Estado</th><th>Jugadores</th><th class="th-ida">📍 Citación</th><th class="th-ida">✈️ Traslado</th><th class="th-vuelta">🔙 Vuelta</th><th class="th-matches">⚽ Partidos</th></tr></thead>';
-    if(up.length)h+='<div class="tabla-wrap"><table class="tabla">'+thead+'<tbody>'+up.map(callupTableRow).join("")+"</tbody></table></div>";
+    h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><span class="agenda-upcoming-hdr" data-toggle-curso="1" style="cursor:pointer;display:flex;align-items:center;gap:6px"><span class="fecha-cat-group-chev">'+(S.agendaCollapseCurso?"▶":"▼")+'</span><h2 class="st" style="margin:0">🔴 En curso</h2></span>'+miniToggle+"</div>";
+    if(!S.agendaCollapseCurso)h+=enCurso.length?'<div class="tabla-wrap"><table class="tabla">'+thead+'<tbody>'+enCurso.map(callupTableRow).join("")+"</tbody></table></div>":'<p class="msub">Nada en curso ahora mismo</p>';
+    h+='<div style="display:flex;align-items:center;justify-content:space-between;margin:16px 0 6px"><span class="agenda-upcoming-hdr" data-toggle-prox="1" style="cursor:pointer;display:flex;align-items:center;gap:6px"><span class="fecha-cat-group-chev">'+(S.agendaCollapseProx?"▶":"▼")+'</span><h2 class="st" style="margin:0">Próximas</h2></span></div>';
+    if(!S.agendaCollapseProx)h+=proximas.length?'<div class="tabla-wrap"><table class="tabla">'+thead+'<tbody>'+proximas.map(callupTableRow).join("")+"</tbody></table></div>":'<p class="msub">Nada próximo</p>';
     if(done.length)h+='<details class="fin-details"'+(S.finOpen?" open":"")+'><summary class="fin-summary"><span class="fin-summary__label">Finalizadas</span><span class="fin-summary__count">'+done.length+'</span></summary><div style="margin-top:8px"><div class="tabla-wrap"><table class="tabla">'+thead+'<tbody>'+done.map(callupTableRow).join("")+"</tbody></table></div></div></details>";
   } else {
-    h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><h2 class="st" style="margin:0">Próximas y en curso</h2>'+miniToggle+"</div>";
-    if(up.length)h+='<div class="cl">'+up.map(callupCard).join("")+"</div>";
+    h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><span class="agenda-upcoming-hdr" data-toggle-curso="1" style="cursor:pointer;display:flex;align-items:center;gap:6px"><span class="fecha-cat-group-chev">'+(S.agendaCollapseCurso?"▶":"▼")+'</span><h2 class="st" style="margin:0">🔴 En curso</h2></span>'+miniToggle+"</div>";
+    if(!S.agendaCollapseCurso)h+=enCurso.length?'<div class="cl">'+enCurso.map(callupCard).join("")+"</div>":'<p class="msub">Nada en curso ahora mismo</p>';
+    h+='<div style="display:flex;align-items:center;justify-content:space-between;margin:16px 0 6px"><span class="agenda-upcoming-hdr" data-toggle-prox="1" style="cursor:pointer;display:flex;align-items:center;gap:6px"><span class="fecha-cat-group-chev">'+(S.agendaCollapseProx?"▶":"▼")+'</span><h2 class="st" style="margin:0">Próximas</h2></span></div>';
+    if(!S.agendaCollapseProx)h+=proximas.length?'<div class="cl">'+proximas.map(callupCard).join("")+"</div>":'<p class="msub">Nada próximo</p>';
     if(done.length)h+='<details class="fin-details"'+(S.finOpen?" open":"")+'><summary class="fin-summary"><span class="fin-summary__label">Finalizadas</span><span class="fin-summary__count">'+done.length+'</span></summary><div class="cl cl-past" style="margin-top:10px">'+done.map(callupCard).join("")+"</div></details>";
   }
   $("main").innerHTML=h;
@@ -1128,11 +1150,15 @@ function renderAgenda(viewMode){
   if(det)det.addEventListener("toggle",function(){S.finOpen=det.open;});
   if(viewMode==="fichas")bindCards();
   else document.querySelectorAll(".trow").forEach(function(row){row.addEventListener("click",function(){openDetail(row.dataset.id);});});
-  document.querySelectorAll("[data-f]").forEach(function(b){b.addEventListener("click",function(){S.filterType=b.dataset.f||null;S.filterCats=[];renderAgenda(S.agendaView);});});
+  document.querySelectorAll("[data-f]").forEach(function(b){b.addEventListener("click",function(){S.filterType=b.dataset.f||null;S.filterCats=[];S.filterPais=[];renderAgenda(S.agendaView);});});
+  document.querySelectorAll("[data-pais-f]").forEach(function(b){b.addEventListener("click",function(){var p=b.dataset.paisF;var idx=S.filterPais.indexOf(p);if(idx===-1)S.filterPais.push(p);else S.filterPais.splice(idx,1);renderAgenda(S.agendaView);});});
+  document.querySelectorAll("[data-pais-clear]").forEach(function(b){b.addEventListener("click",function(){S.filterPais=[];renderAgenda(S.agendaView);});});
   $("atab-conv").addEventListener("click",function(){S.agendaTab="conv";renderAgenda(S.agendaView);});
   $("atab-fechas").addEventListener("click",function(){S.agendaTab="fechas";renderAgenda(S.agendaView);});
   document.querySelectorAll("[data-cat]").forEach(function(b){b.addEventListener("click",function(){var cat=b.dataset.cat;if(!cat)return;var idx=S.filterCats.indexOf(cat);if(idx===-1)S.filterCats.push(cat);else S.filterCats.splice(idx,1);renderAgenda(S.agendaView);});});
   document.querySelectorAll("[data-cat-clear]").forEach(function(b){b.addEventListener("click",function(){S.filterCats=[];renderAgenda(S.agendaView);});});
+  document.querySelectorAll("[data-toggle-curso]").forEach(function(b){b.addEventListener("click",function(){S.agendaCollapseCurso=!S.agendaCollapseCurso;renderAgenda(S.agendaView);});});
+  document.querySelectorAll("[data-toggle-prox]").forEach(function(b){b.addEventListener("click",function(){S.agendaCollapseProx=!S.agendaCollapseProx;renderAgenda(S.agendaView);});});
   document.querySelectorAll("[data-vm]").forEach(function(b){b.addEventListener("click",function(){renderAgenda(b.dataset.vm);});});
   var btnDesc=document.getElementById("btn-show-desc");
   if(btnDesc)btnDesc.addEventListener("click",function(){S.showDescartadas=!S.showDescartadas;renderAgenda(S.agendaView);});
