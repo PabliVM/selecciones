@@ -28,7 +28,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .app{display:flex;flex-direction:column;min-height:100dvh}
 
 /* HEADER */
-.app-topbar{position:sticky;top:0;z-index:100}
+.app-topbar{position:fixed;top:0;left:0;right:0;z-index:100}
 body.gate-active{background:var(--navy)}
 body.gate-active .app-topbar,body.gate-active .app-footer{display:none}
 .login-gate{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--navy);z-index:200}
