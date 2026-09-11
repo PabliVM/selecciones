@@ -88,6 +88,7 @@ body.dark .nav{background:var(--surface)}
 .fb{display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;-webkit-overflow-scrolling:touch}
 @media(max-width:639px){.fb{scrollbar-width:none}.fb::-webkit-scrollbar{display:none}}
 .fbtn{flex-shrink:0;padding:8px 16px;border-radius:var(--r);border:1px solid var(--border);background:var(--surface);color:var(--text-mid);font-size:13px;font-weight:600;cursor:pointer;transition:all var(--t);min-height:36px;box-shadow:var(--shadow-sm)}
+.fbtn-sm{padding:5px 10px;font-size:11px;min-height:28px}
 .fbtn.on{background:var(--navy);color:#fff;border-color:var(--navy);font-weight:600;box-shadow:0 2px 8px rgba(37,99,235,.25)}
 .fbtn-mad.on{background:#2563eb;border-color:#2563eb;box-shadow:0 2px 8px rgba(37,99,235,.3)}
 .fbtn-esp.on{background:#dc2626;border-color:#dc2626;box-shadow:0 2px 8px rgba(220,38,38,.3)}
