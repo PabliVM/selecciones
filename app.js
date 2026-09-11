@@ -1095,7 +1095,7 @@ function renderAgenda(viewMode){
   var catPills="";
   if(allCats.length>1){
     catPills='<div class="fb" style="margin-top:-8px">'+
-      allCats.map(function(c){var isOn=S.filterCats.indexOf(c)!==-1;return'<button class="fbtn'+(isOn?" on":"")+'" data-cat="'+c+'">'+(CAT[c]||c)+"</button>";}).join("")+
+      allCats.map(function(c){var isOn=S.filterCats.indexOf(c)!==-1;return'<button class="fbtn fbtn-sm'+(isOn?" on":"")+'" data-cat="'+c+'">'+(CAT[c]||c)+"</button>";}).join("")+
       (S.filterCats.length?'<button class="fbtn" data-cat-clear="" style="border-style:dashed;color:var(--text-muted)">✕ Limpiar</button>':"")+
       '</div>';
   }
@@ -1106,7 +1106,7 @@ function renderAgenda(viewMode){
     var allPaises=Object.keys(paisSet).sort();
     if(allPaises.length){
       paisPills='<div class="fb" style="margin-top:-8px">'+
-        allPaises.map(function(p){var isOn=S.filterPais.indexOf(p)!==-1;return'<button class="fbtn'+(isOn?" on":"")+'" data-pais-f="'+esc(p)+'">'+getFlag(p)+" "+esc(p)+"</button>";}).join("")+
+        allPaises.map(function(p){var isOn=S.filterPais.indexOf(p)!==-1;return'<button class="fbtn fbtn-sm'+(isOn?" on":"")+'" data-pais-f="'+esc(p)+'">'+getFlag(p)+" "+esc(p)+"</button>";}).join("")+
         (S.filterPais.length?'<button class="fbtn" data-pais-clear="" style="border-style:dashed;color:var(--text-muted)">✕ Limpiar</button>':"")+
         '</div>';
     }
