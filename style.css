@@ -29,6 +29,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 
 /* HEADER */
 .app-topbar{position:fixed;top:0;left:0;right:0;z-index:100}
+@media(max-width:639px){.main{padding-top:104px!important}}
 body.gate-active{background:var(--navy)}
 body.gate-active .app-topbar,body.gate-active .app-footer{display:none}
 .login-gate{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--navy);z-index:200}
@@ -62,7 +63,7 @@ body.gate-active .app-topbar,body.gate-active .app-footer{display:none}
 .btn-dark:hover{background:rgba(255,255,255,.25)}
 
 /* MAIN */
-.main{flex:1;padding:16px 24px 56px;max-width:1600px;margin:0 auto;width:100%}
+.main{flex:1;padding:118px 24px 56px;max-width:1600px;margin:0 auto;width:100%}
 
 /* NAV */
 .nav{background:var(--surface);border-bottom:1px solid var(--border);display:flex;gap:8px;padding:10px 24px;overflow-x:auto;-webkit-overflow-scrolling:touch}
