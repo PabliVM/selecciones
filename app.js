@@ -162,6 +162,20 @@ var TEAMS=[
   {id:"t_aa",name:"AA",order:3},{id:"t_ab",name:"AB",order:2},{id:"t_ac",name:"AC",order:1}
 ];
 
+var PAIS_CODE={
+  "España":"ESP","Francia":"FRA","Alemania":"GER","Portugal":"POR","Italia":"ITA",
+  "Argentina":"ARG","Brasil":"BRA","Marruecos":"MAR","Colombia":"COL","Suecia":"SWE",
+  "Suiza":"SUI","Holanda":"NED","Bélgica":"BEL","Uruguay":"URU","Chile":"CHI",
+  "México":"MEX","Ecuador":"ECU","Perú":"PER","Venezuela":"VEN","Bolivia":"BOL",
+  "Paraguay":"PAR","Senegal":"SEN","Nigeria":"NGA","Ghana":"GHA","Turquía":"TUR",
+  "Polonia":"POL","Rumania":"ROU","Ucrania":"UKR","Croacia":"CRO",
+  "Guinea Ecuatorial":"EQG","Camerún":"CMR","Estados Unidos":"USA"
+};
+function paisCode(p){
+  if(!p)return"INT";
+  if(PAIS_CODE[p])return PAIS_CODE[p];
+  return p.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().slice(0,3);
+}
 var FLAGS={
   "España":"🇪🇸","Francia":"🇫🇷","Alemania":"🇩🇪","Portugal":"🇵🇹","Italia":"🇮🇹",
   "Argentina":"🇦🇷","Brasil":"🇧🇷","Marruecos":"🇲🇦","Colombia":"🇨🇴","Suecia":"🇸🇪",
@@ -375,10 +389,13 @@ function callupCard(c){
   var k=selKey(c.selectionType),sel=SELS[k];
   var col=(sel&&sel.colors&&sel.colors[c.selectionCategory])?sel.colors[c.selectionCategory]:{badge:"#1A3A8F"};
   var activePlayers=(c.players||[]).filter(function(p){return!p.dropStatus||p.dropStatus==="active";});
+  var droppedPlayers=(c.players||[]).filter(function(p){return p.dropStatus&&p.dropStatus!=="active";});
   var pc=activePlayers.length;
   var flag=getSelFlag(c.selectionType,c.pais);
   var playersList=activePlayers.map(function(p){
     return'<div class="cc-plrow"><span class="cc-plrow-n">'+esc(p.fullName)+"</span>"+(p.teamName?'<span class="cc-plrow-t">('+esc(p.teamName)+")</span>":"")+"</div>";
+  }).join("")+droppedPlayers.map(function(p){
+    return'<div class="cc-plrow cc-plrow-dropped"><span class="cc-plrow-n">'+esc(p.fullName)+"</span>"+(p.teamName?'<span class="cc-plrow-t">('+esc(p.teamName)+")</span>":"")+'<span class="cc-plrow-dropbadge">desconvocado</span></div>';
   }).join("");
   var tl=[];
   if(c.conc&&(c.conc.date||c.conc.time||c.conc.lugar))
@@ -418,7 +435,7 @@ function callupCard(c){
     '<div class="cc-meta">'+
     '<div class="cc-mi"><span class="mi">📅</span><span>'+fmtRange(c.startDate,c.endDate)+"</span></div>"+
     "</div>"+
-    (pc>0?'<button type="button" class="cc-plcount" data-players-toggle="1"><span class="cc-plcount-chev">▸</span>👕 '+pc+(pc===1?" jugador seleccionado":" jugadores seleccionados")+'</button><div class="cc-plrows" style="display:none">'+playersList+"</div>":"")+
+    ((pc>0||droppedPlayers.length>0)?'<button type="button" class="cc-plcount" data-players-toggle="1"><span class="cc-plcount-chev">▸</span>👕 '+pc+(pc===1?" jugador seleccionado":" jugadores seleccionados")+(droppedPlayers.length?" ("+droppedPlayers.length+" desconvocado"+(droppedPlayers.length===1?"":"s")+")":"")+'</button><div class="cc-plrows" style="display:none">'+playersList+"</div>":"")+
     (tlHtml?'<button type="button" class="cc-more-btn" data-more-toggle="1">+ Ver más</button><div class="cc-tl-wrap" style="display:none">'+tlHtml+"</div>":"")+
     "</article>";
 }
@@ -963,7 +980,8 @@ function agendaBannerHtml(){
   function callupSelLabel(c){
     var k=selKey(c.selectionType);var sel=SELS[k];
     var col=(sel&&sel.colors&&sel.colors[c.selectionCategory])?sel.colors[c.selectionCategory].badge:"#1A3A8F";
-    var catLabel=(CAT[c.selectionCategory]||c.selectionCategory||"")+(sel?" "+sel.short:"");
+    var shortPart=k==="internacional"?paisCode(c.pais):(sel?sel.short:"");
+    var catLabel=(CAT[c.selectionCategory]||c.selectionCategory||"")+(shortPart?" "+shortPart:"");
     return{label:catLabel,color:col};
   }
   var activeCallups=allCallups.filter(function(c){var end=c.endDate||c.startDate;return c.status!=="finalizada"&&c.startDate<=todayStr&&end>=todayStr;});
