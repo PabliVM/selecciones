@@ -1039,6 +1039,7 @@ function agendaBannerHtml(){
     (S.agendaCollapseCurso?"":cursoRows)+
     "</div>":"";
 
+  var allConflictIds=conflictRefIds(findFederationConflicts());
   var items=[];
   allCallups.forEach(function(c){
     if(c.status==="finalizada")return;
@@ -1053,7 +1054,8 @@ function agendaBannerHtml(){
     if(end<todayStr||r.startDate>monthEndStr)return;
     if(r.startDate<=todayStr&&end>=todayStr)return;
     var label=r.cat?(CAT[r.cat]||r.cat):(r.tipo||"Fecha");
-    items.push({kind:"fecha",tipo:r.tipo,startDate:r.startDate,endDate:end,title:label,color:r.color||"#888"});
+    var isConflict=!!allConflictIds[r.id];
+    items.push({kind:"fecha",tipo:r.tipo,startDate:r.startDate,endDate:end,title:label,color:r.color||"#888",conflict:isConflict});
   });
   items.sort(function(a,b){
     return a.startDate.localeCompare(b.startDate)||
@@ -1085,9 +1087,9 @@ function agendaBannerHtml(){
     rightBlock+
     "</div>"+
     (S.agendaCollapseProx?"":(items.length?items.map(function(it){
-      return'<div class="agenda-upcoming-row"'+(it.kind==="callup"?' data-openid="'+it.id+'"':"")+'>'+
+      return'<div class="agenda-upcoming-row'+(it.conflict?" agenda-row-conflict":"")+'"'+(it.kind==="callup"?' data-openid="'+it.id+'"':"")+'>'+
         '<span class="agenda-banner-dot" style="background:'+it.color+'"></span>'+
-        '<span class="agenda-upcoming-title">'+(it._raw?it.title:esc(it.title))+"</span>"+
+        '<span class="agenda-upcoming-title">'+(it._raw?it.title:esc(it.title))+(it.conflict?' <b class="agenda-conflict-tag">⚠️ COINCIDENCIA</b>':"")+"</span>"+
         '<span class="agenda-upcoming-date">'+fmtRange(it.startDate,it.endDate)+"</span>"+
         "</div>";
     }).join(""):'<p class="msub" style="padding:10px 14px">Nada próximamente</p>'))+
@@ -1114,13 +1116,27 @@ function findFederationConflicts(){
   });
   return conflicts;
 }
+function conflictIsWithinMonth(c){
+  var today=new Date();today.setHours(0,0,0,0);
+  var todayStr=today.getFullYear()+"-"+String(today.getMonth()+1).padStart(2,"0")+"-"+String(today.getDate()).padStart(2,"0");
+  var monthAhead=new Date(today);monthAhead.setDate(monthAhead.getDate()+30);
+  var monthAheadStr=monthAhead.getFullYear()+"-"+String(monthAhead.getMonth()+1).padStart(2,"0")+"-"+String(monthAhead.getDate()).padStart(2,"0");
+  var overlapStart=c.a.startDate>c.b.startDate?c.a.startDate:c.b.startDate;
+  var overlapEnd=(c.a.endDate||c.a.startDate)<(c.b.endDate||c.b.startDate)?(c.a.endDate||c.a.startDate):(c.b.endDate||c.b.startDate);
+  return overlapStart<=monthAheadStr&&overlapEnd>=todayStr;
+}
+function conflictRefIds(conflicts){
+  var set={};
+  conflicts.forEach(function(c){set[c.a.id]=1;set[c.b.id]=1;});
+  return set;
+}
 function renderAgenda(viewMode){
   viewMode=viewMode||S.agendaView||"fichas";S.agendaView=viewMode;
   if(!S.agendaTab)S.agendaTab="conv";
   if(S.showDescartadas===undefined)S.showDescartadas=false;
   if(!S.filterCats)S.filterCats=[];
 
-  var conflicts=findFederationConflicts();
+  var conflicts=findFederationConflicts().filter(conflictIsWithinMonth);
   var conflictHtml=conflicts.length?'<div class="conflict-alert">'+
     '<div class="conflict-alert-hdr">⚠️ '+conflicts.length+' coincidencia'+(conflicts.length===1?"":"s")+' RFEF / RFFM</div>'+
     conflicts.map(function(c){
