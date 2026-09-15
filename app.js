@@ -440,6 +440,37 @@ function callupCard(c){
     "</article>";
 }
 
+// ── TABLA ESTILO HOJA DE CÁLCULO (una fila por jugador) ──
+function playerSheetRows(callups){
+  var rows=[];
+  callups.forEach(function(c){
+    var k=selKey(c.selectionType);var sel=SELS[k];
+    var selLabel=(sel?sel.label.toUpperCase():"")+" "+(k==="internacional"&&c.pais?paisAdj(c.pais).toUpperCase():(CAT[c.selectionCategory]||c.selectionCategory||"").toUpperCase());
+    var matchesStr=(c.matches||[]).map(function(m){return m.date?fmtDateShort(m.date):"";}).filter(Boolean).join(" y ");
+    var players=c.players||[];
+    if(!players.length){
+      rows.push({sel:selLabel,decision:c.convType==="definitiva"?"CONVOCADO":"PRECONVOCADO",player:"—",pre:"",conv:fmtDateShort(c.startDate),lleg:fmtDateShort(c.conc&&c.conc.date),partidos:matchesStr,vuelta:fmtDateShort(c.vuelta&&c.vuelta.date),lugar:c.location||"",cls:""});
+      return;
+    }
+    players.forEach(function(p){
+      var dropped=p.dropStatus&&p.dropStatus!=="active";
+      var decision=dropped?"DESCONVOCADO":(c.convType==="definitiva"?"CONVOCADO":"PRECONVOCADO");
+      var cls=dropped?"psheet-red":(c.convType==="definitiva"?"psheet-green":"psheet-white");
+      rows.push({sel:selLabel,decision:decision,player:p.fullName,pre:"",conv:fmtDateShort(c.startDate),lleg:fmtDateShort(c.conc&&c.conc.date),partidos:matchesStr,vuelta:fmtDateShort(c.vuelta&&c.vuelta.date),lugar:c.location||"",cls:cls});
+    });
+  });
+  return rows;
+}
+function playerSheetTableHtml(callups){
+  var rows=playerSheetRows(callups);
+  if(!rows.length)return emptyState("Sin convocatorias","📋");
+  return'<div class="tabla-wrap"><table class="tabla psheet">'+
+    '<thead><tr><th>Selección</th><th>Decisión</th><th>Jugador</th><th>Preconvocatoria</th><th>Convocatoria</th><th>Fecha incorporación</th><th>Fechas partidos</th><th>Fecha vuelta</th><th>Lugar partidos</th></tr></thead>'+
+    '<tbody>'+rows.map(function(r){
+      return'<tr class="'+r.cls+'"><td><b>'+esc(r.sel)+'</b></td><td>'+esc(r.decision)+"</td><td>"+esc(r.player)+"</td><td>"+esc(r.pre)+"</td><td>"+esc(r.conv)+"</td><td>"+esc(r.lleg)+"</td><td>"+esc(r.partidos)+"</td><td>"+esc(r.vuelta)+"</td><td>"+esc(r.lugar)+"</td></tr>";
+    }).join("")+
+    "</tbody></table></div>";
+}
 // ── TABLE ROW ──
 function callupTableRow(c){
   var k=selKey(c.selectionType);var sel=SELS[k];
@@ -1177,16 +1208,15 @@ function renderAgenda(viewMode){
 
   if(!filtered.length){h+=emptyState("Sin convocatorias en "+S.season,"📋");}
   else if(viewMode==="tabla"){
-    var thead='<thead><tr><th style="width:44px"></th><th>Cat.</th><th>Estado</th><th>Jugadores</th><th class="th-ida">📍 Citación</th><th class="th-ida">✈️ Traslado</th><th class="th-vuelta">🔙 Vuelta</th><th class="th-matches">⚽ Partidos</th></tr></thead>';
     h+='<div class="agenda-upcoming" style="margin-bottom:16px">'+
       '<div class="agenda-upcoming-hdr" data-toggle-curso="1" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:6px"><span style="display:flex;align-items:center;gap:6px"><span class="fecha-cat-group-chev">'+(S.agendaCollapseCurso?"▶":"▼")+"</span>🔴 EN CURSO ("+enCurso.length+")</span>"+miniToggle+"</div>"+
-      (S.agendaCollapseCurso?"":'<div style="padding:'+(enCurso.length?"0":"14px")+'">'+(enCurso.length?'<div class="tabla-wrap"><table class="tabla">'+thead+'<tbody>'+enCurso.map(callupTableRow).join("")+"</tbody></table></div>":'<p class="msub" style="margin:0">Nada en curso ahora mismo</p>')+"</div>")+
+      (S.agendaCollapseCurso?"":'<div style="padding:'+(enCurso.length?"0":"14px")+'">'+(enCurso.length?playerSheetTableHtml(enCurso):'<p class="msub" style="margin:0">Nada en curso ahora mismo</p>')+"</div>")+
       "</div>";
     h+='<div class="agenda-upcoming" style="margin-bottom:16px">'+
       '<div class="agenda-upcoming-hdr" data-toggle-prox="1" style="cursor:pointer;display:flex;align-items:center;gap:6px"><span class="fecha-cat-group-chev">'+(S.agendaCollapseProx?"▶":"▼")+"</span>PRÓXIMAS ("+proximas.length+")</div>"+
-      (S.agendaCollapseProx?"":'<div style="padding:'+(proximas.length?"0":"14px")+'">'+(proximas.length?'<div class="tabla-wrap"><table class="tabla">'+thead+'<tbody>'+proximas.map(callupTableRow).join("")+"</tbody></table></div>":'<p class="msub" style="margin:0">Nada próximo</p>')+"</div>")+
+      (S.agendaCollapseProx?"":'<div style="padding:'+(proximas.length?"0":"14px")+'">'+(proximas.length?playerSheetTableHtml(proximas):'<p class="msub" style="margin:0">Nada próximo</p>')+"</div>")+
       "</div>";
-    if(done.length)h+='<details class="fin-details"'+(S.finOpen?" open":"")+'><summary class="fin-summary"><span class="fin-summary__label">Finalizadas</span><span class="fin-summary__count">'+done.length+'</span></summary><div style="margin-top:8px"><div class="tabla-wrap"><table class="tabla">'+thead+'<tbody>'+done.map(callupTableRow).join("")+"</tbody></table></div></div></details>";
+    if(done.length)h+='<details class="fin-details"'+(S.finOpen?" open":"")+'><summary class="fin-summary"><span class="fin-summary__label">Finalizadas</span><span class="fin-summary__count">'+done.length+'</span></summary><div style="margin-top:8px">'+playerSheetTableHtml(done)+"</div></details>";
   } else {
     h+='<div class="agenda-upcoming" style="margin-bottom:16px">'+
       '<div class="agenda-upcoming-hdr" data-toggle-curso="1" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:6px"><span style="display:flex;align-items:center;gap:6px"><span class="fecha-cat-group-chev">'+(S.agendaCollapseCurso?"▶":"▼")+"</span>🔴 EN CURSO ("+enCurso.length+")</span>"+miniToggle+"</div>"+
