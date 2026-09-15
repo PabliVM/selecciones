@@ -449,14 +449,14 @@ function playerSheetRows(callups){
     var matchesStr=(c.matches||[]).map(function(m){return m.date?fmtDateShort(m.date):"";}).filter(Boolean).join(" y ");
     var players=c.players||[];
     if(!players.length){
-      rows.push({sel:selLabel,decision:c.convType==="definitiva"?"CONVOCADO":"PRECONVOCADO",player:"—",pre:"",conv:fmtDateShort(c.startDate),lleg:fmtDateShort(c.conc&&c.conc.date),partidos:matchesStr,vuelta:fmtDateShort(c.vuelta&&c.vuelta.date),lugar:c.location||"",cls:""});
+      rows.push({sel:selLabel,decision:c.convType==="definitiva"?"CONVOCADO":"PRECONVOCADO",player:"—",pre:fmtDateShort(c.preconvDate),conv:fmtDateShort(c.startDate),lleg:fmtDateShort(c.conc&&c.conc.date),partidos:matchesStr,vuelta:fmtDateShort(c.vuelta&&c.vuelta.date),lugar:c.location||"",cls:""});
       return;
     }
     players.forEach(function(p){
       var dropped=p.dropStatus&&p.dropStatus!=="active";
       var decision=dropped?"DESCONVOCADO":(c.convType==="definitiva"?"CONVOCADO":"PRECONVOCADO");
       var cls=dropped?"psheet-red":(c.convType==="definitiva"?"psheet-green":"psheet-white");
-      rows.push({sel:selLabel,decision:decision,player:p.fullName,pre:"",conv:fmtDateShort(c.startDate),lleg:fmtDateShort(c.conc&&c.conc.date),partidos:matchesStr,vuelta:fmtDateShort(c.vuelta&&c.vuelta.date),lugar:c.location||"",cls:cls});
+      rows.push({sel:selLabel,decision:decision,player:p.fullName,pre:fmtDateShort(c.preconvDate),conv:fmtDateShort(c.startDate),lleg:fmtDateShort(c.conc&&c.conc.date),partidos:matchesStr,vuelta:fmtDateShort(c.vuelta&&c.vuelta.date),lugar:c.location||"",cls:cls});
     });
   });
   return rows;
@@ -825,7 +825,7 @@ function openDetail(id){
         var cat=$("sel-cat");if(cat)cat.value=c.selectionCategory;
         var pf=$("f-pais");if(pf&&c.pais)pf.value=c.pais;
         var pg=$("pais-g");if(pg&&selKey(c.selectionType)==="internacional")pg.style.display="block";
-        var fields={title:c.title,startDate:c.startDate,endDate:c.endDate,rival:c.rival||"",location:c.location||"",notes:c.notes||"",convType:c.convType||"provisional",limitDate:c.limitDate||""};
+        var fields={title:c.title,startDate:c.startDate,endDate:c.endDate,rival:c.rival||"",location:c.location||"",notes:c.notes||"",convType:c.convType||"provisional",limitDate:c.limitDate||"",preconvDate:c.preconvDate||""};
         Object.keys(fields).forEach(function(k){if(fields[k]===undefined||fields[k]===null)return;var el=form.querySelector('[name="'+k+'"]');if(el)el.value=fields[k];});
         if(c.conc){var cf2={concDate:c.conc.date,concTime:c.conc.time,concLugar:c.conc.lugar,concHotel:c.conc.hotel,concNotas:c.conc.notas};Object.keys(cf2).forEach(function(k){if(!cf2[k])return;var el=form.querySelector('[name="'+k+'"]');if(el)el.value=cf2[k];}); }if(c.traslado){var ct={trasladoDesde:c.traslado.desde,trasladoDate:c.traslado.date,trasladoTime:c.traslado.time,trasladoTransporte:c.traslado.transporte,trasladoHasta:c.traslado.hasta,trasladoHotel:c.traslado.hotel,trasladoNotas:c.traslado.notas};Object.keys(ct).forEach(function(k){if(!ct[k])return;var el=form.querySelector('[name="'+k+'"]');if(el)el.value=ct[k];});}
 if(c.vuelta){var vf={vueltaDesde:c.vuelta.desde,vueltaDate:c.vuelta.date,vueltaTime:c.vuelta.time,vueltaTransporte:c.vuelta.transporte,vueltaHasta:c.vuelta.hasta,vueltaNotas:c.vuelta.notas};Object.keys(vf).forEach(function(k){if(!vf[k])return;var el=form.querySelector('[name="'+k+'"]');if(el)el.value=vf[k];});}
@@ -1402,6 +1402,7 @@ function renderNueva(){
     '<div class="fg"><label class="fl">Rival / Torneo</label><input class="fi" type="text" name="rival" placeholder="Ej: Portugal, Francia"/></div>'+
     '<div class="fg"><label class="fl">Tipo de convocatoria</label><select class="fsel" name="convType"><option value="provisional">⏳ Provisional</option><option value="definitiva">✅ Definitiva</option></select></div>'+
     '<div class="fg" id="limit-date-g"><label class="fl">Fecha límite confirmación</label><input class="fi" type="date" name="limitDate"/><p style="font-size:11px;color:var(--text-muted);margin-top:4px">Si no se confirma antes de esta fecha, se descartará automáticamente</p></div>'+
+    '<div class="fg"><label class="fl">Fecha de preconvocatoria</label><input class="fi" type="date" name="preconvDate"/><p style="font-size:11px;color:var(--text-muted);margin-top:4px">Día en que se recibió la preconvocatoria (opcional)</p></div>'+
     '<div class="frow"><div class="fg"><label class="fl">Inicio *</label><input class="fi" type="date" name="startDate"/></div><div class="fg"><label class="fl">Fin *</label><input class="fi" type="date" name="endDate"/></div></div>'+
     '<div class="fg"><label class="fl">Lugar de concentración</label><input class="fi" type="text" name="location" placeholder="Ej: Ciudad del Fútbol, Las Rozas"/></div>'+
     '</div>'+
@@ -1574,6 +1575,7 @@ function renderNueva(){
       rival:fd.get("rival")||"",
       convType:fd.get("convType")||"provisional",
       limitDate:fd.get("limitDate")||"",
+      preconvDate:fd.get("preconvDate")||"",
       location:fd.get("location")||"",
       notes:fd.get("notes")||"",
       conc:{date:fd.get("concDate")||"",time:fd.get("concTime")||"",lugar:fd.get("concLugar")||"",hotel:fd.get("concHotel")||"",notas:fd.get("concNotas")||""},
