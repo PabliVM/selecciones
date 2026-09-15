@@ -1066,11 +1066,38 @@ function agendaBannerHtml(){
   return dataModeToggle+cursoHtml+listHtml;
 }
 
+function findFederationConflicts(){
+  var watch=["sub14","sub16"];
+  var all=getRefDates_raw().filter(function(r){return!!r.startDate;});
+  var rfef=all.filter(function(r){return(r.tipo||"").trim().toLowerCase()==="rfef"&&watch.indexOf(r.cat)!==-1;});
+  var rffm=all.filter(function(r){return(r.tipo||"").trim().toLowerCase()==="rffm"&&watch.indexOf(r.cat)!==-1;});
+  var conflicts=[];
+  rfef.forEach(function(a){
+    rffm.forEach(function(b){
+      if(a.cat!==b.cat)return;
+      var aEnd=a.endDate||a.startDate,bEnd=b.endDate||b.startDate;
+      if(a.startDate<=bEnd&&aEnd>=b.startDate){
+        conflicts.push({cat:a.cat,a:a,b:b});
+      }
+    });
+  });
+  return conflicts;
+}
 function renderAgenda(viewMode){
   viewMode=viewMode||S.agendaView||"fichas";S.agendaView=viewMode;
   if(!S.agendaTab)S.agendaTab="conv";
   if(S.showDescartadas===undefined)S.showDescartadas=false;
   if(!S.filterCats)S.filterCats=[];
+
+  var conflicts=findFederationConflicts();
+  var conflictHtml=conflicts.length?'<div class="conflict-alert">'+
+    '<div class="conflict-alert-hdr">⚠️ '+conflicts.length+' coincidencia'+(conflicts.length===1?"":"s")+' RFEF / RFFM</div>'+
+    conflicts.map(function(c){
+      return'<div class="conflict-alert-row">'+
+        '<b>'+esc(CAT[c.cat]||c.cat)+'</b>: RFEF ('+fmtRange(c.a.startDate,c.a.endDate)+') se solapa con RFFM ('+fmtRange(c.b.startDate,c.b.endDate)+')'+
+        "</div>";
+    }).join("")+
+    "</div>":"";
 
   var tabsHtml='<div class="view-toggle" style="margin-bottom:14px">'+
     '<button class="vtbtn'+(S.agendaTab==="conv"?" on":"")+'" id="atab-conv">📋 Convocatorias</button>'+
@@ -1078,7 +1105,7 @@ function renderAgenda(viewMode){
     "</div>";
 
   if(S.agendaTab==="fechas"){
-    var h0='<div class="vh" style="margin-bottom:12px"><h1 class="vt">Agenda</h1></div>'+tabsHtml+agendaBannerHtml();
+    var h0='<div class="vh" style="margin-bottom:12px"><h1 class="vt">Agenda</h1></div>'+conflictHtml+tabsHtml+agendaBannerHtml();
     $("main").innerHTML=h0;
     document.querySelectorAll("[data-openid]").forEach(function(b){b.addEventListener("click",function(){openDetail(b.dataset.openid);});});
     document.querySelectorAll(".agenda-months-btn").forEach(function(b){b.addEventListener("click",function(){S.agendaMonths=parseInt(b.dataset.months,10);renderAgenda(S.agendaView);});});
@@ -1133,7 +1160,7 @@ function renderAgenda(viewMode){
   var h='<div class="vh" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:8px;justify-content:space-between">'+
     '<h1 class="vt">Agenda</h1>'+
     '<button class="btn-print" id="btn-print-agenda">🖨️</button>'+
-    '</div></div>'+tabsHtml+
+    '</div></div>'+conflictHtml+tabsHtml+
     '<div class="view-toggle" style="flex-wrap:wrap;height:auto;margin-bottom:10px">'+
     '<button class="vtbtn'+(!S.filterType?" on":"")+'" data-f="">Todas</button>'+
     '<button class="vtbtn'+(S.filterType==="espanola"?" on":"")+'" data-f="espanola"><img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/flags/espa%C3%B1a.png" style="width:14px;height:10px;object-fit:cover;border-radius:1px;vertical-align:middle"/> RFEF</button>'+
