@@ -322,6 +322,16 @@ body.dark .nav{background:var(--surface)}
 /* TABLE */
 .tabla-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--r);border:1px solid var(--border);box-shadow:var(--shadow-sm);margin-bottom:12px}
 .tabla{width:100%;border-collapse:collapse;background:var(--surface);font-size:13px}
+.psheet thead th{background:#D9D9D9;color:#111;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.2px;padding:8px 10px;border:1px solid #999;text-align:left}
+.psheet tbody td{padding:6px 10px;border:1px solid #ccc;font-size:12px;color:#111;white-space:nowrap}
+.psheet tr.psheet-green td{background:#C6E9C6}
+.psheet tr.psheet-red td{background:#F4C7C3;color:#7F1D1D}
+.psheet tr.psheet-white td{background:#fff}
+@media print{
+  .psheet tr.psheet-green td{background:#C6E9C6!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .psheet tr.psheet-red td{background:#F4C7C3!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .psheet thead th{background:#D9D9D9!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
 .tabla thead tr{background:var(--navy)}
 .tabla thead th{color:#fff;font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:10px 10px;text-align:left;white-space:nowrap}
 .tabla thead th:first-child{padding-left:14px}
