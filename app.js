@@ -665,6 +665,7 @@ function route(v){
   document.querySelectorAll(".nb").forEach(function(b){b.classList.toggle("active",b.dataset.v===v);b.style.display="";});
   if(!isLoggedIn()){renderLoginGate();return;}
   document.body.classList.remove("gate-active");
+  if(typeof syncTopbarSpacer==="function")setTimeout(syncTopbarSpacer,50);
   document.querySelectorAll(".nb-new,.nb[data-v='jugadores']").forEach(function(b){b.style.display=canEdit()?"":"none";});
   var views={
     agenda:renderAgenda,
@@ -3052,6 +3053,18 @@ renderSeasonSel();
 bindLoginBtn();
 renderUsersBtn();
 route(S.view || "agenda");
+
+function syncTopbarSpacer(){
+  var tb=document.querySelector(".app-topbar");
+  var main=$("main");
+  if(!tb||!main)return;
+  if(document.body.classList.contains("gate-active")){main.style.paddingTop="";return;}
+  var h=tb.offsetHeight;
+  if(h>0)main.style.paddingTop=(h+16)+"px";
+}
+window.addEventListener("resize",syncTopbarSpacer);
+setTimeout(syncTopbarSpacer,50);
+setTimeout(syncTopbarSpacer,400);
 
 if(window._fbCallupsFlag) { renderSeasonSel(); route(S.view || "agenda"); }
 if(window._fbPlayersFlag) { route(S.view || "agenda"); }
