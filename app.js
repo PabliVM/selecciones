@@ -825,7 +825,7 @@ function openDetail(id){
         var cat=$("sel-cat");if(cat)cat.value=c.selectionCategory;
         var pf=$("f-pais");if(pf&&c.pais)pf.value=c.pais;
         var pg=$("pais-g");if(pg&&selKey(c.selectionType)==="internacional")pg.style.display="block";
-        var fields={title:c.title,startDate:c.startDate,endDate:c.endDate,rival:c.rival||"",location:c.location||"",notes:c.notes||"",convType:c.convType||"provisional",limitDate:c.limitDate||"",preconvDate:c.preconvDate||""};
+        var fields={title:c.title,startDate:c.startDate,endDate:c.endDate,location:c.location||"",notes:c.notes||"",convType:c.convType||"provisional",limitDate:c.limitDate||"",preconvDate:c.preconvDate||""};
         Object.keys(fields).forEach(function(k){if(fields[k]===undefined||fields[k]===null)return;var el=form.querySelector('[name="'+k+'"]');if(el)el.value=fields[k];});
         if(c.conc){var cf2={concDate:c.conc.date,concTime:c.conc.time,concLugar:c.conc.lugar,concHotel:c.conc.hotel,concNotas:c.conc.notas};Object.keys(cf2).forEach(function(k){if(!cf2[k])return;var el=form.querySelector('[name="'+k+'"]');if(el)el.value=cf2[k];}); }if(c.traslado){var ct={trasladoDesde:c.traslado.desde,trasladoDate:c.traslado.date,trasladoTime:c.traslado.time,trasladoTransporte:c.traslado.transporte,trasladoHasta:c.traslado.hasta,trasladoHotel:c.traslado.hotel,trasladoNotas:c.traslado.notas};Object.keys(ct).forEach(function(k){if(!ct[k])return;var el=form.querySelector('[name="'+k+'"]');if(el)el.value=ct[k];});}
 if(c.vuelta){var vf={vueltaDesde:c.vuelta.desde,vueltaDate:c.vuelta.date,vueltaTime:c.vuelta.time,vueltaTransporte:c.vuelta.transporte,vueltaHasta:c.vuelta.hasta,vueltaNotas:c.vuelta.notas};Object.keys(vf).forEach(function(k){if(!vf[k])return;var el=form.querySelector('[name="'+k+'"]');if(el)el.value=vf[k];});}
@@ -1399,7 +1399,6 @@ function renderNueva(){
     '<div class="fg" id="pais-g" style="display:none"><label class="fl">País *</label><div id="pais-pills" class="pais-pills"></div><input class="fi" type="text" id="f-pais" name="pais" placeholder="Escribe el país..." style="display:none;margin-top:6px"/></div>'+
     '<div class="fg" id="cat-g" style="display:none"><label class="fl">Categoría *</label><select class="fsel" id="sel-cat" name="selCat"><option value="">Selecciona categoría</option></select></div>'+
     '<div class="fg"><label class="fl">Título *</label><input class="fi" type="text" name="title" placeholder="Ej: Concentración U17 Marzo"/></div>'+
-    '<div class="fg"><label class="fl">Rival / Torneo</label><input class="fi" type="text" name="rival" placeholder="Ej: Portugal, Francia"/></div>'+
     '<div class="fg"><label class="fl">Tipo de convocatoria</label><select class="fsel" name="convType"><option value="provisional">⏳ Provisional</option><option value="definitiva">✅ Definitiva</option></select></div>'+
     '<div class="fg" id="limit-date-g"><label class="fl">Fecha límite confirmación</label><input class="fi" type="date" name="limitDate"/><p style="font-size:11px;color:var(--text-muted);margin-top:4px">Si no se confirma antes de esta fecha, se descartará automáticamente</p></div>'+
     '<div class="fg"><label class="fl">Fecha de preconvocatoria</label><input class="fi" type="date" name="preconvDate"/><p style="font-size:11px;color:var(--text-muted);margin-top:4px">Día en que se recibió la preconvocatoria (opcional)</p></div>'+
@@ -1572,7 +1571,6 @@ function renderNueva(){
       title:fd.get("title")||"",
       startDate:fd.get("startDate")||"",
       endDate:fd.get("endDate")||"",
-      rival:fd.get("rival")||"",
       convType:fd.get("convType")||"provisional",
       limitDate:fd.get("limitDate")||"",
       preconvDate:fd.get("preconvDate")||"",
