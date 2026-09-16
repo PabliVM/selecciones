@@ -261,6 +261,7 @@ function daysUntil(dateStr){if(!dateStr)return 999;var now=new Date();now.setHou
 function provAlertBadge(c){if(c.convType!=="provisional")return"";var days=daysUntil(c.startDate);if(days>7)return"";if(days<0)return'<span class="badge prov-alert prov-alert-late">⚠️ Sin confirmar</span>';if(days===0)return'<span class="badge prov-alert prov-alert-today">⚠️ HOY</span>';return'<span class="badge prov-alert prov-alert-soon">⚠️ '+days+'d</span>';}
 function fmtRange(s,e){if(!s)return"—";var a=new Date(s+"T12:00:00"),b=new Date(e+"T12:00:00");return a.toLocaleDateString("es-ES",{day:"2-digit",month:"short"})+" — "+b.toLocaleDateString("es-ES",{day:"2-digit",month:"short",year:"numeric"});}
 function fmtDateShort(d){if(!d)return"";var dt=new Date(d+"T12:00:00");return dt.toLocaleDateString("es-ES",{day:"2-digit",month:"short"});}
+function fmtDMY(d,t){if(!d)return"";var p=d.split("-");if(p.length!==3)return"";return p[2]+"/"+p[1]+"/"+p[0]+(t?" "+t+"h":"");}
 function teamNow(p){if(!p||!p.teamHistory||!p.teamHistory.length)return null;for(var i=0;i<p.teamHistory.length;i++){if(p.teamHistory[i].to===null)return p.teamHistory[i];}return p.teamHistory[p.teamHistory.length-1];}
 function teamInSeason(p,sea){if(!p||!p.teamHistory)return null;var hs=p.teamHistory.filter(function(h){return h.season===sea;});if(!hs.length)return null;hs.sort(function(a,b){return new Date(b.from)-new Date(a.from);});return hs[0];}
 function nextSea(s){var y=parseInt(s.split("-")[0])+1;return y+"-"+String(y+1).slice(2);}
@@ -395,7 +396,8 @@ function callupCard(c){
   var playersList=activePlayers.map(function(p){
     return'<div class="cc-plrow"><span class="cc-plrow-n">'+esc(p.fullName)+"</span>"+(p.teamName?'<span class="cc-plrow-t">('+esc(p.teamName)+")</span>":"")+"</div>";
   }).join("")+droppedPlayers.map(function(p){
-    return'<div class="cc-plrow cc-plrow-dropped"><span class="cc-plrow-n">'+esc(p.fullName)+"</span>"+(p.teamName?'<span class="cc-plrow-t">('+esc(p.teamName)+")</span>":"")+'<span class="cc-plrow-dropbadge">desconvocado</span></div>';
+    var reasonTxt=p.dropStatus&&["no_convocado","no_liberado","otros","sin_motivo","sin_especificar","active"].indexOf(p.dropStatus)===-1?p.dropStatus:"";
+    return'<div class="cc-plrow cc-plrow-dropped"><span class="cc-plrow-n">'+esc(p.fullName)+"</span>"+(p.teamName?'<span class="cc-plrow-t">('+esc(p.teamName)+")</span>":"")+'<span class="cc-plrow-dropbadge">desconvocado'+(reasonTxt?" · "+esc(reasonTxt):"")+"</span></div>";
   }).join("");
   var tl=[];
   if(c.conc&&(c.conc.date||c.conc.time||c.conc.lugar))
@@ -430,7 +432,7 @@ function callupCard(c){
     '<span style="font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:'+(c.convType==="definitiva"?"#34D399":(c.convType==="descartada"?"#EF4444":"#FBBF24"))+'">'+(c.convType==="definitiva"?"Definitiva":(c.convType==="descartada"?"No seleccionados":"Provisional"))+'</span>'+
     provAlertBadge(c)+
     '</div>'+
-    '<div class="cc-hdr"><div class="cc-badges">'+selBadge(c.selectionType,c.selectionCategory,c.pais)+statusBadge(c.status)+fifaBadge(c)+"</div></div>"+
+    '<div class="cc-hdr"><div class="cc-badges">'+selBadge(c.selectionType,c.selectionCategory,c.pais)+statusBadge(c.status)+fifaBadge(c)+(pc===0&&droppedPlayers.length>0?'<span class="badge" style="background:#EF4444;color:#fff">⚠️ SIN JUGADORES</span>':"")+"</div></div>"+
     '<h3 class="cc-title">'+esc(c.title)+"</h3>"+
     '<div class="cc-meta">'+
     '<div class="cc-mi"><span class="mi">📅</span><span>'+fmtRange(c.startDate,c.endDate)+"</span></div>"+
@@ -446,17 +448,19 @@ function playerSheetRows(callups){
   callups.forEach(function(c){
     var k=selKey(c.selectionType);var sel=SELS[k];
     var selLabel=(sel?sel.label.toUpperCase():"")+" "+(k==="internacional"&&c.pais?paisAdj(c.pais).toUpperCase():(CAT[c.selectionCategory]||c.selectionCategory||"").toUpperCase());
-    var matchesStr=(c.matches||[]).map(function(m){return m.date?fmtDateShort(m.date):"";}).filter(Boolean).join(" y ");
+    var matchesStr=(c.matches||[]).map(function(m){if(!m.date)return"";return(m.matchType==="entrenamiento"?"Entrenamiento ":"")+fmtDMY(m.date);}).filter(Boolean).join(" y ");
+    var incorp=fmtDMY(c.startDate,c.incorpTime);
+    var vuelta=fmtDMY(c.vuelta&&c.vuelta.date,c.vuelta&&c.vuelta.time);
     var players=c.players||[];
     if(!players.length){
-      rows.push({sel:selLabel,decision:c.convType==="definitiva"?"CONVOCADO":"PRECONVOCADO",player:"—",pre:fmtDateShort(c.preconvDate),conv:fmtDateShort(c.startDate),lleg:fmtDateShort(c.conc&&c.conc.date),partidos:matchesStr,vuelta:fmtDateShort(c.vuelta&&c.vuelta.date),lugar:c.location||"",cls:""});
+      rows.push({sel:selLabel,decision:c.convType==="definitiva"?"CONVOCADO":"PRECONVOCADO",player:"—",pre:fmtDMY(c.preconvDate),conv:fmtDMY(c.convDate),lleg:incorp,partidos:matchesStr,vuelta:vuelta,lugar:c.location||"",cls:""});
       return;
     }
     players.forEach(function(p){
       var dropped=p.dropStatus&&p.dropStatus!=="active";
       var decision=dropped?"DESCONVOCADO":(c.convType==="definitiva"?"CONVOCADO":"PRECONVOCADO");
       var cls=dropped?"psheet-red":(c.convType==="definitiva"?"psheet-green":"psheet-white");
-      rows.push({sel:selLabel,decision:decision,player:p.fullName,pre:fmtDateShort(c.preconvDate),conv:fmtDateShort(c.startDate),lleg:fmtDateShort(c.conc&&c.conc.date),partidos:matchesStr,vuelta:fmtDateShort(c.vuelta&&c.vuelta.date),lugar:c.location||"",cls:cls});
+      rows.push({sel:selLabel,decision:decision,player:p.fullName,pre:fmtDMY(c.preconvDate),conv:fmtDMY(c.convDate),lleg:incorp,partidos:matchesStr,vuelta:vuelta,lugar:c.location||"",cls:cls});
     });
   });
   return rows;
@@ -465,7 +469,8 @@ function playerSheetTableHtml(callups){
   var rows=playerSheetRows(callups);
   if(!rows.length)return emptyState("Sin convocatorias","📋");
   return'<div class="tabla-wrap"><table class="tabla psheet">'+
-    '<thead><tr><th>Selección</th><th>Decisión</th><th>Jugador</th><th>Preconvocatoria</th><th>Convocatoria</th><th>Fecha incorporación</th><th>Fechas partidos</th><th>Fecha vuelta</th><th>Lugar partidos</th></tr></thead>'+
+    '<colgroup><col style="width:11%"><col style="width:8%"><col style="width:11%"><col style="width:7%"><col style="width:7%"><col style="width:13%"><col style="width:17%"><col style="width:13%"><col style="width:13%"></colgroup>'+
+    '<thead><tr><th>Selección</th><th>Decisión</th><th>Jugador</th><th>Preconv.<br><span class="psheet-subhdr">(fecha envío)</span></th><th>Convocatoria<br><span class="psheet-subhdr">(fecha envío)</span></th><th>Fecha incorporación</th><th>Fechas partidos</th><th>Fecha vuelta</th><th>Lugar partidos</th></tr></thead>'+
     '<tbody>'+rows.map(function(r){
       return'<tr class="'+r.cls+'"><td><b>'+esc(r.sel)+'</b></td><td>'+esc(r.decision)+"</td><td>"+esc(r.player)+"</td><td>"+esc(r.pre)+"</td><td>"+esc(r.conv)+"</td><td>"+esc(r.lleg)+"</td><td>"+esc(r.partidos)+"</td><td>"+esc(r.vuelta)+"</td><td>"+esc(r.lugar)+"</td></tr>";
     }).join("")+
@@ -822,7 +827,7 @@ function openDetail(id){
         var cat=$("sel-cat");if(cat)cat.value=c.selectionCategory;
         var pf=$("f-pais");if(pf&&c.pais)pf.value=c.pais;
         var pg=$("pais-g");if(pg&&selKey(c.selectionType)==="internacional")pg.style.display="block";
-        var fields={title:c.title,startDate:c.startDate,endDate:c.endDate,location:c.location||"",notes:c.notes||"",convType:c.convType||"provisional",limitDate:c.limitDate||"",preconvDate:c.preconvDate||""};
+        var fields={title:c.title,startDate:c.startDate,endDate:c.endDate,location:c.location||"",notes:c.notes||"",convType:c.convType||"provisional",limitDate:c.limitDate||"",preconvDate:c.preconvDate||"",convDate:c.convDate||"",incorpTime:c.incorpTime||""};
         Object.keys(fields).forEach(function(k){if(fields[k]===undefined||fields[k]===null)return;var el=form.querySelector('[name="'+k+'"]');if(el)el.value=fields[k];});
         if(c.conc){var cf2={concDate:c.conc.date,concTime:c.conc.time,concLugar:c.conc.lugar,concHotel:c.conc.hotel,concNotas:c.conc.notas};Object.keys(cf2).forEach(function(k){if(!cf2[k])return;var el=form.querySelector('[name="'+k+'"]');if(el)el.value=cf2[k];}); }if(c.traslado){var ct={trasladoDesde:c.traslado.desde,trasladoDate:c.traslado.date,trasladoTime:c.traslado.time,trasladoTransporte:c.traslado.transporte,trasladoHasta:c.traslado.hasta,trasladoHotel:c.traslado.hotel,trasladoNotas:c.traslado.notas};Object.keys(ct).forEach(function(k){if(!ct[k])return;var el=form.querySelector('[name="'+k+'"]');if(el)el.value=ct[k];});}
 if(c.vuelta){var vf={vueltaDesde:c.vuelta.desde,vueltaDate:c.vuelta.date,vueltaTime:c.vuelta.time,vueltaTransporte:c.vuelta.transporte,vueltaHasta:c.vuelta.hasta,vueltaNotas:c.vuelta.notas};Object.keys(vf).forEach(function(k){if(!vf[k])return;var el=form.querySelector('[name="'+k+'"]');if(el)el.value=vf[k];});}
@@ -1414,8 +1419,10 @@ function renderNueva(){
     '<div class="fg"><label class="fl">Título *</label><input class="fi" type="text" name="title" placeholder="Ej: Concentración U17 Marzo"/></div>'+
     '<div class="fg"><label class="fl">Tipo de convocatoria</label><select class="fsel" name="convType"><option value="provisional">⏳ Provisional</option><option value="definitiva">✅ Definitiva</option></select></div>'+
     '<div class="fg" id="limit-date-g"><label class="fl">Fecha límite confirmación</label><input class="fi" type="date" name="limitDate"/><p style="font-size:11px;color:var(--text-muted);margin-top:4px">Si no se confirma antes de esta fecha, se descartará automáticamente</p></div>'+
-    '<div class="fg"><label class="fl">Fecha de preconvocatoria</label><input class="fi" type="date" name="preconvDate"/><p style="font-size:11px;color:var(--text-muted);margin-top:4px">Día en que se recibió la preconvocatoria (opcional)</p></div>'+
-    '<div class="frow"><div class="fg"><label class="fl">Inicio *</label><input class="fi" type="date" name="startDate"/></div><div class="fg"><label class="fl">Fin *</label><input class="fi" type="date" name="endDate"/></div></div>'+
+    '<div class="fg"><label class="fl">Fecha de envío de la preconvocatoria</label><input class="fi" type="date" name="preconvDate"/><p style="font-size:11px;color:var(--text-muted);margin-top:4px">Día en que la federación envió/publicó la preconvocatoria (rellena si lo sabes)</p></div>'+
+    '<div class="fg"><label class="fl">Fecha de envío de la convocatoria</label><input class="fi" type="date" name="convDate"/><p style="font-size:11px;color:var(--text-muted);margin-top:4px">Día en que la federación envió/publicó la convocatoria (rellena si lo sabes)</p></div>'+
+    '<div class="frow"><div class="fg"><label class="fl">Inicio (incorporación) *</label><input class="fi" type="date" name="startDate"/></div><div class="fg"><label class="fl">Hora incorporación</label><input class="fi" type="time" name="incorpTime"/></div></div>'+
+    '<div class="fg"><label class="fl">Fin *</label><input class="fi" type="date" name="endDate"/></div>'+
     '<div class="fg"><label class="fl">Lugar de concentración</label><input class="fi" type="text" name="location" placeholder="Ej: Ciudad del Fútbol, Las Rozas"/></div>'+
     '</div>'+
 '<div class="fblock fblock-conc">'+
@@ -1629,6 +1636,8 @@ function renderNueva(){
       convType:fd.get("convType")||"provisional",
       limitDate:fd.get("limitDate")||"",
       preconvDate:fd.get("preconvDate")||"",
+      convDate:fd.get("convDate")||"",
+      incorpTime:fd.get("incorpTime")||"",
       location:fd.get("location")||"",
       notes:fd.get("notes")||"",
       conc:{date:fd.get("concDate")||"",time:fd.get("concTime")||"",lugar:fd.get("concLugar")||"",hotel:fd.get("concHotel")||"",notas:fd.get("concNotas")||""},
