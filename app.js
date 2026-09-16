@@ -3177,11 +3177,12 @@ route(S.view || "agenda");
 
 function syncTopbarSpacer(){
   var tb=document.querySelector(".app-topbar");
+  var ft=document.querySelector(".app-footer");
   var main=$("main");
-  if(!tb||!main)return;
-  if(document.body.classList.contains("gate-active")){main.style.paddingTop="";return;}
-  var h=tb.offsetHeight;
-  if(h>0)main.style.paddingTop=(h+16)+"px";
+  if(!main)return;
+  if(document.body.classList.contains("gate-active")){main.style.paddingTop="";main.style.paddingBottom="";return;}
+  if(tb){var h=tb.offsetHeight;if(h>0)main.style.paddingTop=(h+16)+"px";}
+  if(ft){var fh=ft.offsetHeight;if(fh>0)main.style.paddingBottom=(fh+24)+"px";}
 }
 window.addEventListener("resize",syncTopbarSpacer);
 setTimeout(syncTopbarSpacer,50);
