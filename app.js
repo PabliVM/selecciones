@@ -1460,6 +1460,14 @@ function renderNueva(){
     '<div class="fg">'+
     '<input class="fi" type="text" id="psearch" placeholder="🔍 Buscar jugador..." autocomplete="off" style="margin-bottom:8px"/>'+
     '<div class="psel" id="psel">'+pselHTML+'</div><div id="sprev" class="sp"></div></div>'+
+    '<div class="fg" style="border-top:1px solid var(--border);padding-top:10px;margin-top:6px">'+
+    '<label class="fl">¿No está en la lista? Añádelo a mano</label>'+
+    '<div style="display:flex;gap:6px">'+
+    '<input class="fi" type="text" id="manual-pname" placeholder="Nombre Apellido" autocomplete="off" style="flex:2"/>'+
+    '<input class="fi" type="text" id="manual-pteam" placeholder="Equipo (opcional)" autocomplete="off" style="flex:1"/>'+
+    '<button type="button" class="btn btn-ghost" id="btn-add-manual-player" style="flex-shrink:0">+ Añadir</button>'+
+    '</div><div id="manual-plist" style="margin-top:8px"></div>'+
+    '</div>'+
     '</div>'+
     '<div class="fblock fblock-extra">'+
     '<div class="fsec fsec-extra"><span class="fsec-ico">📝</span><span class="fsec-lbl">Información adicional</span></div>'+
@@ -1549,6 +1557,38 @@ function renderNueva(){
   }
   document.querySelectorAll('[name="pids"]').forEach(function(cb){cb.addEventListener("change",updatePreview);});
 
+  var manualPlayers=[];
+  if(S.editingId){
+    var _editingConv=getCallups_raw().find(function(c){return c.id===S.editingId;});
+    if(_editingConv&&_editingConv.players){
+      manualPlayers=_editingConv.players.filter(function(p){return p.manual;}).map(function(p){return{fullName:p.fullName,teamName:p.teamName||""};});
+    }
+  }
+  function renderManualPlayers(){
+    var el=$("manual-plist");if(!el)return;
+    if(!manualPlayers.length){el.innerHTML="";return;}
+    el.innerHTML='<div class="sp-label">Añadidos a mano ('+manualPlayers.length+')</div><div class="sp-chips">'+
+      manualPlayers.map(function(p,i){
+        return'<span class="chip chip-sel" style="display:inline-flex;align-items:center;gap:3px">'+esc(p.fullName)+
+          (p.teamName?' <span style="color:var(--text-muted);font-size:10px">('+esc(p.teamName)+')</span>':"")+
+          '<button type="button" data-manual-rm="'+i+'" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;padding:0 2px;line-height:1">×</button></span>';
+      }).join("")+"</div>";
+    el.querySelectorAll("[data-manual-rm]").forEach(function(btn){
+      btn.addEventListener("click",function(){manualPlayers.splice(parseInt(btn.dataset.manualRm,10),1);renderManualPlayers();});
+    });
+  }
+  var addManualBtn=$("btn-add-manual-player");
+  if(addManualBtn)addManualBtn.addEventListener("click",function(){
+    var nameEl=$("manual-pname"),teamEl=$("manual-pteam");
+    var name=(nameEl.value||"").trim();
+    if(!name){nameEl.style.borderColor="red";return;}
+    nameEl.style.borderColor="";
+    manualPlayers.push({fullName:name,teamName:(teamEl.value||"").trim()});
+    nameEl.value="";teamEl.value="";nameEl.focus();
+    renderManualPlayers();
+  });
+  renderManualPlayers();
+
   var matchCount=0;
   function addMatchRow(date,time,rival,mtype){
     var idx=matchCount++;mtype=mtype||"amistoso";
@@ -1578,7 +1618,9 @@ function renderNueva(){
       var pl=null;for(var i=0;i<getPlayers_raw().length;i++){if(getPlayers_raw()[i].id===cb.value){pl=getPlayers_raw()[i];break;}}
       var per=pl?(teamInSeason(pl,S.season)||teamNow(pl)):null;
       return{playerId:cb.value,fullName:cb.dataset.n,teamId:per?per.teamId:"",teamName:cb.dataset.t,dropStatus:"active"};
-    });
+    }).concat(manualPlayers.map(function(p){
+      return{playerId:"manual_"+gid(),fullName:p.fullName,teamId:"",teamName:p.teamName||"",dropStatus:"active",manual:true};
+    }));
     var paisVal=(fd.get("pais")||"").trim()||($("f-pais")?$("f-pais").value.trim():"");
     var data={
       selectionType:fd.get("selType")||"",
