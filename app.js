@@ -538,7 +538,7 @@ function callupDetail(c){
     rows+='<li class="pl-dropped-hdr">❌ No convocados / No liberados ('+droppedPlayers.length+')</li>';
     for(var j=0;j<droppedPlayers.length;j++){
       var dp2=droppedPlayers[j];
-      var dropLabel=dp2.p.dropStatus==="no_convocado"?"No convocado":dp2.p.dropStatus==="no_liberado"?"No liberado":"Otros";
+      var dropLabel=dp2.p.dropStatus==="no_convocado"?"No convocado":dp2.p.dropStatus==="no_liberado"?"No liberado":dp2.p.dropStatus==="otros"||dp2.p.dropStatus==="sin_motivo"||dp2.p.dropStatus==="sin_especificar"?"Sin motivo especificado":dp2.p.dropStatus;
       rows+='<li class="pl-item pl-item-dropped" data-pidx="'+dp2.idx+'">'+
         '<span class="pl-num" style="color:#EF4444;text-decoration:line-through">'+(j+1)+'</span>'+
         '<div class="pl-info"><span class="pl-name" style="text-decoration:line-through;color:#EF4444;opacity:.7">'+esc(dp2.p.fullName)+'</span>'+
@@ -781,10 +781,7 @@ function openDetail(id){
       var mo2=document.createElement("div");mo2.className="mo";
       mo2.innerHTML='<div class="modal" style="padding-bottom:40px"><button class="mcl" id="dr-close">×</button>'+
         '<div class="mtitle">Descartar jugador</div><p class="msub">'+esc(pname)+' no irá a esta convocatoria.</p>'+
-        '<div class="fg"><label class="fl">Motivo</label><select class="fsel" id="dr-reason">'+
-        '<option value="no_convocado">No convocado</option>'+
-        '<option value="no_liberado">No liberado</option>'+
-        '<option value="otros">Otros</option></select></div>'+
+        '<div class="fg"><label class="fl">Motivo (opcional)</label><input class="fi" type="text" id="dr-reason" placeholder="Ej: lesión, no liberado por su club..." autocomplete="off"/></div>'+
         '<div style="display:flex;gap:8px;margin-top:12px">'+
         '<button class="btn btn-ghost btn-sm" id="dr-cancel" style="flex:1">Cancelar</button>'+
         '<button class="btn btn-danger btn-sm" id="dr-ok" style="flex:1">❌ Descartar</button></div></div>';
@@ -793,7 +790,7 @@ function openDetail(id){
       $("dr-close").addEventListener("click",closeMo2);$("dr-cancel").addEventListener("click",closeMo2);
       mo2.addEventListener("click",function(ev){if(ev.target===mo2)closeMo2();});
       $("dr-ok").addEventListener("click",function(){
-        var reason=$("dr-reason").value;
+        var reason=($("dr-reason").value||"").trim()||"sin_motivo";
         conv.players[idx].dropStatus=reason;
         if(window._db&&window._fbUser){var fns=window._fbFns;fns.setDoc(fns.doc(window._db,"callups",id),Object.assign({},conv)).catch(function(e){console.error(e);});}
         toast("❌ "+pname+" descartado");closeMo2();close();openDetail(id);
@@ -903,7 +900,7 @@ if(c.llegada){var lf={llegadaDate:c.llegada.date,llegadaTime:c.llegada.time,lleg
     if(droppedPlayers.length){
       playersHtml+='<div class="pl-dropped-hdr">❌ No convocados / No liberados</div>';
       playersHtml+=droppedPlayers.map(function(p){
-        var lbl=p.dropStatus==="no_convocado"?"No convocado":p.dropStatus==="no_liberado"?"No liberado":"Otros";
+        var lbl=p.dropStatus==="no_convocado"?"No convocado":p.dropStatus==="no_liberado"?"No liberado":p.dropStatus==="otros"||p.dropStatus==="sin_motivo"||p.dropStatus==="sin_especificar"?"Sin motivo especificado":p.dropStatus;
         return '<div class="pl-row pl-dropped"><span class="pl-name" style="text-decoration:line-through;color:#c00">'+esc(p.fullName)+'</span><span class="pl-team">'+esc(p.teamName)+' — '+lbl+'</span></div>';
       }).join("");
     }
