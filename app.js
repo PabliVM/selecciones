@@ -426,7 +426,7 @@ function callupCard(c){
           '</div>';
       }).join("")+'</div>';
   }
-  return'<article class="cc'+(c.convType==="descartada"?" cc-descartada":"")+'" style="--ca:'+col.badge+'" data-id="'+c.id+'" tabindex="0" role="button">'+
+  return'<article class="cc'+(c.convType==="descartada"?" cc-descartada":"")+(c.convType!=="descartada"&&pc===0&&droppedPlayers.length>0?" cc-sinjugadores":"")+'" style="--ca:'+col.badge+'" data-id="'+c.id+'" tabindex="0" role="button">'+
     '<div class="cc-convtype" style="display:flex;align-items:center;gap:8px;margin:-16px -16px 10px;padding:8px 16px;border-radius:var(--r) var(--r) 0 0;background:rgba(255,255,255,.03)">'+
     '<span style="font-size:24px;line-height:1">'+(c.convType==="definitiva"?"✅":(c.convType==="descartada"?"❌":"⏳"))+'</span>'+
     '<span style="font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:'+(c.convType==="definitiva"?"#34D399":(c.convType==="descartada"?"#EF4444":"#FBBF24"))+'">'+(c.convType==="definitiva"?"Definitiva":(c.convType==="descartada"?"No seleccionados":"Provisional"))+'</span>'+
