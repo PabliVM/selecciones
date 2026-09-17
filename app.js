@@ -148,10 +148,10 @@ SELS["madrilena"] = {
     sub14:{badge:"#1D4ED8"},
     sub16:{badge:"#1E40AF"}
   }
-};SELS["espanola"]  = {label:"Española",short:"ESP",cats:["sub14","sub15","sub16","sub17","sub18","sub19","sub20","sub21","abs"],colors:{sub14:{badge:"#DC2626"},sub15:{badge:"#DC2626"},sub16:{badge:"#B91C1C"},sub17:{badge:"#B91C1C"},sub18:{badge:"#991B1B"},sub19:{badge:"#7F1D1D"},sub20:{badge:"#7F1D1D"},sub21:{badge:"#450A0A"},abs:{badge:"#1A0000"}}};
-SELS["internacional"]={label:"Internacional",short:"INT",cats:["sub16","sub17","sub18","sub19","sub20","sub21","abs"],colors:{sub16:{badge:"#10B981"},sub17:{badge:"#10B981"},sub18:{badge:"#047857"},sub19:{badge:"#047857"},sub20:{badge:"#065F46"},sub21:{badge:"#065F46"},abs:{badge:"#064E3B"}}};
+};SELS["espanola"]  = {label:"Española",short:"ESP",cats:["sub14","sub15","sub16","sub17","sub18","sub19","sub20","sub21","sub23","abs"],colors:{sub14:{badge:"#DC2626"},sub15:{badge:"#DC2626"},sub16:{badge:"#B91C1C"},sub17:{badge:"#B91C1C"},sub18:{badge:"#991B1B"},sub19:{badge:"#7F1D1D"},sub20:{badge:"#7F1D1D"},sub21:{badge:"#450A0A"},sub23:{badge:"#2C0000"},abs:{badge:"#1A0000"}}};
+SELS["internacional"]={label:"Internacional",short:"INT",cats:["sub16","sub17","sub18","sub19","sub20","sub21","sub23","abs"],colors:{sub16:{badge:"#10B981"},sub17:{badge:"#10B981"},sub18:{badge:"#047857"},sub19:{badge:"#047857"},sub20:{badge:"#065F46"},sub21:{badge:"#065F46"},sub23:{badge:"#033B2E"},abs:{badge:"#064E3B"}}};
 
-var CAT={todas:"Todas",sub12:"U12",sub14:"U14",sub15:"U15",sub16:"U16",sub17:"U17",sub18:"U18",sub19:"U19",sub20:"U20",sub21:"U21",abs:"Absoluta"};
+var CAT={todas:"Todas",sub12:"U12",sub14:"U14",sub15:"U15",sub16:"U16",sub17:"U17",sub18:"U18",sub19:"U19",sub20:"U20",sub21:"U21",sub23:"U23",abs:"Absoluta"};
 var STATUS={proxima:{c:"s-prox",i:"⏰",l:"PRÓXIMA"},en_curso:{c:"s-cur",i:"●",l:"EN CURSO"},finalizada:{c:"s-fin",i:"✓",l:"FINALIZADA"}};
 
 var TEAMS=[
@@ -1185,7 +1185,7 @@ function renderAgenda(viewMode){
   // Build category pills — always visible, collected from all visible convocatorias
   var allCatsSet={};
   visible.forEach(function(c){if(c.selectionCategory)allCatsSet[c.selectionCategory]=true;});
-  var catOrder=["sub12","sub14","sub15","sub16","sub17","sub18","sub19","sub20","sub21","abs"];
+  var catOrder=["sub12","sub14","sub15","sub16","sub17","sub18","sub19","sub20","sub21","sub23","abs"];
   var allCats=catOrder.filter(function(c){return allCatsSet[c];});
   var catPills="";
   if(allCats.length>1){
@@ -1307,7 +1307,7 @@ function renderIntl(){
     if(!pais)return emptyState("Sin selecciones internacionales","🌍");
     var cs=paisMap[pais]||[];
     var cats=[];cs.forEach(function(c){if(cats.indexOf(c.selectionCategory)===-1)cats.push(c.selectionCategory);});
-    cats.sort(function(a,b){var o=["sub16","sub17","sub18","sub19","sub20","sub21","abs"];return o.indexOf(a)-o.indexOf(b);});
+    cats.sort(function(a,b){var o=["sub16","sub17","sub18","sub19","sub20","sub21","sub23","abs"];return o.indexOf(a)-o.indexOf(b);});
     if(cats.length<=1)return cs.length?'<div class="cl">'+cs.map(callupCard).join("")+"</div>":emptyState("Sin convocatorias","📋");
     return'<div class="tbar-wrap tbar-wrap-sm">'+
       cats.map(function(c){return'<button class="tbtn tbtn-sm'+(c===cats[0]?" on":"")+'" data-cat="'+c+'">'+(CAT[c]||c)+"</button>";}).join("")+
