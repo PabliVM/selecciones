@@ -443,12 +443,25 @@ function callupCard(c){
 }
 
 // ── TABLA ESTILO HOJA DE CÁLCULO (una fila por jugador) ──
+function fmtMatchesCompact(matches){
+  var groups=[],map={};
+  (matches||[]).forEach(function(m){
+    if(!m.date)return;
+    var p=m.date.split("-");if(p.length!==3)return;
+    var day=parseInt(p[2],10);
+    var label=m.matchType==="entrenamiento"?"Entrenamiento ":"";
+    var key=label+p[0]+p[1];
+    if(!map[key]){map[key]={label:label,mm:p[1],yyyy:p[0],days:[]};groups.push(map[key]);}
+    if(map[key].days.indexOf(day)===-1)map[key].days.push(day);
+  });
+  return groups.map(function(g){return g.label+g.days.sort(function(a,b){return a-b;}).join(",")+"/"+g.mm+"/"+g.yyyy;}).join(" y ");
+}
 function playerSheetRows(callups){
   var rows=[];
   callups.forEach(function(c){
     var k=selKey(c.selectionType);var sel=SELS[k];
     var selLabel=(sel?sel.label.toUpperCase():"")+" "+(k==="internacional"&&c.pais?paisAdj(c.pais).toUpperCase():(CAT[c.selectionCategory]||c.selectionCategory||"").toUpperCase());
-    var matchesStr=(c.matches||[]).map(function(m){if(!m.date)return"";return(m.matchType==="entrenamiento"?"Entrenamiento ":"")+fmtDMY(m.date);}).filter(Boolean).join(" y ");
+    var matchesStr=fmtMatchesCompact(c.matches);
     var incorp=fmtDMY(c.startDate,c.incorpTime);
     var vuelta=fmtDMY(c.vuelta&&c.vuelta.date,c.vuelta&&c.vuelta.time);
     var players=c.players||[];
