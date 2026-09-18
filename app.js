@@ -265,6 +265,8 @@ function provAlertBadge(c){if(c.convType!=="provisional")return"";var days=daysU
 function fmtRange(s,e){if(!s)return"—";var a=new Date(s+"T12:00:00"),b=new Date(e+"T12:00:00");return a.toLocaleDateString("es-ES",{day:"2-digit",month:"short"})+" — "+b.toLocaleDateString("es-ES",{day:"2-digit",month:"short",year:"numeric"});}
 function fmtDateShort(d){if(!d)return"";var dt=new Date(d+"T12:00:00");return dt.toLocaleDateString("es-ES",{day:"2-digit",month:"short"});}
 function fmtDMY(d,t){if(!d)return"";var p=d.split("-");if(p.length!==3)return"";return p[2]+"/"+p[1]+"/"+p[0]+(t?" "+t+"h":"");}
+function fmtTimePart(t){if(!t)return"";return/^\d{1,2}:\d{2}$/.test(t)?t+"h":t;}
+function fmtDMYSep(d,t){if(!d)return"";var tp=fmtTimePart(t);return tp?fmtDMY(d)+" - "+tp:fmtDMY(d);}
 function teamNow(p){if(!p||!p.teamHistory||!p.teamHistory.length)return null;for(var i=0;i<p.teamHistory.length;i++){if(p.teamHistory[i].to===null)return p.teamHistory[i];}return p.teamHistory[p.teamHistory.length-1];}
 function teamInSeason(p,sea){if(!p||!p.teamHistory)return null;var hs=p.teamHistory.filter(function(h){return h.season===sea;});if(!hs.length)return null;hs.sort(function(a,b){return new Date(b.from)-new Date(a.from);});return hs[0];}
 function nextSea(s){var y=parseInt(s.split("-")[0])+1;return y+"-"+String(y+1).slice(2);}
@@ -405,16 +407,16 @@ function callupCard(c){
   }).join("");
   var tl=[];
   if(c.conc&&(c.conc.date||c.conc.time||c.conc.lugar))
-    tl.push({s:c.conc.date||"0",type:"cite",label:"Citación",line:(c.conc.date?fmtDateShort(c.conc.date)+" ":"")+(c.conc.time?c.conc.time+"h ":"")+(c.conc.lugar?"· "+esc(c.conc.lugar):"")});
+    tl.push({s:c.conc.date||"0",type:"cite",label:"Citación",line:(c.conc.date?fmtDateShort(c.conc.date)+" ":"")+(c.conc.time?fmtTimePart(c.conc.time)+" ":"")+(c.conc.lugar?"· "+esc(c.conc.lugar):"")});
   if(c.traslado&&(c.traslado.date||c.traslado.transporte||c.traslado.desde))
-    tl.push({s:c.traslado.date||"1",type:"trasl",label:"Traslado",line:(c.traslado.date?fmtDateShort(c.traslado.date)+" ":"")+(c.traslado.time?c.traslado.time+"h ":"")+(c.traslado.desde&&c.traslado.hasta?esc(c.traslado.desde)+" → "+esc(c.traslado.hasta):(c.traslado.transporte?esc(c.traslado.transporte):""))});
+    tl.push({s:c.traslado.date||"1",type:"trasl",label:"Traslado",line:(c.traslado.date?fmtDateShort(c.traslado.date)+" ":"")+(c.traslado.time?fmtTimePart(c.traslado.time)+" ":"")+(c.traslado.desde&&c.traslado.hasta?esc(c.traslado.desde)+" → "+esc(c.traslado.hasta):(c.traslado.transporte?esc(c.traslado.transporte):""))});
   if(c.matches&&c.matches.length)c.matches.forEach(function(m){
-    tl.push({s:m.date||"5",type:"match",label:matchIcon(m.matchType)+" "+(m.rival?esc(m.rival):"TBD"),line:(m.date?fmtDateShort(m.date)+" ":"")+(m.time?m.time+"h":"")});
+    tl.push({s:m.date||"5",type:"match",label:matchIcon(m.matchType)+" "+(m.rival?esc(m.rival):"TBD"),line:(m.date?fmtDateShort(m.date)+" ":"")+(m.time?fmtTimePart(m.time)+"":"")});
   });
   if(c.vuelta&&(c.vuelta.date||c.vuelta.time||c.vuelta.desde))
-    tl.push({s:c.vuelta.date||"9",type:"vuelta",label:"Vuelta",line:(c.vuelta.date?fmtDateShort(c.vuelta.date)+" ":"")+(c.vuelta.time?c.vuelta.time+"h ":"")+(c.vuelta.desde&&c.vuelta.hasta?esc(c.vuelta.desde)+" → "+esc(c.vuelta.hasta):"")});
+    tl.push({s:c.vuelta.date||"9",type:"vuelta",label:"Vuelta",line:(c.vuelta.date?fmtDateShort(c.vuelta.date)+" ":"")+(c.vuelta.time?fmtTimePart(c.vuelta.time)+" ":"")+(c.vuelta.desde&&c.vuelta.hasta?esc(c.vuelta.desde)+" → "+esc(c.vuelta.hasta):"")});
   if(c.llegada&&(c.llegada.date||c.llegada.time||c.llegada.lugar))
-    tl.push({s:(c.llegada.date||"9")+"z",type:"llegada",label:"🏁 Llegada",line:(c.llegada.date?fmtDateShort(c.llegada.date)+" ":"")+(c.llegada.time?c.llegada.time+"h ":"")+(c.llegada.lugar?esc(c.llegada.lugar):"")});
+    tl.push({s:(c.llegada.date||"9")+"z",type:"llegada",label:"🏁 Llegada",line:(c.llegada.date?fmtDateShort(c.llegada.date)+" ":"")+(c.llegada.time?fmtTimePart(c.llegada.time)+" ":"")+(c.llegada.lugar?esc(c.llegada.lugar):"")});
   var tlHtml="";
   if(tl.length){
     tl.sort(function(a,b){return a.s.localeCompare(b.s);});
@@ -439,7 +441,7 @@ function callupCard(c){
     '<div class="cc-hdr"><div class="cc-badges">'+selBadge(c.selectionType,c.selectionCategory,c.pais)+statusBadge(c.status)+fifaBadge(c)+(pc===0&&droppedPlayers.length>0?'<span class="badge" style="background:#EF4444;color:#fff">⚠️ SIN JUGADORES</span>':"")+"</div></div>"+
     '<h3 class="cc-title">'+esc(c.title)+"</h3>"+
     '<div class="cc-meta">'+
-    '<div class="cc-mi"><span class="mi">📅</span><span>'+fmtRange(c.startDate,c.endDate)+"</span></div>"+
+    '<div class="cc-mi"><span class="mi">📅</span><span>'+fmtRange(c.startDate,c.endDate)+(c.incorpTime?" · "+esc(fmtTimePart(c.incorpTime)):"")+"</span></div>"+
     (c.location?'<div class="cc-mi"><span class="mi">📍</span><span>'+esc(c.location)+"</span></div>":"")+
     "</div>"+
     ((pc>0||droppedPlayers.length>0)?'<button type="button" class="cc-plcount" data-players-toggle="1"><span class="cc-plcount-chev">▸</span>👕 '+pc+(pc===1?" jugador seleccionado":" jugadores seleccionados")+(droppedPlayers.length?" ("+droppedPlayers.length+(droppedPlayers.length===1?" jugador no va":" jugadores no van")+")":"")+'</button><div class="cc-plrows" style="display:none">'+playersList+"</div>":"")+
@@ -475,8 +477,8 @@ function playerSheetRows(callups){
     var activeCount=players.filter(function(p){return!p.dropStatus||p.dropStatus==="active";}).length;
     var noneActive=players.length>0&&activeCount===0;
     var matchesStr=noneActive?"":fmtMatchesCompact(c.matches);
-    var incorp=fmtDMY(c.startDate,c.incorpTime);
-    var vuelta=fmtDMY(c.vuelta&&c.vuelta.date,c.vuelta&&c.vuelta.time);
+    var incorp=fmtDMYSep(c.startDate,c.incorpTime);
+    var vuelta=fmtDMYSep(c.vuelta&&c.vuelta.date,c.vuelta&&c.vuelta.time);
     var lugarVal=noneActive?"":(c.location||"");
     if(!players.length){
       rows.push({sel:selLabel,decision:c.convType==="definitiva"?"CONVOCADO":"PRECONVOCADO",player:"—",pre:fmtDMY(c.preconvDate),conv:fmtDMY(c.convDate),lleg:incorp,partidos:matchesStr,vuelta:vuelta,lugar:lugarVal,cls:""});
@@ -540,26 +542,26 @@ function callupTableRow(c){
   function logCellConc(obj,fallbackDate){
     if(!obj||(!obj.date&&!obj.time&&!obj.lugar&&!obj.hotel))return'<span class="td-log-empty">—</span>';
     return (obj.date?'<span class="td-log-date">'+fmtDateShort(obj.date)+"</span>":"")+
-      (obj.time||obj.lugar?'<span class="td-log-sub">'+(obj.time?obj.time+"h ":"")+esc(obj.lugar||"")+"</span>":"")+
+      (obj.time||obj.lugar?'<span class="td-log-sub">'+(obj.time?fmtTimePart(obj.time)+" ":"")+esc(obj.lugar||"")+"</span>":"")+
       (obj.hotel?'<span class="td-log-trans">🏨 '+esc(obj.hotel)+"</span>":"");
   }
   function logCellTraslado(obj){
     if(!obj||(!obj.date&&!obj.time&&!obj.lugar&&!obj.transporte))return'<span class="td-log-empty">—</span>';
     return (obj.date?'<span class="td-log-date">'+fmtDateShort(obj.date)+"</span>":"")+
-      (obj.time?'<span class="td-log-sub">'+obj.time+"h"+(obj.lugar?" · "+esc(obj.lugar):"")+"</span>":
+      (obj.time?'<span class="td-log-sub">'+fmtTimePart(obj.time)+(obj.lugar?" · "+esc(obj.lugar):"")+"</span>":
         (obj.lugar?'<span class="td-log-sub">'+esc(obj.lugar)+"</span>":""))+
       (obj.transporte?'<span class="td-log-trans">'+esc(obj.transporte)+"</span>":"");
   }
   function logCellVuelta(obj,fallbackDate){
     if(!obj||(!obj.date&&!obj.time&&!obj.lugar&&!obj.transporte))return'<span class="td-log-empty">—</span>';
     return (obj.date?'<span class="td-log-date">'+fmtDateShort(obj.date)+"</span>":"")+
-      (obj.time||obj.lugar?'<span class="td-log-sub">'+(obj.time?obj.time+"h ":"")+esc(obj.lugar||"")+"</span>":"")+
+      (obj.time||obj.lugar?'<span class="td-log-sub">'+(obj.time?fmtTimePart(obj.time)+" ":"")+esc(obj.lugar||"")+"</span>":"")+
       (obj.transporte?'<span class="td-log-trans">'+esc(obj.transporte)+"</span>":"");
   }
   var _mcells=c.matches&&c.matches.length?c.matches.map(function(m){
     if(!m.rival&&!m.date&&!m.time)return"";
     return'<div class="td-match"><span class="td-match-rival">'+matchIcon(m.matchType)+" "+esc(m.rival||"Por confirmar")+"</span>"+
-      '<span class="td-match-sub">'+(m.date?fmtDateShort(m.date)+" ":"")+(m.time?m.time+"h":(!m.date?"Fecha TBD":""))+"</span></div>";
+      '<span class="td-match-sub">'+(m.date?fmtDateShort(m.date)+" ":"")+(m.time?fmtTimePart(m.time):(!m.date?"Fecha TBD":""))+"</span></div>";
   }).filter(Boolean):[];
   var matchCell=_mcells.length?_mcells.join(""):'<span class="td-log-empty">—</span>';
   return'<tr class="trow'+(pc===0?" trow-empty":"")+(c.convType==="descartada"?" trow-empty":"")+'" data-id="'+c.id+'">'+
@@ -626,7 +628,7 @@ function callupDetail(c){
       // Citación
       if(c.conc&&(c.conc.date||c.conc.time||c.conc.lugar||c.conc.hotel)){
         var h2='<div class="dp-tl-item"><div class="dp-tl-dot dp-tl-dot-cite"></div><div class="dp-tl-type dp-tl-type-cite">Citación</div>';
-        if(c.conc.date||c.conc.time)h2+='<div class="dp-tl-date">'+(c.conc.date?fmtDateShort(c.conc.date)+" ":"")+(c.conc.time?c.conc.time+"h":"")+"</div>";
+        if(c.conc.date||c.conc.time)h2+='<div class="dp-tl-date">'+(c.conc.date?fmtDateShort(c.conc.date)+" ":"")+(c.conc.time?fmtTimePart(c.conc.time):"")+"</div>";
         if(c.conc.lugar)h2+='<div class="dp-tl-detail">'+esc(c.conc.lugar)+"</div>";
         if(c.conc.hotel)h2+='<div class="dp-tl-detail">🏨 '+esc(c.conc.hotel)+"</div>";
         if(c.conc.notas)h2+='<div class="dp-tl-note">'+esc(c.conc.notas)+"</div>";
@@ -635,7 +637,7 @@ function callupDetail(c){
       // Traslado
       if(c.traslado&&(c.traslado.date||c.traslado.time||c.traslado.desde||c.traslado.transporte||c.traslado.hasta)){
         var h3='<div class="dp-tl-item"><div class="dp-tl-dot dp-tl-dot-trasl"></div><div class="dp-tl-type dp-tl-type-trasl">Traslado</div>';
-        if(c.traslado.date||c.traslado.time)h3+='<div class="dp-tl-date">'+(c.traslado.date?fmtDateShort(c.traslado.date)+" ":"")+(c.traslado.time?c.traslado.time+"h":"")+"</div>";
+        if(c.traslado.date||c.traslado.time)h3+='<div class="dp-tl-date">'+(c.traslado.date?fmtDateShort(c.traslado.date)+" ":"")+(c.traslado.time?fmtTimePart(c.traslado.time):"")+"</div>";
         if(c.traslado.desde||c.traslado.hasta)h3+='<div class="dp-tl-detail">'+(c.traslado.desde?esc(c.traslado.desde):"")+(c.traslado.desde&&c.traslado.hasta?" → ":"")+(c.traslado.hasta?esc(c.traslado.hasta):"")+"</div>";
         if(c.traslado.transporte)h3+='<div class="dp-tl-detail">'+esc(c.traslado.transporte)+"</div>";
         if(c.traslado.hotel)h3+='<div class="dp-tl-detail">🏨 '+esc(c.traslado.hotel)+"</div>";
@@ -647,7 +649,7 @@ function callupDetail(c){
         c.matches.forEach(function(m){
           var dt=m.date?new Date(m.date+"T12:00:00").toLocaleDateString("es-ES",{weekday:"short",day:"2-digit",month:"short"}):"";
           var h4='<div class="dp-tl-item"><div class="dp-tl-dot dp-tl-dot-match"></div><div class="dp-tl-type dp-tl-type-match">'+matchIcon(m.matchType)+" "+(m.matchType==="entrenamiento"?"Entrenamiento":(m.matchType==="oficial"?"Partido oficial":"Partido amistoso"))+"</div>";
-          if(dt)h4+='<div class="dp-tl-date">'+dt+(m.time?" · "+m.time+"h":"")+"</div>";
+          if(dt)h4+='<div class="dp-tl-date">'+dt+(m.time?" · "+fmtTimePart(m.time):"")+"</div>";
           if(m.rival)h4+='<div class="dp-tl-detail">'+(m.matchType==="entrenamiento"?"":"vs ")+esc(m.rival)+"</div>";
           h4+="</div>";items.push({sort:m.date||"5",html:h4});
         });
@@ -655,7 +657,7 @@ function callupDetail(c){
       // Vuelta
       if(c.vuelta&&(c.vuelta.date||c.vuelta.time||c.vuelta.desde||c.vuelta.transporte||c.vuelta.hasta)){
         var h5='<div class="dp-tl-item"><div class="dp-tl-dot dp-tl-dot-vuelta"></div><div class="dp-tl-type dp-tl-type-vuelta">Vuelta</div>';
-        if(c.vuelta.date||c.vuelta.time)h5+='<div class="dp-tl-date">'+(c.vuelta.date?fmtDateShort(c.vuelta.date)+" ":"")+(c.vuelta.time?c.vuelta.time+"h":"")+"</div>";
+        if(c.vuelta.date||c.vuelta.time)h5+='<div class="dp-tl-date">'+(c.vuelta.date?fmtDateShort(c.vuelta.date)+" ":"")+(c.vuelta.time?fmtTimePart(c.vuelta.time):"")+"</div>";
         if(c.vuelta.desde||c.vuelta.hasta)h5+='<div class="dp-tl-detail">'+(c.vuelta.desde?esc(c.vuelta.desde):"")+(c.vuelta.desde&&c.vuelta.hasta?" → ":"")+(c.vuelta.hasta?esc(c.vuelta.hasta):"")+"</div>";
         if(c.vuelta.transporte)h5+='<div class="dp-tl-detail">'+esc(c.vuelta.transporte)+"</div>";
         if(c.vuelta.notas)h5+='<div class="dp-tl-note">'+esc(c.vuelta.notas)+"</div>";
@@ -664,7 +666,7 @@ function callupDetail(c){
       // Llegada a Madrid
       if(c.llegada&&(c.llegada.date||c.llegada.time||c.llegada.lugar)){
         var h6='<div class="dp-tl-item"><div class="dp-tl-dot" style="border-color:#10B981;background:rgba(16,185,129,.12)"></div><div class="dp-tl-type" style="color:#34D399">🏁 Llegada a Madrid</div>';
-        if(c.llegada.date||c.llegada.time)h6+='<div class="dp-tl-date">'+(c.llegada.date?fmtDateShort(c.llegada.date)+" ":"")+(c.llegada.time?c.llegada.time+"h":"")+"</div>";
+        if(c.llegada.date||c.llegada.time)h6+='<div class="dp-tl-date">'+(c.llegada.date?fmtDateShort(c.llegada.date)+" ":"")+(c.llegada.time?fmtTimePart(c.llegada.time):"")+"</div>";
         if(c.llegada.lugar)h6+='<div class="dp-tl-detail">'+esc(c.llegada.lugar)+"</div>";
         if(c.llegada.notas)h6+='<div class="dp-tl-note">'+esc(c.llegada.notas)+"</div>";
         h6+="</div>";items.push({sort:(c.llegada.date||c.endDate||"9")+"z",html:h6});
@@ -879,7 +881,7 @@ function openDetail(id){
         var cat=$("sel-cat");if(cat)cat.value=c.selectionCategory;
         var pf=$("f-pais");if(pf&&c.pais)pf.value=c.pais;
         var pg=$("pais-g");if(pg&&selKey(c.selectionType)==="internacional")pg.style.display="block";
-        var fields={title:c.title,startDate:c.startDate,endDate:c.endDate,location:c.location||"",notes:c.notes||"",convType:c.convType||"provisional",limitDate:c.limitDate||"",preconvDate:c.preconvDate||"",convDate:c.convDate||"",incorpTime:c.incorpTime||""};
+        var fields={title:c.title,startDate:c.startDate,endDate:c.endDate,endTime:c.endTime||"",location:c.location||"",notes:c.notes||"",convType:c.convType||"provisional",limitDate:c.limitDate||"",preconvDate:c.preconvDate||"",convDate:c.convDate||"",incorpTime:c.incorpTime||""};
         Object.keys(fields).forEach(function(k){if(fields[k]===undefined||fields[k]===null)return;var el=form.querySelector('[name="'+k+'"]');if(el)el.value=fields[k];});
         if(c.conc){var cf2={concDate:c.conc.date,concTime:c.conc.time,concLugar:c.conc.lugar,concHotel:c.conc.hotel,concNotas:c.conc.notas};Object.keys(cf2).forEach(function(k){if(!cf2[k])return;var el=form.querySelector('[name="'+k+'"]');if(el)el.value=cf2[k];}); }if(c.traslado){var ct={trasladoDesde:c.traslado.desde,trasladoDate:c.traslado.date,trasladoTime:c.traslado.time,trasladoTransporte:c.traslado.transporte,trasladoHasta:c.traslado.hasta,trasladoHotel:c.traslado.hotel,trasladoNotas:c.traslado.notas};Object.keys(ct).forEach(function(k){if(!ct[k])return;var el=form.querySelector('[name="'+k+'"]');if(el)el.value=ct[k];});}
 if(c.vuelta){var vf={vueltaDesde:c.vuelta.desde,vueltaDate:c.vuelta.date,vueltaTime:c.vuelta.time,vueltaTransporte:c.vuelta.transporte,vueltaHasta:c.vuelta.hasta,vueltaNotas:c.vuelta.notas};Object.keys(vf).forEach(function(k){if(!vf[k])return;var el=form.querySelector('[name="'+k+'"]');if(el)el.value=vf[k];});}
@@ -965,7 +967,7 @@ if(c.llegada){var lf={llegadaDate:c.llegada.date,llegadaTime:c.llegada.time,lleg
     function logBlock(label,ico,obj){
       if(!obj)return"";
       var rows="";
-      if(obj.date||obj.time) rows+='<div class="log-row"><span class="log-l">Fecha y hora</span><span class="log-v">'+(obj.date?fmtDateShort(obj.date)+" ":"")+(obj.time?obj.time+"h":"")+"</span></div>";
+      if(obj.date||obj.time) rows+='<div class="log-row"><span class="log-l">Fecha y hora</span><span class="log-v">'+(obj.date?fmtDateShort(obj.date)+" ":"")+(obj.time?fmtTimePart(obj.time):"")+"</span></div>";
       if(obj.lugar) rows+='<div class="log-row"><span class="log-l">Lugar</span><span class="log-v">'+esc(obj.lugar)+"</span></div>";
       if(obj.hotel) rows+='<div class="log-row"><span class="log-l">🏨 Alojamiento</span><span class="log-v">'+esc(obj.hotel)+"</span></div>";
       if(obj.transporte) rows+='<div class="log-row"><span class="log-l">Transporte</span><span class="log-v">'+esc(obj.transporte)+"</span></div>";
@@ -977,7 +979,7 @@ if(c.llegada){var lf={llegadaDate:c.llegada.date,llegadaTime:c.llegada.time,lleg
       matchesHtml='<div class="section-title">⚽ Partidos / Entrenamientos</div>';
       matchesHtml+=c.matches.map(function(m){
         var dt=m.date?new Date(m.date+"T12:00:00").toLocaleDateString("es-ES",{weekday:"short",day:"2-digit",month:"short"}):"Fecha TBD";
-        return '<div class="match-row">'+matchIcon(m.matchType)+' <strong>'+(m.matchType==="entrenamiento"?"":"vs ")+esc(m.rival||"Por confirmar")+'</strong> — '+dt+(m.time?" · "+m.time+"h":"")+"</div>";
+        return '<div class="match-row">'+matchIcon(m.matchType)+' <strong>'+(m.matchType==="entrenamiento"?"":"vs ")+esc(m.rival||"Por confirmar")+'</strong> — '+dt+(m.time?" · "+fmtTimePart(m.time):"")+"</div>";
       }).join("");
     }
     win.document.write('<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/><title>'+esc(c.title)+'</title><style>'+
@@ -1513,13 +1515,13 @@ function renderNueva(){
     '<div class="fg" id="limit-date-g"><label class="fl">Fecha límite confirmación</label><input class="fi" type="date" name="limitDate"/><p style="font-size:11px;color:var(--text-muted);margin-top:4px">Si no se confirma antes de esta fecha, se descartará automáticamente</p></div>'+
     '<div class="fg"><label class="fl">Fecha de envío de la preconvocatoria</label><input class="fi" type="date" name="preconvDate"/><p style="font-size:11px;color:var(--text-muted);margin-top:4px">Día en que la federación envió/publicó la preconvocatoria (rellena si lo sabes)</p></div>'+
     '<div class="fg"><label class="fl">Fecha de envío de la convocatoria</label><input class="fi" type="date" name="convDate"/><p style="font-size:11px;color:var(--text-muted);margin-top:4px">Día en que la federación envió/publicó la convocatoria (rellena si lo sabes)</p></div>'+
-    '<div class="frow"><div class="fg"><label class="fl">Inicio (incorporación) *</label><input class="fi" type="date" name="startDate"/></div><div class="fg"><label class="fl">Hora incorporación</label><input class="fi" type="time" name="incorpTime"/></div></div>'+
-    '<div class="fg"><label class="fl">Fin *</label><input class="fi" type="date" name="endDate"/></div>'+
+    '<div class="frow"><div class="fg"><label class="fl">Inicio (incorporación) *</label><input class="fi" type="date" name="startDate" id="f-startDate"/></div><div class="fg"><label class="fl">Hora incorporación</label><input class="fi" type="text" name="incorpTime" id="f-incorpTime" placeholder="18:00 o &quot;Mañana&quot;/&quot;Tarde&quot;"/></div></div>'+
+    '<div class="frow"><div class="fg"><label class="fl">Fin *</label><input class="fi" type="date" name="endDate" id="f-endDate"/></div><div class="fg"><label class="fl">Hora fin</label><input class="fi" type="text" name="endTime" id="f-endTime" placeholder="18:00 o &quot;Mañana&quot;/&quot;Tarde&quot;"/></div></div>'+
     '<div class="fg"><label class="fl">Lugar de concentración</label><input class="fi" type="text" name="location" placeholder="Ej: Ciudad del Fútbol, Las Rozas"/></div>'+
     '</div>'+
 '<div class="fblock fblock-conc">'+
 '<div class="fsec fsec-conc"><span class="fsec-ico">📍</span><span class="fsec-lbl">Citación</span></div>'+
-'<div class="frow"><div class="fg"><label class="fl">Fecha citación</label><input class="fi" type="date" name="concDate"/></div><div class="fg"><label class="fl">Hora</label><input class="fi" type="time" name="concTime"/></div></div>'+
+'<div class="frow"><div class="fg"><label class="fl">Fecha citación</label><input class="fi" type="date" name="concDate" id="f-concDate"/></div><div class="fg"><label class="fl">Hora</label><input class="fi" type="text" name="concTime" id="f-concTime" placeholder="18:00 o &quot;Mañana&quot;/&quot;Tarde&quot;"/></div></div>'+
 '<div class="fg"><label class="fl">Lugar de citación</label><input class="fi" type="text" name="concLugar" placeholder="Ej: Ciudad del Fútbol, Las Rozas..."/></div>'+
 '<div class="fg"><label class="fl">Alojamiento</label><input class="fi" type="text" name="concHotel" placeholder="Ej: Hotel NH Las Rozas..."/></div>'+
 '<div class="fg"><label class="fl">Notas citación</label><textarea class="fta" name="concNotas" rows="2" placeholder="Ej: Presentarse con DNI. Cena a las 21:00..." style="min-height:50px"></textarea></div>'+
@@ -1536,7 +1538,7 @@ function renderNueva(){
 '<div class="fblock fblock-vuelta">'+
 '<div class="fsec fsec-vuelta"><span class="fsec-ico">🔙</span><span class="fsec-lbl">Vuelta</span></div>'+
 '<div class="fg"><label class="fl">Desde (origen vuelta)</label><input class="fi" type="text" name="vueltaDesde" placeholder="Ej: Aeropuerto de Lisboa..."/></div>'+
-'<div class="frow"><div class="fg"><label class="fl">Fecha vuelta</label><input class="fi" type="date" name="vueltaDate"/></div><div class="fg"><label class="fl">Hora</label><input class="fi" type="time" name="vueltaTime"/></div></div>'+
+'<div class="frow"><div class="fg"><label class="fl">Fecha vuelta</label><input class="fi" type="date" name="vueltaDate" id="f-vueltaDate"/></div><div class="fg"><label class="fl">Hora</label><input class="fi" type="text" name="vueltaTime" id="f-vueltaTime" placeholder="18:00 o &quot;Mañana&quot;/&quot;Tarde&quot;"/></div></div>'+
 '<div class="fg"><label class="fl">Medio y localizador</label><input class="fi" type="text" name="vueltaTransporte" placeholder="Ej: Vuelo IB5678 · Localizador XYZ789"/></div>'+
 '<div class="fg"><label class="fl">Hasta (destino vuelta)</label><input class="fi" type="text" name="vueltaHasta" placeholder="Ej: Aeropuerto T4 Madrid..."/></div>'+
 '<div class="fg"><label class="fl">Notas vuelta</label><textarea class="fta" name="vueltaNotas" rows="2" placeholder="Ej: Bus al CRM. Llegada 16:30h. Recogida familias..." style="min-height:50px"></textarea></div>'+
@@ -1580,6 +1582,22 @@ function renderNueva(){
     var input=label.querySelector('input[type="radio"]');
     if(input){input.addEventListener('change',function(){document.querySelectorAll('.rc').forEach(function(l){l.classList.toggle('on',l.querySelector('input[type="radio"]').checked);});});}
   });
+
+  (function(){
+    function mirror(idA,idB){
+      var a=$(idA),b=$(idB);if(!a||!b)return;
+      a.addEventListener("input",function(){if(a.value)b.value=a.value;});
+      b.addEventListener("input",function(){if(b.value)a.value=b.value;});
+    }
+    mirror("f-startDate","f-concDate");
+    mirror("f-incorpTime","f-concTime");
+    function fillIfEmpty(srcId,dstId){
+      var src=$(srcId),dst=$(dstId);if(!src||!dst)return;
+      src.addEventListener("input",function(){if(src.value&&!dst.value)dst.value=src.value;});
+    }
+    fillIfEmpty("f-endDate","f-vueltaDate");
+    fillIfEmpty("f-endTime","f-vueltaTime");
+  })();
 
   document.querySelectorAll(".pg-hdr").forEach(function(h){
     h.addEventListener("click",function(){
@@ -1725,6 +1743,7 @@ function renderNueva(){
       title:fd.get("title")||"",
       startDate:fd.get("startDate")||"",
       endDate:fd.get("endDate")||"",
+      endTime:fd.get("endTime")||"",
       convType:fd.get("convType")||"provisional",
       limitDate:fd.get("limitDate")||"",
       preconvDate:fd.get("preconvDate")||"",
@@ -2562,7 +2581,7 @@ function calDayPanelHtml(ds,dayEvents,dayMatches){
   var mrows=(dayMatches||[]).map(function(x){
     return'<div class="cal-ev-item"><span class="cal-ev-flag">'+matchIcon(x.match.matchType)+'</span>'+
       '<div class="cal-ev-info"><div class="cal-ev-title">'+(x.match.matchType==="entrenamiento"?"":"vs ")+esc(x.match.rival||"Por confirmar")+'</div>'+
-      '<div class="cal-ev-dates">'+esc(x.conv.title)+(x.match.time?" · "+x.match.time+"h":"")+"</div></div></div>";
+      '<div class="cal-ev-dates">'+esc(x.conv.title)+(x.match.time?" · "+fmtTimePart(x.match.time):"")+"</div></div></div>";
   }).join("");
   return'<div class="cal-panel-date">'+dt.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"})+"</div>"+rows+mrows;
 }
