@@ -263,6 +263,12 @@ function calcStatus(s,e){var n=new Date();n.setHours(0,0,0,0);var a=new Date(s+"
 function daysUntil(dateStr){if(!dateStr)return 999;var now=new Date();now.setHours(0,0,0,0);var d=new Date(dateStr+"T00:00:00");return Math.ceil((d-now)/(1000*60*60*24));}
 function provAlertBadge(c){if(c.convType!=="provisional")return"";var days=daysUntil(c.startDate);if(days>7)return"";if(days<0)return'<span class="badge prov-alert prov-alert-late">⚠️ Sin confirmar</span>';if(days===0)return'<span class="badge prov-alert prov-alert-today">⚠️ HOY</span>';return'<span class="badge prov-alert prov-alert-soon">⚠️ '+days+'d</span>';}
 function fmtRange(s,e){if(!s)return"—";var a=new Date(s+"T12:00:00"),b=new Date(e+"T12:00:00");return a.toLocaleDateString("es-ES",{day:"2-digit",month:"short"})+" — "+b.toLocaleDateString("es-ES",{day:"2-digit",month:"short",year:"numeric"});}
+function fmtRangeWithTimes(s,e,st,et){
+  if(!s)return"—";
+  var a=new Date(s+"T12:00:00"),b=new Date(e+"T12:00:00");
+  var stTxt=fmtTimePart(st),etTxt=fmtTimePart(et);
+  return a.toLocaleDateString("es-ES",{day:"2-digit",month:"short"})+(stTxt?" "+stTxt:"")+" — "+b.toLocaleDateString("es-ES",{day:"2-digit",month:"short",year:"numeric"})+(etTxt?" "+etTxt:"");
+}
 function fmtDateShort(d){if(!d)return"";var dt=new Date(d+"T12:00:00");return dt.toLocaleDateString("es-ES",{day:"2-digit",month:"short"});}
 function fmtDMY(d,t){if(!d)return"";var p=d.split("-");if(p.length!==3)return"";return p[2]+"/"+p[1]+"/"+p[0]+(t?" "+t+"h":"");}
 function fmtTimePart(t){if(!t)return"";return/^\d{1,2}:\d{2}$/.test(t)?t+"h":t;}
@@ -441,7 +447,7 @@ function callupCard(c){
     '<div class="cc-hdr"><div class="cc-badges">'+selBadge(c.selectionType,c.selectionCategory,c.pais)+statusBadge(c.status)+fifaBadge(c)+(pc===0&&droppedPlayers.length>0?'<span class="badge" style="background:#EF4444;color:#fff">⚠️ SIN JUGADORES</span>':"")+"</div></div>"+
     '<h3 class="cc-title">'+esc(c.title)+"</h3>"+
     '<div class="cc-meta">'+
-    '<div class="cc-mi"><span class="mi">📅</span><span>'+fmtRange(c.startDate,c.endDate)+(c.incorpTime?" · "+esc(fmtTimePart(c.incorpTime)):"")+"</span></div>"+
+    '<div class="cc-mi"><span class="mi">📅</span><span>'+fmtRangeWithTimes(c.startDate,c.endDate,c.incorpTime,c.endTime)+"</span></div>"+
     (c.location?'<div class="cc-mi"><span class="mi">📍</span><span>'+esc(c.location)+"</span></div>":"")+
     "</div>"+
     ((pc>0||droppedPlayers.length>0)?'<button type="button" class="cc-plcount" data-players-toggle="1"><span class="cc-plcount-chev">▸</span>👕 '+pc+(pc===1?" jugador seleccionado":" jugadores seleccionados")+(droppedPlayers.length?" ("+droppedPlayers.length+(droppedPlayers.length===1?" jugador no va":" jugadores no van")+")":"")+'</button><div class="cc-plrows" style="display:none">'+playersList+"</div>":"")+
