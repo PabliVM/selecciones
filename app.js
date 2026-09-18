@@ -256,6 +256,9 @@ function loadUserRoles(cb){
   }).catch(function(e){console.error("loadUserRoles:",e);if(cb)cb();});
 }
 function esc(s){if(!s)return"";return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function dropIsRed(p){return p.dropConvType?p.dropConvType==="definitiva":true;}
+function dropWord(p){return dropIsRed(p)?"DESCONVOCADO":"NO CONVOCADO";}
+function dropReasonTxt(p){return p.dropStatus&&["no_convocado","no_liberado","otros","sin_motivo","sin_especificar","active"].indexOf(p.dropStatus)===-1?p.dropStatus:"";}
 function calcStatus(s,e){var n=new Date();n.setHours(0,0,0,0);var a=new Date(s+"T00:00:00"),b=new Date(e+"T23:59:59");return n<a?"proxima":n>b?"finalizada":"en_curso";}
 function daysUntil(dateStr){if(!dateStr)return 999;var now=new Date();now.setHours(0,0,0,0);var d=new Date(dateStr+"T00:00:00");return Math.ceil((d-now)/(1000*60*60*24));}
 function provAlertBadge(c){if(c.convType!=="provisional")return"";var days=daysUntil(c.startDate);if(days>7)return"";if(days<0)return'<span class="badge prov-alert prov-alert-late">⚠️ Sin confirmar</span>';if(days===0)return'<span class="badge prov-alert prov-alert-today">⚠️ HOY</span>';return'<span class="badge prov-alert prov-alert-soon">⚠️ '+days+'d</span>';}
@@ -396,8 +399,9 @@ function callupCard(c){
   var playersList=activePlayers.map(function(p){
     return'<div class="cc-plrow"><span class="cc-plrow-n">'+esc(p.fullName)+"</span>"+(p.teamName?'<span class="cc-plrow-t">('+esc(p.teamName)+")</span>":"")+"</div>";
   }).join("")+droppedPlayers.map(function(p){
-    var reasonTxt=p.dropStatus&&["no_convocado","no_liberado","otros","sin_motivo","sin_especificar","active"].indexOf(p.dropStatus)===-1?p.dropStatus:"";
-    return'<div class="cc-plrow cc-plrow-dropped"><span class="cc-plrow-n">'+esc(p.fullName)+"</span>"+(p.teamName?'<span class="cc-plrow-t">('+esc(p.teamName)+")</span>":"")+'<span class="cc-plrow-dropbadge">desconvocado'+(reasonTxt?" · "+esc(reasonTxt):"")+"</span></div>";
+    var reasonTxt=dropReasonTxt(p);
+    var cls=dropIsRed(p)?"cc-plrow-dropped-red":"cc-plrow-dropped-orange";
+    return'<div class="cc-plrow cc-plrow-dropped '+cls+'"><span class="cc-plrow-n">'+esc(p.fullName)+"</span>"+(p.teamName?'<span class="cc-plrow-t">('+esc(p.teamName)+")</span>":"")+'<span class="cc-plrow-dropbadge">'+dropWord(p)+(reasonTxt?" · "+esc(reasonTxt):"")+"</span></div>";
   }).join("");
   var tl=[];
   if(c.conc&&(c.conc.date||c.conc.time||c.conc.lugar))
@@ -436,13 +440,15 @@ function callupCard(c){
     '<h3 class="cc-title">'+esc(c.title)+"</h3>"+
     '<div class="cc-meta">'+
     '<div class="cc-mi"><span class="mi">📅</span><span>'+fmtRange(c.startDate,c.endDate)+"</span></div>"+
+    (c.location?'<div class="cc-mi"><span class="mi">📍</span><span>'+esc(c.location)+"</span></div>":"")+
     "</div>"+
-    ((pc>0||droppedPlayers.length>0)?'<button type="button" class="cc-plcount" data-players-toggle="1"><span class="cc-plcount-chev">▸</span>👕 '+pc+(pc===1?" jugador seleccionado":" jugadores seleccionados")+(droppedPlayers.length?" ("+droppedPlayers.length+" desconvocado"+(droppedPlayers.length===1?"":"s")+")":"")+'</button><div class="cc-plrows" style="display:none">'+playersList+"</div>":"")+
+    ((pc>0||droppedPlayers.length>0)?'<button type="button" class="cc-plcount" data-players-toggle="1"><span class="cc-plcount-chev">▸</span>👕 '+pc+(pc===1?" jugador seleccionado":" jugadores seleccionados")+(droppedPlayers.length?" ("+droppedPlayers.length+(droppedPlayers.length===1?" jugador no va":" jugadores no van")+")":"")+'</button><div class="cc-plrows" style="display:none">'+playersList+"</div>":"")+
     (tlHtml?'<button type="button" class="cc-more-btn" data-more-toggle="1">+ Ver más</button><div class="cc-tl-wrap" style="display:none">'+tlHtml+"</div>":"")+
     "</article>";
 }
 
 // ── TABLA ESTILO HOJA DE CÁLCULO (una fila por jugador) ──
+var MESES_ABR=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sept","Oct","Nov","Dic"];
 function fmtMatchesCompact(matches){
   var groups=[],map={};
   (matches||[]).forEach(function(m){
@@ -451,32 +457,62 @@ function fmtMatchesCompact(matches){
     var day=parseInt(p[2],10);
     var label=m.matchType==="entrenamiento"?"Entrenamiento ":"";
     var key=label+p[0]+p[1];
-    if(!map[key]){map[key]={label:label,mm:p[1],yyyy:p[0],days:[]};groups.push(map[key]);}
+    if(!map[key]){map[key]={label:label,mIdx:parseInt(p[1],10)-1,days:[]};groups.push(map[key]);}
     if(map[key].days.indexOf(day)===-1)map[key].days.push(day);
   });
-  return groups.map(function(g){return g.label+g.days.sort(function(a,b){return a-b;}).join(",")+"/"+g.mm+"/"+g.yyyy;}).join(" y ");
+  return groups.map(function(g){
+    var days=g.days.sort(function(a,b){return a-b;});
+    var daysStr=days.length>1?days.slice(0,-1).join(",")+" y "+days[days.length-1]:String(days[0]);
+    return g.label+daysStr+" "+MESES_ABR[g.mIdx]+".";
+  }).join(" ");
 }
 function playerSheetRows(callups){
   var rows=[];
   callups.forEach(function(c){
     var k=selKey(c.selectionType);var sel=SELS[k];
     var selLabel=(sel?sel.label.toUpperCase():"")+" "+(k==="internacional"&&c.pais?paisAdj(c.pais).toUpperCase():(CAT[c.selectionCategory]||c.selectionCategory||"").toUpperCase());
-    var matchesStr=fmtMatchesCompact(c.matches);
+    var players=c.players||[];
+    var activeCount=players.filter(function(p){return!p.dropStatus||p.dropStatus==="active";}).length;
+    var noneActive=players.length>0&&activeCount===0;
+    var matchesStr=noneActive?"":fmtMatchesCompact(c.matches);
     var incorp=fmtDMY(c.startDate,c.incorpTime);
     var vuelta=fmtDMY(c.vuelta&&c.vuelta.date,c.vuelta&&c.vuelta.time);
-    var players=c.players||[];
+    var lugarVal=noneActive?"":(c.location||"");
     if(!players.length){
-      rows.push({sel:selLabel,decision:c.convType==="definitiva"?"CONVOCADO":"PRECONVOCADO",player:"—",pre:fmtDMY(c.preconvDate),conv:fmtDMY(c.convDate),lleg:incorp,partidos:matchesStr,vuelta:vuelta,lugar:c.location||"",cls:""});
+      rows.push({sel:selLabel,decision:c.convType==="definitiva"?"CONVOCADO":"PRECONVOCADO",player:"—",pre:fmtDMY(c.preconvDate),conv:fmtDMY(c.convDate),lleg:incorp,partidos:matchesStr,vuelta:vuelta,lugar:lugarVal,cls:""});
       return;
     }
     players.forEach(function(p){
       var dropped=p.dropStatus&&p.dropStatus!=="active";
-      var decision=dropped?"DESCONVOCADO":(c.convType==="definitiva"?"CONVOCADO":"PRECONVOCADO");
-      var cls=dropped?"psheet-red":(c.convType==="definitiva"?"psheet-green":"psheet-white");
-      rows.push({sel:selLabel,decision:decision,player:p.fullName,pre:fmtDMY(c.preconvDate),conv:fmtDMY(c.convDate),lleg:incorp,partidos:matchesStr,vuelta:vuelta,lugar:c.location||"",cls:cls});
+      var decision=dropped?dropWord(p):(c.convType==="definitiva"?"CONVOCADO":"PRECONVOCADO");
+      if(dropped){var rt=dropReasonTxt(p);if(rt)decision+=" — "+rt;}
+      var cls=dropped?(dropIsRed(p)?"psheet-red":"psheet-orange"):(c.convType==="definitiva"?"psheet-green":"psheet-white");
+      rows.push({sel:selLabel,decision:decision,player:p.fullName,pre:fmtDMY(c.preconvDate),conv:fmtDMY(c.convDate),lleg:incorp,partidos:matchesStr,vuelta:vuelta,lugar:lugarVal,cls:cls});
     });
   });
   return rows;
+}
+function printJrDoc(title,bodyHtml){
+  var win=window.open("","_blank","width=1400,height=900");
+  if(!win){toast("El navegador bloqueó la ventana emergente. Permite pop-ups para imprimir.");return;}
+  win.document.write('<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/><title>'+esc(title)+'</title><style>'+
+    '*{box-sizing:border-box}body{font-family:Arial,sans-serif;padding:14px;color:#111}'+
+    'h1{font-size:16pt;margin:0 0 4px;border-bottom:3px solid #2563eb;padding-bottom:6px}'+
+    'h2{font-size:12pt;margin:20px 0 6px;color:#2563eb}'+
+    '.meta{font-size:9pt;color:#555;margin-bottom:10px}'+
+    'table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:9pt;margin-bottom:10px}'+
+    'th{background:#D9D9D9;font-weight:700;text-transform:uppercase;font-size:8pt;padding:6px 8px;border:1px solid #999;text-align:left}'+
+    'td{padding:5px 8px;border:1px solid #ccc;font-size:8.5pt;word-break:break-word;vertical-align:top}'+
+    'tr.psheet-green td{background:#C6E9C6}'+
+    'tr.psheet-red td{background:#F4C7C3;color:#7F1D1D}'+
+    'tr.psheet-orange td{background:#FDE4C0;color:#92400E}'+
+    '@media print{@page{size:landscape;margin:8mm}}'+
+    '</style></head><body>'+
+    '<h1>'+esc(title)+'</h1><div class="meta">Real Madrid Cantera · Temporada '+esc(S.season)+' · '+new Date().toLocaleDateString("es-ES")+'</div>'+
+    bodyHtml+
+    '</body></html>');
+  win.document.close();win.focus();
+  setTimeout(function(){win.print();},400);
 }
 function playerSheetTableHtml(callups){
   var rows=playerSheetRows(callups);
@@ -553,14 +589,16 @@ function callupDetail(c){
       '<button class="pl-rm-btn" data-pidx="'+ap.idx+'" title="Eliminar">×</button>'+"</li>";
   }
   if(droppedPlayers.length){
-    rows+='<li class="pl-dropped-hdr">❌ No convocados / No liberados ('+droppedPlayers.length+')</li>';
+    rows+='<li class="pl-dropped-hdr">⚠️ No van a esta convocatoria ('+droppedPlayers.length+')</li>';
     for(var j=0;j<droppedPlayers.length;j++){
       var dp2=droppedPlayers[j];
-      var dropLabel=dp2.p.dropStatus==="no_convocado"?"No convocado":dp2.p.dropStatus==="no_liberado"?"No liberado":dp2.p.dropStatus==="otros"||dp2.p.dropStatus==="sin_motivo"||dp2.p.dropStatus==="sin_especificar"?"Sin motivo especificado":dp2.p.dropStatus;
+      var dcol=dropIsRed(dp2.p)?"#EF4444":"#F59E0B";
+      var reasonTxt2=dropReasonTxt(dp2.p);
+      var dropLabel=dropWord(dp2.p)+(reasonTxt2?" — "+reasonTxt2:"");
       rows+='<li class="pl-item pl-item-dropped" data-pidx="'+dp2.idx+'">'+
-        '<span class="pl-num" style="color:#EF4444;text-decoration:line-through">'+(j+1)+'</span>'+
-        '<div class="pl-info"><span class="pl-name" style="text-decoration:line-through;color:#EF4444;opacity:.7">'+esc(dp2.p.fullName)+'</span>'+
-        '<span class="pl-team" style="color:#EF4444;opacity:.6">'+esc(dp2.p.teamName)+' — '+dropLabel+"</span></div>"+
+        '<span class="pl-num" style="color:'+dcol+';text-decoration:line-through">'+(j+1)+'</span>'+
+        '<div class="pl-info"><span class="pl-name" style="text-decoration:line-through;color:'+dcol+';opacity:.7">'+esc(dp2.p.fullName)+'</span>'+
+        '<span class="pl-team" style="color:'+dcol+';opacity:.8">'+esc(dp2.p.teamName)+' — '+esc(dropLabel)+"</span></div>"+
         '<button class="pl-restore-btn" data-pidx="'+dp2.idx+'" title="Restaurar">↩</button>'+"</li>";
     }
   }
@@ -810,6 +848,7 @@ function openDetail(id){
       $("dr-ok").addEventListener("click",function(){
         var reason=($("dr-reason").value||"").trim()||"sin_motivo";
         conv.players[idx].dropStatus=reason;
+        conv.players[idx].dropConvType=conv.convType;
         if(window._db&&window._fbUser){var fns=window._fbFns;fns.setDoc(fns.doc(window._db,"callups",id),Object.assign({},conv)).catch(function(e){console.error(e);});}
         toast("❌ "+pname+" descartado");closeMo2();close();openDetail(id);
       });
@@ -866,7 +905,6 @@ if(c.llegada){var lf={llegadaDate:c.llegada.date,llegadaTime:c.llegada.time,lleg
         }
         var sb=form.querySelector('[type="submit"]');if(sb)sb.textContent="💾 Guardar";
         var vt=document.querySelector(".vt");if(vt)vt.textContent="Editar Convocatoria";
-        if(sb)sb.scrollIntoView({behavior:"smooth",block:"center"});
       },50);
     },50);
   });
@@ -916,10 +954,12 @@ if(c.llegada){var lf={llegadaDate:c.llegada.date,llegadaTime:c.llegada.time,lleg
       return '<div class="pl-row"><span class="pl-num">'+(i+1)+'</span><span class="pl-name">'+esc(p.fullName)+'</span><span class="pl-team">'+esc(p.teamName)+'</span></div>';
     }).join("");
     if(droppedPlayers.length){
-      playersHtml+='<div class="pl-dropped-hdr">❌ No convocados / No liberados</div>';
+      playersHtml+='<div class="pl-dropped-hdr">⚠️ No van a esta convocatoria</div>';
       playersHtml+=droppedPlayers.map(function(p){
-        var lbl=p.dropStatus==="no_convocado"?"No convocado":p.dropStatus==="no_liberado"?"No liberado":p.dropStatus==="otros"||p.dropStatus==="sin_motivo"||p.dropStatus==="sin_especificar"?"Sin motivo especificado":p.dropStatus;
-        return '<div class="pl-row pl-dropped"><span class="pl-name" style="text-decoration:line-through;color:#c00">'+esc(p.fullName)+'</span><span class="pl-team">'+esc(p.teamName)+' — '+lbl+'</span></div>';
+        var pcol=dropIsRed(p)?"#c00":"#B45309";
+        var reasonTxt3=dropReasonTxt(p);
+        var lbl=dropWord(p)+(reasonTxt3?" — "+reasonTxt3:"");
+        return '<div class="pl-row pl-dropped"><span class="pl-name" style="text-decoration:line-through;color:'+pcol+'">'+esc(p.fullName)+'</span><span class="pl-team" style="color:'+pcol+'">'+esc(p.teamName)+' — '+esc(lbl)+'</span></div>';
       }).join("");
     }
     function logBlock(label,ico,obj){
@@ -1232,7 +1272,8 @@ function renderAgenda(viewMode){
     '</div>'+paisPills+catPills;
 
   var miniToggle='<div class="mini-toggle"><button class="mini-toggle-btn'+(viewMode==="fichas"?" on":"")+'" data-vm="fichas">⊢□ Fichas</button>'+
-    '<button class="mini-toggle-btn'+(viewMode==="tabla"?" on":"")+'" data-vm="tabla">≡ Tabla</button></div>';
+    '<button class="mini-toggle-btn'+(viewMode==="tabla"?" on":"")+'" data-vm="tabla">≡ Tabla</button>'+
+    '<button class="mini-toggle-btn'+(viewMode==="tablajr"?" on":"")+'" data-vm="tablajr">⚏ Tabla JR</button></div>';
 
   if(S.agendaCollapseCurso===undefined)S.agendaCollapseCurso=false;
   if(S.agendaCollapseProx===undefined)S.agendaCollapseProx=false;
@@ -1248,6 +1289,25 @@ function renderAgenda(viewMode){
       (S.agendaCollapseProx?"":'<div style="padding:'+(proximas.length?"0":"14px")+'">'+(proximas.length?playerSheetTableHtml(proximas):'<p class="msub" style="margin:0">Nada próximo</p>')+"</div>")+
       "</div>";
     if(done.length)h+='<details class="fin-details"'+(S.finOpen?" open":"")+'><summary class="fin-summary"><span class="fin-summary__label">Finalizadas</span><span class="fin-summary__count">'+done.length+'</span></summary><div style="margin-top:8px">'+playerSheetTableHtml(done)+"</div></details>";
+  } else if(viewMode==="tablajr"){
+    var jrCallups=enCurso.concat(proximas);
+    var jrGroups=[
+      {key:"espanola",label:"ESPAÑOLA"},
+      {key:"internacional",label:"INTERNACIONAL"},
+      {key:"madrilena",label:"MADRILEÑA"}
+    ];
+    h+='<div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:12px">'+miniToggle+
+      '<button class="btn btn-ghost btn-sm" id="btn-jr-print-all">🖨️ Imprimir todas juntas</button></div>';
+    jrGroups.forEach(function(g){
+      var gc=jrCallups.filter(function(c){return selKey(c.selectionType)===g.key;});
+      h+='<div class="agenda-upcoming" style="margin-bottom:16px" data-jr-group="'+g.key+'">'+
+        '<div class="agenda-upcoming-hdr" style="display:flex;align-items:center;justify-content:space-between;gap:6px">'+
+        '<span>'+g.label+' ('+gc.length+')</span>'+
+        (gc.length?'<button class="jug-edit-btn btn-jr-print-one" data-jr-group="'+g.key+'" data-jr-label="'+esc(g.label)+'">🖨️ Imprimir</button>':"")+
+        "</div>"+
+        '<div style="padding:'+(gc.length?"0":"14px")+'">'+(gc.length?playerSheetTableHtml(gc):'<p class="msub" style="margin:0">Sin convocatorias</p>')+"</div>"+
+        "</div>";
+    });
   } else {
     h+='<div class="agenda-upcoming" style="margin-bottom:16px">'+
       '<div class="agenda-upcoming-hdr" data-toggle-curso="1" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:6px"><span style="display:flex;align-items:center;gap:6px"><span class="fecha-cat-group-chev">'+(S.agendaCollapseCurso?"▶":"▼")+"</span>🔴 EN CURSO ("+enCurso.length+")</span>"+miniToggle+"</div>"+
@@ -1287,6 +1347,25 @@ function renderAgenda(viewMode){
       window.print();
       if(viewMode==="fichas") document.querySelectorAll(".cl").forEach(function(el){el.classList.remove("print-2col");});
     },100);
+  });
+  document.querySelectorAll(".btn-jr-print-one").forEach(function(b){
+    b.addEventListener("click",function(e){
+      e.stopPropagation();
+      var block=document.querySelector('[data-jr-group="'+b.dataset.jrGroup+'"] .tabla-wrap');
+      if(!block){toast("Nada que imprimir");return;}
+      printJrDoc(b.dataset.jrLabel,block.outerHTML);
+    });
+  });
+  var btnJrAll=document.getElementById("btn-jr-print-all");
+  if(btnJrAll)btnJrAll.addEventListener("click",function(){
+    var labels={espanola:"Española",internacional:"Internacional",madrilena:"Madrileña"};
+    var body="";
+    document.querySelectorAll("[data-jr-group]").forEach(function(g){
+      var wrap=g.querySelector(".tabla-wrap");
+      if(wrap)body+="<h2>"+esc(labels[g.dataset.jrGroup]||g.dataset.jrGroup)+"</h2>"+wrap.outerHTML;
+    });
+    if(!body){toast("Nada que imprimir");return;}
+    printJrDoc("Tabla JR",body);
   });
 }
 
