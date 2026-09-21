@@ -258,7 +258,7 @@ function loadUserRoles(cb){
 function esc(s){if(!s)return"";return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
 function dropIsRed(p){return p.dropConvType?p.dropConvType==="definitiva":true;}
 function dropWord(p){return dropIsRed(p)?"DESCONVOCADO":"NO CONVOCADO";}
-function dropReasonTxt(p){return p.dropStatus&&["no_convocado","no_liberado","otros","sin_motivo","sin_especificar","active"].indexOf(p.dropStatus)===-1?p.dropStatus:"";}
+function dropReasonTxt(p){return p.dropStatus&&["sin_motivo","sin_especificar","active"].indexOf(p.dropStatus)===-1?p.dropStatus:"";}
 function calcStatus(s,e){var n=new Date();n.setHours(0,0,0,0);var a=new Date(s+"T00:00:00"),b=new Date(e+"T23:59:59");return n<a?"proxima":n>b?"finalizada":"en_curso";}
 function daysUntil(dateStr){if(!dateStr)return 999;var now=new Date();now.setHours(0,0,0,0);var d=new Date(dateStr+"T00:00:00");return Math.ceil((d-now)/(1000*60*60*24));}
 function provAlertBadge(c){if(c.convType!=="provisional")return"";var days=daysUntil(c.startDate);if(days>7)return"";if(days<0)return'<span class="badge prov-alert prov-alert-late">⚠️ Sin confirmar</span>';if(days===0)return'<span class="badge prov-alert prov-alert-today">⚠️ HOY</span>';return'<span class="badge prov-alert prov-alert-soon">⚠️ '+days+'d</span>';}
@@ -484,7 +484,7 @@ function playerSheetRows(callups){
     var noneActive=players.length>0&&activeCount===0;
     var matchesStr=noneActive?"":fmtMatchesCompact(c.matches);
     var incorp=fmtDMYSep(c.startDate,c.incorpTime);
-    var vuelta=fmtDMYSep(c.vuelta&&c.vuelta.date,c.vuelta&&c.vuelta.time);
+    var vuelta=fmtDMYSep((c.vuelta&&c.vuelta.date)||c.endDate,(c.vuelta&&c.vuelta.time)||c.endTime);
     var lugarVal=noneActive?"":(c.location||"");
     if(!players.length){
       rows.push({sel:selLabel,decision:c.convType==="definitiva"?"CONVOCADO":"PRECONVOCADO",player:"—",pre:fmtDMY(c.preconvDate),conv:fmtDMY(c.convDate),lleg:incorp,partidos:matchesStr,vuelta:vuelta,lugar:lugarVal,cls:""});
@@ -845,7 +845,15 @@ function openDetail(id){
       var mo2=document.createElement("div");mo2.className="mo";
       mo2.innerHTML='<div class="modal" style="padding-bottom:40px"><button class="mcl" id="dr-close">×</button>'+
         '<div class="mtitle">Descartar jugador</div><p class="msub">'+esc(pname)+' no irá a esta convocatoria.</p>'+
-        '<div class="fg"><label class="fl">Motivo (opcional)</label><input class="fi" type="text" id="dr-reason" placeholder="Ej: lesión, no liberado por su club..." autocomplete="off"/></div>'+
+        '<div class="fg"><label class="fl">Motivo *</label><select class="fsel" id="dr-reason">'+
+        '<option value="">Selecciona un motivo</option>'+
+        '<option value="Desconvocado">Desconvocado</option>'+
+        '<option value="No liberado">No liberado</option>'+
+        '<option value="No en la lista final">No en la lista final</option>'+
+        '<option value="Lesión">Lesión</option>'+
+        '<option value="otros">Otros</option></select></div>'+
+        '<div class="fg" id="dr-otros-wrap" style="display:none"><label class="fl">Escribe el motivo *</label><input class="fi" type="text" id="dr-otros-text" placeholder="Motivo" autocomplete="off"/></div>'+
+        '<div id="dr-err" class="ferr" style="display:none"></div>'+
         '<div style="display:flex;gap:8px;margin-top:12px">'+
         '<button class="btn btn-ghost btn-sm" id="dr-cancel" style="flex:1">Cancelar</button>'+
         '<button class="btn btn-danger btn-sm" id="dr-ok" style="flex:1">❌ Descartar</button></div></div>';
@@ -853,8 +861,19 @@ function openDetail(id){
       function closeMo2(){if(mo2.parentNode)mo2.parentNode.removeChild(mo2);}
       $("dr-close").addEventListener("click",closeMo2);$("dr-cancel").addEventListener("click",closeMo2);
       mo2.addEventListener("click",function(ev){if(ev.target===mo2)closeMo2();});
+      $("dr-reason").addEventListener("change",function(){
+        $("dr-otros-wrap").style.display=this.value==="otros"?"block":"none";
+      });
       $("dr-ok").addEventListener("click",function(){
-        var reason=($("dr-reason").value||"").trim()||"sin_motivo";
+        var sel=$("dr-reason").value;
+        var errEl=$("dr-err");
+        if(!sel){errEl.style.display="block";errEl.textContent="Elige un motivo.";return;}
+        var reason=sel;
+        if(sel==="otros"){
+          var txt=($("dr-otros-text").value||"").trim();
+          if(!txt){errEl.style.display="block";errEl.textContent="Escribe el motivo.";return;}
+          reason=txt;
+        }
         conv.players[idx].dropStatus=reason;
         conv.players[idx].dropConvType=conv.convType;
         if(window._db&&window._fbUser){var fns=window._fbFns;fns.setDoc(fns.doc(window._db,"callups",id),Object.assign({},conv)).catch(function(e){console.error(e);});}
