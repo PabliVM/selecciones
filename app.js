@@ -409,7 +409,7 @@ function callupCard(c){
   }).join("")+droppedPlayers.map(function(p){
     var reasonTxt=dropReasonTxt(p);
     var cls=dropIsRed(p)?"cc-plrow-dropped-red":"cc-plrow-dropped-orange";
-    return'<div class="cc-plrow cc-plrow-dropped '+cls+'"><span class="cc-plrow-n">'+esc(p.fullName)+"</span>"+(p.teamName?'<span class="cc-plrow-t">('+esc(p.teamName)+")</span>":"")+'<span class="cc-plrow-dropbadge">'+dropWord(p)+(reasonTxt?" · "+esc(reasonTxt):"")+"</span></div>";
+    return'<div class="cc-plrow cc-plrow-dropped '+cls+'"><span class="cc-plrow-n">'+esc(p.fullName)+"</span>"+(p.teamName?'<span class="cc-plrow-t">('+esc(p.teamName)+")</span>":"")+'<span class="cc-plrow-dropbadge">'+(reasonTxt?esc(reasonTxt):dropWord(p))+"</span></div>";
   }).join("");
   var tl=[];
   if(c.conc&&(c.conc.date||c.conc.time||c.conc.lugar))
@@ -492,8 +492,8 @@ function playerSheetRows(callups){
     }
     players.forEach(function(p){
       var dropped=p.dropStatus&&p.dropStatus!=="active";
-      var decision=dropped?dropWord(p):(c.convType==="definitiva"?"CONVOCADO":"PRECONVOCADO");
-      if(dropped){var rt=dropReasonTxt(p);if(rt)decision+=" — "+rt;}
+      var dropReason=dropped?dropReasonTxt(p):"";
+      var decision=dropped?(dropReason||dropWord(p)):(c.convType==="definitiva"?"CONVOCADO":"PRECONVOCADO");
       var cls=dropped?(dropIsRed(p)?"psheet-red":"psheet-orange"):(c.convType==="definitiva"?"psheet-green":"psheet-white");
       rows.push({sel:selLabel,decision:decision,player:p.fullName,pre:fmtDMY(c.preconvDate),conv:fmtDMY(c.convDate),lleg:incorp,partidos:matchesStr,vuelta:vuelta,lugar:lugarVal,cls:cls});
     });
@@ -602,7 +602,7 @@ function callupDetail(c){
       var dp2=droppedPlayers[j];
       var dcol=dropIsRed(dp2.p)?"#EF4444":"#F59E0B";
       var reasonTxt2=dropReasonTxt(dp2.p);
-      var dropLabel=dropWord(dp2.p)+(reasonTxt2?" — "+reasonTxt2:"");
+      var dropLabel=reasonTxt2?reasonTxt2:dropWord(dp2.p);
       rows+='<li class="pl-item pl-item-dropped" data-pidx="'+dp2.idx+'">'+
         '<span class="pl-num" style="color:'+dcol+';text-decoration:line-through">'+(j+1)+'</span>'+
         '<div class="pl-info"><span class="pl-name" style="text-decoration:line-through;color:'+dcol+';opacity:.7">'+esc(dp2.p.fullName)+'</span>'+
@@ -985,7 +985,7 @@ if(c.llegada){var lf={llegadaDate:c.llegada.date,llegadaTime:c.llegada.time,lleg
       playersHtml+=droppedPlayers.map(function(p){
         var pcol=dropIsRed(p)?"#c00":"#B45309";
         var reasonTxt3=dropReasonTxt(p);
-        var lbl=dropWord(p)+(reasonTxt3?" — "+reasonTxt3:"");
+        var lbl=reasonTxt3?reasonTxt3:dropWord(p);
         return '<div class="pl-row pl-dropped"><span class="pl-name" style="text-decoration:line-through;color:'+pcol+'">'+esc(p.fullName)+'</span><span class="pl-team" style="color:'+pcol+'">'+esc(p.teamName)+' — '+esc(lbl)+'</span></div>';
       }).join("");
     }
