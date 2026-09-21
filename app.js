@@ -1700,7 +1700,7 @@ function renderNueva(){
   if(S.editingId){
     var _editingConv=getCallups_raw().find(function(c){return c.id===S.editingId;});
     if(_editingConv&&_editingConv.players){
-      manualPlayers=_editingConv.players.filter(function(p){return p.manual;}).map(function(p){return{fullName:p.fullName,teamName:p.teamName||""};});
+      manualPlayers=_editingConv.players.filter(function(p){return p.manual;}).map(function(p){return{fullName:p.fullName,teamName:p.teamName||"",playerId:p.playerId,dropStatus:p.dropStatus,dropConvType:p.dropConvType};});
     }
   }
   function renderManualPlayers(){
@@ -1752,13 +1752,21 @@ function renderNueva(){
       var rival=r?r.value.trim():"";
       if((d&&d.value)||rival)matchesData.push({date:d?d.value:"",time:t?t.value:"",rival:rival,matchType:tp?tp.value:"amistoso"});
     });
+    var existingConv=S.editingId?getCallups_raw().find(function(cv){return cv.id===S.editingId;}):null;
+    var existingMap={};
+    if(existingConv&&existingConv.players)existingConv.players.forEach(function(p){existingMap[p.playerId]=p;});
     var checked=Array.prototype.slice.call(document.querySelectorAll('[name="pids"]:checked'));
     var players=checked.map(function(cb){
       var pl=null;for(var i=0;i<getPlayers_raw().length;i++){if(getPlayers_raw()[i].id===cb.value){pl=getPlayers_raw()[i];break;}}
       var per=pl?(teamInSeason(pl,S.season)||teamNow(pl)):null;
-      return{playerId:cb.value,fullName:cb.dataset.n,teamId:per?per.teamId:"",teamName:cb.dataset.t,dropStatus:"active"};
+      var existing=existingMap[cb.value];
+      var row={playerId:cb.value,fullName:cb.dataset.n,teamId:per?per.teamId:"",teamName:cb.dataset.t,dropStatus:existing?existing.dropStatus:"active"};
+      if(existing&&existing.dropConvType)row.dropConvType=existing.dropConvType;
+      return row;
     }).concat(manualPlayers.map(function(p){
-      return{playerId:"manual_"+gid(),fullName:p.fullName,teamId:"",teamName:p.teamName||"",dropStatus:"active",manual:true};
+      var row={playerId:p.playerId||("manual_"+gid()),fullName:p.fullName,teamId:"",teamName:p.teamName||"",dropStatus:p.dropStatus||"active",manual:true};
+      if(p.dropConvType)row.dropConvType=p.dropConvType;
+      return row;
     }));
     var paisVal=(fd.get("pais")||"").trim()||($("f-pais")?$("f-pais").value.trim():"");
     var data={
