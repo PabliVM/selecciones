@@ -529,7 +529,7 @@ function playerSheetTableHtml(callups){
     '<colgroup><col style="width:11%"><col style="width:8%"><col style="width:11%"><col style="width:7%"><col style="width:7%"><col style="width:13%"><col style="width:17%"><col style="width:13%"><col style="width:13%"></colgroup>'+
     '<thead><tr><th>Selección</th><th>Decisión</th><th>Jugador</th><th>Preconv.<br><span class="psheet-subhdr">(fecha envío)</span></th><th>Convocatoria<br><span class="psheet-subhdr">(fecha envío)</span></th><th>Fecha incorporación</th><th>Fechas partidos</th><th>Fecha vuelta</th><th>Lugar partidos</th></tr></thead>'+
     '<tbody>'+rows.map(function(r){
-      return'<tr class="'+r.cls+'"><td><b>'+esc(r.sel)+'</b></td><td>'+esc(r.decision)+"</td><td>"+esc(r.player)+"</td><td>"+esc(r.pre)+"</td><td>"+esc(r.conv)+"</td><td>"+esc(r.lleg)+"</td><td>"+esc(r.partidos)+"</td><td>"+esc(r.vuelta)+"</td><td>"+esc(r.lugar)+"</td></tr>";
+      return'<tr class="'+r.cls+'"><td><b>'+esc(r.sel)+'</b></td><td class="psheet-upper">'+esc(r.decision)+"</td><td>"+esc(r.player)+"</td><td>"+esc(r.pre)+"</td><td>"+esc(r.conv)+"</td><td>"+esc(r.lleg)+"</td><td>"+esc(r.partidos)+"</td><td>"+esc(r.vuelta)+"</td><td>"+esc(r.lugar)+"</td></tr>";
     }).join("")+
     "</tbody></table></div>";
 }
@@ -1618,7 +1618,9 @@ function renderNueva(){
     mirror("f-incorpTime","f-concTime");
     function fillIfEmpty(srcId,dstId){
       var src=$(srcId),dst=$(dstId);if(!src||!dst)return;
-      src.addEventListener("input",function(){if(src.value&&!dst.value)dst.value=src.value;});
+      var dstDirty=!!dst.value;
+      dst.addEventListener("input",function(){dstDirty=true;});
+      src.addEventListener("input",function(){if(!dstDirty)dst.value=src.value;});
     }
     fillIfEmpty("f-endDate","f-vueltaDate");
     fillIfEmpty("f-endTime","f-vueltaTime");
