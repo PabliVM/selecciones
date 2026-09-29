@@ -516,18 +516,21 @@ function printJrDoc(title,bodyHtml){
   var win=window.open("","_blank","width=1400,height=900");
   if(!win){toast("El navegador bloqueó la ventana emergente. Permite pop-ups para imprimir.");return;}
   win.document.write('<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/><title>'+esc(title)+'</title><style>'+
-    '*{box-sizing:border-box}body{font-family:Arial,sans-serif;padding:14px;color:#111}'+
+    '*{box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}'+
+    'body{font-family:Arial,sans-serif;padding:14px;color:#1a1d23}'+
     'h1{font-size:16pt;margin:0 0 4px;border-bottom:3px solid #2563eb;padding-bottom:6px}'+
     'h2{font-size:12pt;margin:20px 0 6px;color:#2563eb}'+
     '.meta{font-size:9pt;color:#555;margin-bottom:10px}'+
-    '*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}'+
-    'table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:9pt;margin-bottom:10px}'+
-    'th{background:#D9D9D9;font-weight:700;text-transform:uppercase;font-size:8pt;padding:6px 8px;border:1px solid #999;text-align:left}'+
-    'td{padding:5px 8px;border:1px solid #ccc;font-size:8.5pt;word-break:normal;overflow-wrap:break-word;vertical-align:top}'+
-    'td:nth-child(2),td:nth-child(4),td:nth-child(5){white-space:nowrap}'+
+    '.tabla-wrap{overflow-x:auto;border-radius:8px;border:1px solid #dfe1e6;margin-bottom:10px}'+
+    'table{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;font-size:13px}'+
+    'thead th{background:#D9D9D9;color:#111;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.1px;padding:6px 6px;border:1px solid #999;text-align:left;line-height:1.25}'+
+    '.psheet-subhdr{font-size:9px;font-weight:600;text-transform:none;letter-spacing:0;color:#555}'+
+    'tbody td{padding:5px 6px;border:1px solid #ccc;font-size:11px;line-height:1.35;color:#111;white-space:normal;word-break:break-word;overflow-wrap:break-word;hyphens:auto;vertical-align:middle}'+
+    '.psheet-upper{text-transform:uppercase}'+
     'tr.psheet-green td{background:#C6E9C6}'+
     'tr.psheet-red td{background:#F4C7C3;color:#7F1D1D}'+
     'tr.psheet-orange td{background:#FDE4C0;color:#92400E}'+
+    'tr.psheet-white td{background:#fff}'+
     '@media print{@page{size:landscape;margin:8mm}}'+
     '</style></head><body>'+
     '<h1>'+esc(title)+'</h1><div class="meta">Real Madrid Cantera · Temporada '+esc(S.season)+' · '+new Date().toLocaleDateString("es-ES")+'</div>'+
@@ -540,7 +543,7 @@ function playerSheetTableHtml(callups){
   var rows=playerSheetRows(callups);
   if(!rows.length)return emptyState("Sin convocatorias","📋");
   return'<div class="tabla-wrap"><table class="tabla psheet">'+
-    '<colgroup><col style="width:11%"><col style="width:10%"><col style="width:11%"><col style="width:9%"><col style="width:9%"><col style="width:12%"><col style="width:14%"><col style="width:13%"><col style="width:11%"></colgroup>'+
+    '<colgroup><col style="width:11%"><col style="width:9%"><col style="width:11%"><col style="width:8%"><col style="width:8%"><col style="width:13%"><col style="width:16%"><col style="width:13%"><col style="width:11%"></colgroup>'+
     '<thead><tr><th>Selección</th><th>Decisión</th><th>Jugador</th><th>Preconv.<br><span class="psheet-subhdr">(fecha envío)</span></th><th>Convocatoria<br><span class="psheet-subhdr">(fecha envío)</span></th><th>Fecha incorporación</th><th>Fechas partidos</th><th>Fecha vuelta</th><th>Lugar partidos</th></tr></thead>'+
     '<tbody>'+rows.map(function(r){
       return'<tr class="'+r.cls+'"><td><b>'+esc(r.sel)+'</b></td><td class="psheet-upper">'+esc(r.decision)+"</td><td>"+esc(r.player)+"</td><td>"+esc(r.pre)+"</td><td>"+esc(r.conv)+"</td><td>"+esc(r.lleg)+"</td><td>"+esc(r.partidos)+"</td><td>"+esc(r.vuelta)+"</td><td>"+esc(r.lugar)+"</td></tr>";
@@ -1320,6 +1323,8 @@ function renderAgenda(viewMode){
 
   if(S.agendaCollapseCurso===undefined)S.agendaCollapseCurso=false;
   if(S.agendaCollapseProx===undefined)S.agendaCollapseProx=false;
+  if(S.jrDateFrom===undefined)S.jrDateFrom="";
+  if(S.jrDateTo===undefined)S.jrDateTo="";
 
   if(!filtered.length){h+=emptyState("Sin convocatorias en "+S.season,"📋");}
   else if(viewMode==="tabla"){
@@ -1333,13 +1338,21 @@ function renderAgenda(viewMode){
       "</div>";
     if(done.length)h+='<details class="fin-details"'+(S.finOpen?" open":"")+'><summary class="fin-summary"><span class="fin-summary__label">Finalizadas</span><span class="fin-summary__count">'+done.length+'</span></summary><div style="margin-top:8px">'+playerSheetTableHtml(done)+"</div></details>";
   } else if(viewMode==="tablajr"){
-    var jrCallups=enCurso.concat(proximas);
+    var jrHasRange=!!(S.jrDateFrom||S.jrDateTo);
+    var jrCallups=jrHasRange?filtered.filter(jrInRange):enCurso.concat(proximas);
     var jrGroups=[
       {key:"espanola",label:"ESPAÑOLA"},
       {key:"internacional",label:"INTERNACIONAL"},
       {key:"madrilena",label:"MADRILEÑA"}
     ];
-    h+='<div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:12px">'+miniToggle+
+    h+='<div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:12px;flex-wrap:wrap">'+
+      '<div style="display:flex;align-items:center;gap:6px"><label style="font-size:11px;color:var(--text-muted)">Desde</label>'+
+      '<input type="date" class="fi" id="jr-date-from" value="'+(S.jrDateFrom||"")+'" style="width:140px"/>'+
+      '<label style="font-size:11px;color:var(--text-muted)">Hasta</label>'+
+      '<input type="date" class="fi" id="jr-date-to" value="'+(S.jrDateTo||"")+'" style="width:140px"/>'+
+      (jrHasRange?'<button class="btn btn-ghost btn-sm" id="btn-jr-range-clear">✕</button>':"")+
+      '</div>'+miniToggle+
+      '<button class="btn btn-ghost btn-sm" id="btn-jr-export-excel">📊 Exportar Excel</button>'+
       '<button class="btn btn-ghost btn-sm" id="btn-jr-print-all">🖨️ Imprimir todas juntas</button></div>';
     jrGroups.forEach(function(g){
       var gc=jrCallups.filter(function(c){return selKey(c.selectionType)===g.key;});
@@ -1410,6 +1423,61 @@ function renderAgenda(viewMode){
     if(!body){toast("Nada que imprimir");return;}
     printJrDoc("Tabla JR",body);
   });
+  var jrFrom=$("jr-date-from"),jrTo=$("jr-date-to");
+  if(jrFrom)jrFrom.addEventListener("change",function(){S.jrDateFrom=jrFrom.value;renderAgenda(S.agendaView);});
+  if(jrTo)jrTo.addEventListener("change",function(){S.jrDateTo=jrTo.value;renderAgenda(S.agendaView);});
+  var jrClear=$("btn-jr-range-clear");
+  if(jrClear)jrClear.addEventListener("click",function(){S.jrDateFrom="";S.jrDateTo="";renderAgenda(S.agendaView);});
+  var jrExcel=$("btn-jr-export-excel");
+  if(jrExcel)jrExcel.addEventListener("click",function(){exportJrExcel();});
+}
+function jrInRange(c){
+  if(!S.jrDateFrom&&!S.jrDateTo)return true;
+  var s=c.startDate,e=c.endDate||c.startDate;
+  if(S.jrDateFrom&&e<S.jrDateFrom)return false;
+  if(S.jrDateTo&&s>S.jrDateTo)return false;
+  return true;
+}
+function exportJrExcel(){
+  if(typeof ExcelJS==="undefined"){toast("Librería Excel no disponible");return;}
+  var all=sortDate(getCallups({season:S.season}),"asc");
+  var visible=S.showDescartadas?all:all.filter(function(c){return c.convType!=="descartada";});
+  var filtered=S.filterType?visible.filter(function(c){return selKey(c.selectionType)===S.filterType;}):visible;
+  if(S.filterType==="internacional"&&S.filterPais&&S.filterPais.length)filtered=filtered.filter(function(c){return S.filterPais.indexOf(c.pais)!==-1;});
+  if(S.filterCats&&S.filterCats.length)filtered=filtered.filter(function(c){return S.filterCats.indexOf(c.selectionCategory)!==-1;});
+  var jrHasRange=!!(S.jrDateFrom||S.jrDateTo);
+  var base=jrHasRange?filtered.filter(jrInRange):filtered.filter(function(c){return c.status==="en_curso"||c.status==="proxima";});
+  var jrGroups=[{key:"espanola",label:"ESPAÑOLA"},{key:"internacional",label:"INTERNACIONAL"},{key:"madrilena",label:"MADRILEÑA"}];
+  var wb=new ExcelJS.Workbook();
+  var headers=["Selección","Decisión","Jugador","Preconv.","Convocatoria","Fecha incorporación","Fechas partidos","Fecha vuelta","Lugar partidos"];
+  var any=false;
+  jrGroups.forEach(function(g){
+    var gc=base.filter(function(c){return selKey(c.selectionType)===g.key;});
+    if(!gc.length)return;
+    any=true;
+    var rows=playerSheetRows(gc);
+    var ws=wb.addWorksheet(g.label.substring(0,31));
+    ws.columns=[{width:18},{width:14},{width:22},{width:12},{width:14},{width:20},{width:18},{width:20},{width:18}];
+    var hr=ws.addRow(headers);
+    hr.eachCell(function(cell){cell.font={bold:true};cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFD9D9D9"}};});
+    rows.forEach(function(r){
+      var row=ws.addRow([r.sel,r.decision,r.player,r.pre,r.conv,r.lleg,r.partidos,r.vuelta,r.lugar]);
+      var bg=r.cls==="psheet-green"?"FFC6E9C6":r.cls==="psheet-red"?"FFF4C7C3":r.cls==="psheet-orange"?"FFFDE4C0":null;
+      var fg=r.cls==="psheet-red"?"FF7F1D1D":r.cls==="psheet-orange"?"FF92400E":null;
+      row.eachCell(function(cell){
+        if(bg)cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:bg}};
+        if(fg)cell.font={color:{argb:fg}};
+        cell.alignment={wrapText:true,vertical:"top"};
+      });
+    });
+  });
+  if(!any){toast("Nada que exportar");return;}
+  wb.xlsx.writeBuffer().then(function(buf){
+    var blob=new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement("a");a.href=url;a.download="TablaJR_"+S.season+".xlsx";document.body.appendChild(a);a.click();a.remove();
+    setTimeout(function(){URL.revokeObjectURL(url);},2000);
+  }).catch(function(e){console.error(e);toast("Error generando Excel");});
 }
 
 function renderSel(type){
