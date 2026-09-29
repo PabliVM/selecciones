@@ -258,7 +258,12 @@ function loadUserRoles(cb){
 function esc(s){if(!s)return"";return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
 function dropIsRed(p){return p.dropConvType?p.dropConvType==="definitiva":true;}
 function dropWord(p){return dropIsRed(p)?"DESCONVOCADO":"NO CONVOCADO";}
-function dropReasonTxt(p){return p.dropStatus&&["sin_motivo","sin_especificar","active"].indexOf(p.dropStatus)===-1?p.dropStatus:"";}
+function dropReasonTxt(p){
+  if(!p.dropStatus||["sin_motivo","sin_especificar","active"].indexOf(p.dropStatus)!==-1)return"";
+  if(p.dropStatus==="No en la lista final")return"No convocado";
+  if(p.dropStatus==="No liberado")return"Preconvocado";
+  return p.dropStatus;
+}
 function calcStatus(s,e){var n=new Date();n.setHours(0,0,0,0);var a=new Date(s+"T00:00:00"),b=new Date(e+"T23:59:59");return n<a?"proxima":n>b?"finalizada":"en_curso";}
 function daysUntil(dateStr){if(!dateStr)return 999;var now=new Date();now.setHours(0,0,0,0);var d=new Date(dateStr+"T00:00:00");return Math.ceil((d-now)/(1000*60*60*24));}
 function provAlertBadge(c){if(c.convType!=="provisional")return"";var days=daysUntil(c.startDate);if(days>7)return"";if(days<0)return'<span class="badge prov-alert prov-alert-late">⚠️ Sin confirmar</span>';if(days===0)return'<span class="badge prov-alert prov-alert-today">⚠️ HOY</span>';return'<span class="badge prov-alert prov-alert-soon">⚠️ '+days+'d</span>';}
