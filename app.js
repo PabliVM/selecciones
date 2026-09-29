@@ -256,7 +256,12 @@ function loadUserRoles(cb){
   }).catch(function(e){console.error("loadUserRoles:",e);if(cb)cb();});
 }
 function esc(s){if(!s)return"";return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
-function dropIsRed(p){return p.dropConvType?p.dropConvType==="definitiva":true;}
+function dropIsRed(p){
+  var r=p.dropStatus;
+  if(r==="Desconvocado")return true;
+  if(r==="No liberado"||r==="No en la lista final"||r==="Lesión")return false;
+  return p.dropConvType?p.dropConvType==="definitiva":true;
+}
 function dropWord(p){return dropIsRed(p)?"DESCONVOCADO":"NO CONVOCADO";}
 function dropReasonTxt(p){
   if(!p.dropStatus||["sin_motivo","sin_especificar","active"].indexOf(p.dropStatus)!==-1)return"";
@@ -515,9 +520,11 @@ function printJrDoc(title,bodyHtml){
     'h1{font-size:16pt;margin:0 0 4px;border-bottom:3px solid #2563eb;padding-bottom:6px}'+
     'h2{font-size:12pt;margin:20px 0 6px;color:#2563eb}'+
     '.meta{font-size:9pt;color:#555;margin-bottom:10px}'+
+    '*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}'+
     'table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:9pt;margin-bottom:10px}'+
     'th{background:#D9D9D9;font-weight:700;text-transform:uppercase;font-size:8pt;padding:6px 8px;border:1px solid #999;text-align:left}'+
-    'td{padding:5px 8px;border:1px solid #ccc;font-size:8.5pt;word-break:break-word;vertical-align:top}'+
+    'td{padding:5px 8px;border:1px solid #ccc;font-size:8.5pt;word-break:normal;overflow-wrap:break-word;vertical-align:top}'+
+    'td:nth-child(2),td:nth-child(4),td:nth-child(5){white-space:nowrap}'+
     'tr.psheet-green td{background:#C6E9C6}'+
     'tr.psheet-red td{background:#F4C7C3;color:#7F1D1D}'+
     'tr.psheet-orange td{background:#FDE4C0;color:#92400E}'+
@@ -533,7 +540,7 @@ function playerSheetTableHtml(callups){
   var rows=playerSheetRows(callups);
   if(!rows.length)return emptyState("Sin convocatorias","📋");
   return'<div class="tabla-wrap"><table class="tabla psheet">'+
-    '<colgroup><col style="width:11%"><col style="width:8%"><col style="width:11%"><col style="width:7%"><col style="width:7%"><col style="width:13%"><col style="width:17%"><col style="width:13%"><col style="width:13%"></colgroup>'+
+    '<colgroup><col style="width:11%"><col style="width:10%"><col style="width:11%"><col style="width:9%"><col style="width:9%"><col style="width:12%"><col style="width:14%"><col style="width:13%"><col style="width:11%"></colgroup>'+
     '<thead><tr><th>Selección</th><th>Decisión</th><th>Jugador</th><th>Preconv.<br><span class="psheet-subhdr">(fecha envío)</span></th><th>Convocatoria<br><span class="psheet-subhdr">(fecha envío)</span></th><th>Fecha incorporación</th><th>Fechas partidos</th><th>Fecha vuelta</th><th>Lugar partidos</th></tr></thead>'+
     '<tbody>'+rows.map(function(r){
       return'<tr class="'+r.cls+'"><td><b>'+esc(r.sel)+'</b></td><td class="psheet-upper">'+esc(r.decision)+"</td><td>"+esc(r.player)+"</td><td>"+esc(r.pre)+"</td><td>"+esc(r.conv)+"</td><td>"+esc(r.lleg)+"</td><td>"+esc(r.partidos)+"</td><td>"+esc(r.vuelta)+"</td><td>"+esc(r.lugar)+"</td></tr>";
