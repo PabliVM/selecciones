@@ -1307,8 +1307,10 @@ function renderAgenda(viewMode){
   }
   var h='<div class="vh" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:8px;justify-content:space-between">'+
     '<h1 class="vt">Agenda</h1>'+
+    '<div style="display:flex;gap:6px">'+
+    '<button class="btn-print" id="btn-cmp-ficha" title="Comparar con ficha de control">🔍</button>'+
     '<button class="btn-print" id="btn-print-agenda">🖨️</button>'+
-    '</div></div>'+conflictHtml+tabsHtml+
+    '</div></div></div>'+conflictHtml+tabsHtml+
     '<div class="view-toggle" style="flex-wrap:wrap;height:auto;margin-bottom:10px">'+
     '<button class="vtbtn'+(!S.filterType?" on":"")+'" data-f="">Todas</button>'+
     '<button class="vtbtn'+(S.filterType==="espanola"?" on":"")+'" data-f="espanola"><img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/flags/espa%C3%B1a.png" style="width:14px;height:10px;object-fit:cover;border-radius:1px;vertical-align:middle"/> RFEF</button>'+
@@ -1394,6 +1396,9 @@ function renderAgenda(viewMode){
   var btnDesc=document.getElementById("btn-show-desc");
   if(btnDesc)btnDesc.addEventListener("click",function(){S.showDescartadas=!S.showDescartadas;renderAgenda(S.agendaView);});
 
+  var btnCmp=document.getElementById("btn-cmp-ficha");
+  if(btnCmp)btnCmp.addEventListener("click",openCompareModal);
+
   var btnPrint=document.getElementById("btn-print-agenda");
   if(btnPrint)btnPrint.addEventListener("click",function(){
     var det=document.querySelector(".fin-details");
@@ -1478,6 +1483,227 @@ function exportJrExcel(){
     var a=document.createElement("a");a.href=url;a.download="TablaJR_"+S.season+".xlsx";document.body.appendChild(a);a.click();a.remove();
     setTimeout(function(){URL.revokeObjectURL(url);},2000);
   }).catch(function(e){console.error(e);toast("Error generando Excel");});
+}
+
+// ── COMPARAR FICHA DE CONTROL ──
+function normTxt(s){
+  return String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();
+}
+function normPlayerName(s){return normTxt(s);}
+function parseFlexDate(s){
+  if(!s)return"";
+  var m=String(s).trim().match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,5})/);
+  if(!m)return"";
+  var d=("0"+m[1]).slice(-2),mo=("0"+m[2]).slice(-2),y=m[3];
+  if(y.length>4)y=y.slice(-4);
+  if(y.length===2)y="20"+y;
+  if(y.length!==4)return"";
+  return y+"-"+mo+"-"+d;
+}
+function normDecision(s){
+  var t=normTxt(s);if(!t)return"";
+  if(t.indexOf("desconvoc")!==-1)return"desconvocado";
+  if(t.indexOf("no convoc")!==-1||t.indexOf("lista final")!==-1)return"no convocado";
+  if(t.indexOf("no liber")!==-1)return"no liberado";
+  if(t.indexOf("lesion")!==-1)return"lesion";
+  if(t.indexOf("preconvoc")!==-1||t.indexOf("pre convoc")!==-1)return"preconvocado";
+  if(t.indexOf("convoc")!==-1)return"convocado";
+  return t;
+}
+function buildAppCompareRows(){
+  var all=sortDate(getCallups({season:S.season}),"asc");
+  var visible=all.filter(function(c){return c.convType!=="descartada";});
+  return playerSheetRows(visible);
+}
+function openCompareModal(){
+  var mo=document.createElement("div");mo.className="mo";
+  mo.innerHTML='<div class="modal modal-tall" style="padding-bottom:40px"><button class="mcl" id="cmp-close">×</button>'+
+    '<div class="mtitle">🔍 Comparar con ficha de control</div><p class="msub">Sube una foto o el Excel de tu ficha de control.</p>'+
+    '<div style="display:flex;gap:6px;margin-bottom:12px">'+
+    '<button class="plan-tbtn on" id="cmp-tab-img" style="flex:1">📷 Foto</button>'+
+    '<button class="plan-tbtn" id="cmp-tab-xlsx" style="flex:1">📊 Excel</button>'+
+    '</div>'+
+    '<div id="cmp-img-panel">'+
+      '<label style="display:block;border:2px dashed var(--gold);border-radius:10px;padding:24px;text-align:center;cursor:pointer;color:var(--gold);font-weight:600;font-size:14px" id="cmp-img-label">'+
+        '📷 Toca para subir · o pega (Ctrl+V)<br><span style="font-size:11px;color:var(--text-muted);font-weight:400">JPG, PNG</span>'+
+        '<input type="file" id="cmp-file-img" accept="image/*" style="display:none"/>'+
+      '</label>'+
+      '<div id="cmp-img-preview" style="margin-top:8px;text-align:center"></div>'+
+    '</div>'+
+    '<div id="cmp-xlsx-panel" style="display:none">'+
+      '<label style="display:block;border:2px dashed var(--gold);border-radius:10px;padding:24px;text-align:center;cursor:pointer;color:var(--gold);font-weight:600;font-size:14px" id="cmp-xlsx-label">'+
+        '📊 Toca para subir tu .xlsx'+
+        '<input type="file" id="cmp-file-xlsx" accept=".xlsx" style="display:none"/>'+
+      '</label>'+
+      '<div id="cmp-xlsx-preview" style="margin-top:8px;text-align:center;font-size:12px;color:var(--text-muted)"></div>'+
+    '</div>'+
+    '<div class="ai-status" id="cmp-status" style="margin-top:8px"></div>'+
+    '<div id="cmp-results" style="margin-top:10px;max-height:340px;overflow-y:auto"></div>'+
+    '<div style="display:flex;gap:8px;margin-top:12px">'+
+    '<button class="btn btn-ghost" id="cmp-cancel" style="flex:1">Cerrar</button>'+
+    '<button class="btn btn-gold" id="cmp-ok" style="flex:1">🔍 Comparar</button></div></div>';
+  document.body.appendChild(mo);
+  function closeMo(){if(mo.parentNode)mo.parentNode.removeChild(mo);}
+  $("cmp-close").addEventListener("click",closeMo);$("cmp-cancel").addEventListener("click",closeMo);
+  mo.addEventListener("click",function(e){if(e.target===mo)closeMo();});
+
+  var tabImg=$("cmp-tab-img"),tabXlsx=$("cmp-tab-xlsx");
+  var panelImg=$("cmp-img-panel"),panelXlsx=$("cmp-xlsx-panel");
+  tabImg.addEventListener("click",function(){tabImg.classList.add("on");tabXlsx.classList.remove("on");panelImg.style.display="";panelXlsx.style.display="none";});
+  tabXlsx.addEventListener("click",function(){tabXlsx.classList.add("on");tabImg.classList.remove("on");panelImg.style.display="none";panelXlsx.style.display="";});
+
+  var fileImg=$("cmp-file-img");var pastedFile=null;
+  if(fileImg)fileImg.addEventListener("change",function(){
+    var f=fileImg.files[0];if(!f)return;pastedFile=f;
+    var url=URL.createObjectURL(f);
+    $("cmp-img-preview").innerHTML='<img src="'+url+'" style="max-width:100%;max-height:160px;border-radius:8px"/><div style="font-size:12px;color:var(--text-muted);margin-top:4px">'+esc(f.name)+"</div>";
+  });
+  mo.addEventListener("paste",function(e){
+    var items=e.clipboardData&&e.clipboardData.items;if(!items)return;
+    for(var i=0;i<items.length;i++){
+      if(items[i].type.indexOf("image")===0){
+        tabImg.classList.add("on");tabXlsx.classList.remove("on");panelImg.style.display="";panelXlsx.style.display="none";
+        pastedFile=items[i].getAsFile();
+        var url=URL.createObjectURL(pastedFile);
+        $("cmp-img-preview").innerHTML='<img src="'+url+'" style="max-width:100%;max-height:160px;border-radius:8px"/><div style="font-size:12px;color:var(--gold);margin-top:4px">✅ Imagen pegada</div>';
+        break;
+      }
+    }
+  });
+  var fileXlsx=$("cmp-file-xlsx");
+  if(fileXlsx)fileXlsx.addEventListener("change",function(){
+    var f=fileXlsx.files[0];if(!f)return;
+    $("cmp-xlsx-preview").textContent="📄 "+f.name;
+  });
+
+  $("cmp-ok").addEventListener("click",function(){
+    var status=$("cmp-status"),okBtn=$("cmp-ok"),results=$("cmp-results");
+    results.innerHTML="";
+    var isXlsx=panelXlsx.style.display!=="none";
+    if(isXlsx){
+      var xf=fileXlsx.files&&fileXlsx.files[0];
+      if(!xf){status.textContent="Sube un archivo .xlsx primero.";return;}
+      if(typeof ExcelJS==="undefined"){status.textContent="Librería Excel no disponible.";return;}
+      status.className="ai-status";status.textContent="⏳ Leyendo Excel...";okBtn.disabled=true;
+      var reader=new FileReader();
+      reader.onload=function(e){
+        var wb=new ExcelJS.Workbook();
+        wb.xlsx.load(e.target.result).then(function(){
+          var controlRows=extractRowsFromWorkbook(wb);
+          runCompare(controlRows,status,results,okBtn);
+        }).catch(function(err){console.error(err);status.textContent="No se pudo leer el Excel.";okBtn.disabled=false;});
+      };
+      reader.readAsArrayBuffer(xf);
+    } else {
+      var imgFile=fileImg&&fileImg.files&&fileImg.files[0]?fileImg.files[0]:null;
+      var actualFile=imgFile||pastedFile;
+      if(!actualFile){status.textContent="Sube o pega una foto primero.";return;}
+      status.className="ai-status";status.textContent="⏳ Analizando foto...";okBtn.disabled=true;
+      var freader=new FileReader();
+      freader.onload=function(e){
+        var prompt="Extrae TODAS las filas de jugadores de esta tabla de convocatorias de fútbol. Devuelve SOLO un array JSON, sin markdown:\n[{\"sel\":\"selección y categoría, ej ESPAÑOLA SUB-20\",\"decision\":\"texto de la columna decisión tal cual aparece\",\"player\":\"nombre jugador\",\"pre\":\"fecha preconvocatoria tal cual aparece\",\"conv\":\"fecha convocatoria tal cual aparece\",\"lleg\":\"fecha incorporación/salida tal cual aparece\",\"partidos\":\"fechas partidos tal cual aparece\",\"vuelta\":\"fecha vuelta/llegada tal cual aparece\",\"lugar\":\"lugar tal cual aparece\"}]\nUna fila por jugador. Si un dato no aparece usa \"\".";
+        fetch("/api/convocatoria",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:prompt,image:e.target.result.split(",")[1],imageType:actualFile.type||"image/jpeg"})})
+          .then(function(r){return r.json();})
+          .then(function(data){
+            if(data&&data.error)throw new Error(data.error.message||JSON.stringify(data.error));
+            var textBlock=data.content&&data.content.find(function(b){return b.type==="text";});
+            var raw=(textBlock&&textBlock.text)||"";
+            raw=raw.replace(/```json|```/g,"").trim();
+            var first=raw.indexOf("["),last=raw.lastIndexOf("]");
+            if(first!==-1&&last!==-1&&last>first)raw=raw.slice(first,last+1);
+            var arr=JSON.parse(raw);
+            runCompare(arr,status,results,okBtn);
+          }).catch(function(err){console.error(err);status.textContent="Error analizando la foto (revisa la consola).";okBtn.disabled=false;});
+      };
+      freader.readAsDataURL(actualFile);
+    }
+  });
+}
+function extractRowsFromWorkbook(wb){
+  var out=[];
+  wb.eachSheet(function(ws){
+    var headerRowIdx=-1,colMap={};
+    for(var r=1;r<=Math.min(ws.rowCount,15);r++){
+      var row=ws.getRow(r);
+      var txt=[];
+      row.eachCell({includeEmpty:true},function(cell,colNumber){txt[colNumber]=normTxt(cell.value);});
+      var joined=txt.join("|");
+      if(joined.indexOf("decision")!==-1||joined.indexOf("jugador")!==-1){
+        headerRowIdx=r;
+        txt.forEach(function(t,ci){
+          if(!t)return;
+          if(t.indexOf("seleccion")!==-1)colMap.sel=ci;
+          else if(t.indexOf("decision")!==-1)colMap.decision=ci;
+          else if(t.indexOf("jugador")!==-1)colMap.player=ci;
+          else if(t.indexOf("preconv")!==-1)colMap.pre=ci;
+          else if(t.indexOf("convocatoria")!==-1)colMap.conv=ci;
+          else if(t.indexOf("incorporacion")!==-1||t.indexOf("salida")!==-1)colMap.lleg=ci;
+          else if(t.indexOf("partidos")!==-1)colMap.partidos=ci;
+          else if(t.indexOf("vuelta")!==-1||t.indexOf("llegada")!==-1)colMap.vuelta=ci;
+          else if(t.indexOf("lugar")!==-1)colMap.lugar=ci;
+        });
+        break;
+      }
+    }
+    if(headerRowIdx===-1||!colMap.player)return;
+    var lastSel="";
+    for(var r2=headerRowIdx+1;r2<=ws.rowCount;r2++){
+      var row2=ws.getRow(r2);
+      function cellTxt(ci){if(!ci)return"";var c=row2.getCell(ci);var v=c.value;if(v&&v.text)v=v.text;if(v instanceof Date)return v.toLocaleDateString("es-ES");return v==null?"":String(v);}
+      var player=cellTxt(colMap.player).trim();
+      if(!player)continue;
+      var sel=cellTxt(colMap.sel).trim()||lastSel;
+      lastSel=sel;
+      out.push({sel:sel,decision:cellTxt(colMap.decision),player:player,pre:cellTxt(colMap.pre),conv:cellTxt(colMap.conv),lleg:cellTxt(colMap.lleg),partidos:cellTxt(colMap.partidos),vuelta:cellTxt(colMap.vuelta),lugar:cellTxt(colMap.lugar)});
+    }
+  });
+  return out;
+}
+function runCompare(controlRows,status,results,okBtn){
+  if(!controlRows||!controlRows.length){status.textContent="No se encontraron filas de jugadores.";okBtn.disabled=false;return;}
+  var appRows=buildAppCompareRows();
+  var appByName={};
+  appRows.forEach(function(r){var k=normPlayerName(r.player);if(!appByName[k])appByName[k]=[];appByName[k].push(r);});
+  var mismatches=[],missing=[];
+  controlRows.forEach(function(cr){
+    var key=normPlayerName(cr.player);
+    var candidates=appByName[key]||[];
+    if(!candidates.length){missing.push(cr);return;}
+    var best=candidates[0];
+    if(candidates.length>1&&cr.sel){
+      var selN=normTxt(cr.sel);
+      var found=candidates.filter(function(c){return selN.indexOf(normTxt(c.sel).split(" ")[0])!==-1||normTxt(c.sel).indexOf(selN.split(" ")[0])!==-1;})[0];
+      if(found)best=found;
+    }
+    var diffs=[];
+    if(normDecision(cr.decision)&&normDecision(cr.decision)!==normDecision(best.decision))
+      diffs.push("Decisión: ficha=\""+cr.decision+"\" · app=\""+best.decision+"\"");
+    [["pre","Preconv."],["conv","Convocatoria"],["lleg","Fecha incorporación"],["vuelta","Fecha vuelta"]].forEach(function(pair){
+      var cIso=parseFlexDate(cr[pair[0]]),aIso=parseFlexDate(best[pair[0]]);
+      if(cIso&&aIso&&cIso!==aIso)diffs.push(pair[1]+": ficha=\""+cr[pair[0]]+"\" · app=\""+best[pair[0]]+"\"");
+      else if(cIso&&!aIso)diffs.push(pair[1]+": en ficha (\""+cr[pair[0]]+"\") pero vacío en la app");
+    });
+    if(cr.lugar&&best.lugar&&normTxt(cr.lugar)!==normTxt(best.lugar))
+      diffs.push("Lugar: ficha=\""+cr.lugar+"\" · app=\""+best.lugar+"\"");
+    if(diffs.length)mismatches.push({player:cr.player,sel:cr.sel||best.sel,diffs:diffs});
+  });
+  var html="";
+  html+='<div style="font-weight:700;margin-bottom:6px">Comparados: '+controlRows.length+' · Diferencias: '+mismatches.length+' · No encontrados en la app: '+missing.length+'</div>';
+  if(mismatches.length){
+    html+='<div style="font-weight:700;color:#F59E0B;margin:8px 0 4px">⚠️ Diferencias</div>';
+    html+=mismatches.map(function(m){
+      return '<div style="border:1px solid #FDE4C0;background:#FFFBEB;border-radius:8px;padding:8px;margin-bottom:6px;font-size:12px"><b>'+esc(m.player)+'</b> ('+esc(m.sel)+')<br>'+m.diffs.map(function(d){return "• "+esc(d);}).join("<br>")+'</div>';
+    }).join("");
+  }
+  if(missing.length){
+    html+='<div style="font-weight:700;color:#EF4444;margin:8px 0 4px">❌ En tu ficha pero no en la app</div>';
+    html+=missing.map(function(m){
+      return '<div style="border:1px solid #F4C7C3;background:#FEF2F2;border-radius:8px;padding:8px;margin-bottom:6px;font-size:12px"><b>'+esc(m.player)+'</b> ('+esc(m.sel||"")+')</div>';
+    }).join("");
+  }
+  if(!mismatches.length&&!missing.length)html+='<div style="color:#10B981;font-weight:700">✅ Todo coincide</div>';
+  results.innerHTML=html;
+  status.textContent="";okBtn.disabled=false;
 }
 
 function renderSel(type){
@@ -1620,7 +1846,7 @@ function renderNueva(){
     '<div class="fg" id="pais-g" style="display:none"><label class="fl">País *</label><div id="pais-pills" class="pais-pills"></div><input class="fi" type="text" id="f-pais" name="pais" placeholder="Escribe el país..." style="display:none;margin-top:6px"/></div>'+
     '<div class="fg" id="cat-g" style="display:none"><label class="fl">Categoría *</label><select class="fsel" id="sel-cat" name="selCat"><option value="">Selecciona categoría</option></select></div>'+
     '<div class="fg"><label class="fl">Título *</label><input class="fi" type="text" name="title" placeholder="Ej: Concentración U17 Marzo"/></div>'+
-    '<div class="fg"><label class="fl">Tipo de convocatoria</label><select class="fsel" name="convType"><option value="provisional">⏳ Provisional</option><option value="definitiva">✅ Definitiva</option></select></div>'+
+    '<div class="fg"><label class="fl">Tipo de convocatoria</label><select class="fsel" name="convType"><option value="provisional">⏳ Preconvocatoria</option><option value="definitiva">✅ Convocatoria</option></select></div>'+
     '<div class="fg" id="limit-date-g"><label class="fl">Fecha límite confirmación</label><input class="fi" type="date" name="limitDate"/><p style="font-size:11px;color:var(--text-muted);margin-top:4px">Si no se confirma antes de esta fecha, se descartará automáticamente</p></div>'+
     '<div class="fg"><label class="fl">Fecha de envío de la preconvocatoria</label><input class="fi" type="date" name="preconvDate"/><p style="font-size:11px;color:var(--text-muted);margin-top:4px">Día en que la federación envió/publicó la preconvocatoria (rellena si lo sabes)</p></div>'+
     '<div class="fg"><label class="fl">Fecha de envío de la convocatoria</label><input class="fi" type="date" name="convDate"/><p style="font-size:11px;color:var(--text-muted);margin-top:4px">Día en que la federación envió/publicó la convocatoria (rellena si lo sabes)</p></div>'+
