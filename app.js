@@ -503,7 +503,8 @@ function playerSheetRows(callups){
       rows.push({sel:selLabel,decision:c.convType==="definitiva"?"CONVOCADO":"PRECONVOCADO",player:"—",pre:fmtDMY(c.preconvDate),conv:fmtDMY(c.convDate),lleg:incorp,partidos:matchesStr,vuelta:vuelta,lugar:lugarVal,cls:""});
       return;
     }
-    players.forEach(function(p){
+    var isDrop=function(p){return p.dropStatus&&p.dropStatus!=="active";};
+    players.filter(function(p){return !isDrop(p);}).concat(players.filter(isDrop)).forEach(function(p){
       var dropped=p.dropStatus&&p.dropStatus!=="active";
       var dropReason=dropped?dropReasonTxt(p):"";
       var decision=dropped?(dropReason||dropWord(p)):(c.convType==="definitiva"?"CONVOCADO":"PRECONVOCADO");
