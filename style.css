@@ -139,6 +139,7 @@ body.dark .nav{background:var(--surface)}
 .cc-plrow-dropped-red .cc-plrow-dropbadge{color:#EF4444}
 .cc-plrow-dropped-orange .cc-plrow-n{color:#F59E0B}
 .cc-plrow-dropped-orange .cc-plrow-dropbadge{color:#F59E0B}
+.cc-plrow-dropped-white .cc-plrow-n,.cc-plrow-dropped-white .cc-plrow-dropbadge{color:var(--text-muted)}
 .cc-plrow-dropbadge{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
 .cc-plrow-n{color:var(--text);font-weight:600}
 .cc-plrow-t{color:var(--text-muted);font-size:11px;flex-shrink:0}
