@@ -259,14 +259,15 @@ function esc(s){if(!s)return"";return String(s).replace(/&/g,"&amp;").replace(/<
 function dropIsRed(p){
   var r=p.dropStatus;
   if(r==="Desconvocado")return true;
-  if(r==="No liberado"||r==="No en la lista final"||r==="Lesión")return false;
+  if(r==="No convocado"||r==="Preconvocatoria"||r==="Preconvocado"||r==="No liberado"||r==="No en la lista final"||r==="Lesión")return false;
   return p.dropConvType?p.dropConvType==="definitiva":true;
 }
+function dropIsWhite(p){return dropReasonTxt(p)==="Preconvocatoria";}
 function dropWord(p){return dropIsRed(p)?"DESCONVOCADO":"NO CONVOCADO";}
 function dropReasonTxt(p){
   if(!p.dropStatus||["sin_motivo","sin_especificar","active"].indexOf(p.dropStatus)!==-1)return"";
   if(p.dropStatus==="No en la lista final")return"No convocado";
-  if(p.dropStatus==="No liberado")return"Preconvocado";
+  if(p.dropStatus==="No liberado"||p.dropStatus==="Preconvocado")return"Preconvocatoria";
   return p.dropStatus;
 }
 function calcStatus(s,e){var n=new Date();n.setHours(0,0,0,0);var a=new Date(s+"T00:00:00"),b=new Date(e+"T23:59:59");return n<a?"proxima":n>b?"finalizada":"en_curso";}
@@ -398,9 +399,9 @@ function selBadge(type,cat,pais){
   return'<span class="badge" style="background:'+c.badge+';color:#fff">'+flag+" "+label+"</span>";
 }
 function convTypeBadge(t){
-  if(t==="definitiva")return'<span class="badge conv-def" title="Definitiva">✅</span>';
+  if(t==="definitiva")return'<span class="badge conv-def" title="Convocatoria">✅</span>';
   if(t==="descartada")return'<span class="badge conv-desc" title="No seleccionados">❌</span>';
-  return'<span class="badge conv-prov" title="Provisional">⏳</span>';
+  return'<span class="badge conv-prov" title="Preconvocatoria">⏳</span>';
 }
 function statusBadge(st){var c=STATUS[st]||STATUS.finalizada;return'<span class="badge '+c.c+'">'+c.i+" "+c.l+"</span>";}
 function emptyState(msg,ico){return'<div class="empty"><span class="empty-ico">'+(ico||"📋")+'</span><p class="empty-t">'+msg+"</p></div>";}
@@ -420,7 +421,7 @@ function callupCard(c){
     return'<div class="cc-plrow"><span class="cc-plrow-n">'+esc(p.fullName)+"</span>"+(p.teamName?'<span class="cc-plrow-t">('+esc(p.teamName)+")</span>":"")+'<span class="cc-plrow-dropbadge" style="color:'+actColor+'">'+actLabel+"</span></div>";
   }).join("")+droppedPlayers.map(function(p){
     var reasonTxt=dropReasonTxt(p);
-    var cls=dropIsRed(p)?"cc-plrow-dropped-red":"cc-plrow-dropped-orange";
+    var cls=dropIsWhite(p)?"cc-plrow-dropped-white":(dropIsRed(p)?"cc-plrow-dropped-red":"cc-plrow-dropped-orange");
     return'<div class="cc-plrow cc-plrow-dropped '+cls+'"><span class="cc-plrow-n">'+esc(p.fullName)+"</span>"+(p.teamName?'<span class="cc-plrow-t">('+esc(p.teamName)+")</span>":"")+'<span class="cc-plrow-dropbadge">'+(reasonTxt?esc(reasonTxt):dropWord(p))+"</span></div>";
   }).join("");
   var tl=[];
@@ -506,7 +507,7 @@ function playerSheetRows(callups){
       var dropped=p.dropStatus&&p.dropStatus!=="active";
       var dropReason=dropped?dropReasonTxt(p):"";
       var decision=dropped?(dropReason||dropWord(p)):(c.convType==="definitiva"?"CONVOCADO":"PRECONVOCADO");
-      var cls=dropped?(dropIsRed(p)?"psheet-red":"psheet-orange"):(c.convType==="definitiva"?"psheet-green":"psheet-white");
+      var cls=dropped?(dropIsWhite(p)?"psheet-white":(dropIsRed(p)?"psheet-red":"psheet-orange")):(c.convType==="definitiva"?"psheet-green":"psheet-white");
       rows.push({sel:selLabel,decision:decision,player:p.fullName,pre:fmtDMY(c.preconvDate),conv:fmtDMY(c.convDate),lleg:incorp,partidos:matchesStr,vuelta:vuelta,lugar:lugarVal,cls:cls});
     });
   });
@@ -617,7 +618,7 @@ function callupDetail(c){
     rows+='<li class="pl-dropped-hdr">⚠️ No van a esta convocatoria ('+droppedPlayers.length+')</li>';
     for(var j=0;j<droppedPlayers.length;j++){
       var dp2=droppedPlayers[j];
-      var dcol=dropIsRed(dp2.p)?"#EF4444":"#F59E0B";
+      var dcol=dropIsWhite(dp2.p)?"#8b919e":(dropIsRed(dp2.p)?"#EF4444":"#F59E0B");
       var reasonTxt2=dropReasonTxt(dp2.p);
       var dropLabel=reasonTxt2?reasonTxt2:dropWord(dp2.p);
       rows+='<li class="pl-item pl-item-dropped" data-pidx="'+dp2.idx+'">'+
@@ -627,9 +628,9 @@ function callupDetail(c){
         '<button class="pl-restore-btn" data-pidx="'+dp2.idx+'" title="Restaurar">↩</button>'+"</li>";
     }
   }
-  var promBtn=canEdit()&&c.convType==="provisional"?'<button class="btn btn-gold btn-sm" data-promote="'+c.id+'" style="flex:1">✅ Confirmar definitiva</button>':"";
+  var promBtn=canEdit()&&c.convType==="provisional"?'<button class="btn btn-gold btn-sm" data-promote="'+c.id+'" style="flex:1">✅ Confirmar convocatoria</button>':"";
   var descBtn=canEdit()&&c.convType==="provisional"?'<button class="btn btn-danger btn-sm" data-descartar="'+c.id+'" style="flex:1">❌ Descartar</button>':"";
-  var restoreBtn=canEdit()&&c.convType==="descartada"?'<button class="btn btn-gold btn-sm" data-restore-conv="'+c.id+'" style="flex:1">↩ Restaurar a provisional</button>':"";
+  var restoreBtn=canEdit()&&c.convType==="descartada"?'<button class="btn btn-gold btn-sm" data-restore-conv="'+c.id+'" style="flex:1">↩ Restaurar a preconvocatoria</button>':"";
   var printBtn='<button class="btn btn-ghost btn-sm btn-print-ficha" style="flex:1">🖨️ Imprimir ficha</button>';
   var editBtn=canEdit()?'<button class="btn btn-ghost btn-sm" data-edit="'+c.id+'" style="flex:1">✎ Editar</button>':"";
   var delBtn=canEdit()?'<button class="btn btn-danger btn-sm" data-del="'+c.id+'" style="flex:1">🗑 Eliminar</button>':"";
@@ -864,11 +865,9 @@ function openDetail(id){
         '<div class="mtitle">Descartar jugador</div><p class="msub">'+esc(pname)+' no irá a esta convocatoria.</p>'+
         '<div class="fg"><label class="fl">Motivo *</label><select class="fsel" id="dr-reason">'+
         '<option value="">Selecciona un motivo</option>'+
-        '<option value="Desconvocado">Desconvocado</option>'+
-        '<option value="No liberado">No liberado</option>'+
-        '<option value="No en la lista final">No en la lista final</option>'+
-        '<option value="Lesión">Lesión</option>'+
-        '<option value="otros">Otros</option></select></div>'+
+        '<option value="Preconvocatoria">Preconvocatoria</option>'+
+        '<option value="No convocado">No convocado</option>'+
+        '<option value="Desconvocado">Desconvocado</option></select></div>'+
         '<div class="fg" id="dr-otros-wrap" style="display:none"><label class="fl">Escribe el motivo *</label><input class="fi" type="text" id="dr-otros-text" placeholder="Motivo" autocomplete="off"/></div>'+
         '<div id="dr-err" class="ferr" style="display:none"></div>'+
         '<div style="display:flex;gap:8px;margin-top:12px">'+
@@ -959,7 +958,7 @@ if(c.llegada){var lf={llegadaDate:c.llegada.date,llegadaTime:c.llegada.time,lleg
     if(!conv)return;
     conv.convType="definitiva";
     if(window._db&&window._fbUser){var fns=window._fbFns;fns.setDoc(fns.doc(window._db,"callups",id),Object.assign({},conv)).catch(function(e){console.error(e);});}
-    toast("✅ Confirmada como definitiva");close();openDetail(id);
+    toast("✅ Confirmada como convocatoria");close();openDetail(id);
   });
 
   var descBtn2=ov.querySelector("[data-descartar]");
@@ -978,7 +977,7 @@ if(c.llegada){var lf={llegadaDate:c.llegada.date,llegadaTime:c.llegada.time,lleg
     if(!conv)return;
     conv.convType="provisional";
     if(window._db&&window._fbUser){var fns=window._fbFns;fns.setDoc(fns.doc(window._db,"callups",id),{convType:"provisional"},{merge:true}).catch(function(e){console.error(e);});}
-    toast("↩ Restaurada a provisional");close();openDetail(id);
+    toast("↩ Restaurada a preconvocatoria");close();openDetail(id);
   });
 
   var delBtn=ov.querySelector("[data-del]");
@@ -1002,7 +1001,7 @@ if(c.llegada){var lf={llegadaDate:c.llegada.date,llegadaTime:c.llegada.time,lleg
     if(droppedPlayers.length){
       playersHtml+='<div class="pl-dropped-hdr">⚠️ No van a esta convocatoria</div>';
       playersHtml+=droppedPlayers.map(function(p){
-        var pcol=dropIsRed(p)?"#c00":"#B45309";
+        var pcol=dropIsWhite(p)?"#6B7280":(dropIsRed(p)?"#c00":"#B45309");
         var reasonTxt3=dropReasonTxt(p);
         var lbl=reasonTxt3?reasonTxt3:dropWord(p);
         return '<div class="pl-row pl-dropped"><span class="pl-name" style="text-decoration:line-through;color:'+pcol+'">'+esc(p.fullName)+'</span><span class="pl-team" style="color:'+pcol+'">'+esc(p.teamName)+' — '+esc(lbl)+'</span></div>';
