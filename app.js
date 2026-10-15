@@ -1924,7 +1924,7 @@ function renderNueva(){
     '<div class="fg"><label class="fl">Fecha de envío de la preconvocatoria</label><input class="fi" type="date" name="preconvDate"/><p style="font-size:11px;color:var(--text-muted);margin-top:4px">Día en que la federación envió/publicó la preconvocatoria (rellena si lo sabes)</p></div>'+
     '<div class="fg"><label class="fl">Fecha de envío de la convocatoria</label><input class="fi" type="date" name="convDate"/><p style="font-size:11px;color:var(--text-muted);margin-top:4px">Día en que la federación envió/publicó la convocatoria (rellena si lo sabes)</p></div>'+
     '<div class="frow"><div class="fg"><label class="fl">Inicio (incorporación) *</label><input class="fi" type="date" name="startDate" id="f-startDate"/></div><div class="fg"><label class="fl">Hora incorporación</label><input class="fi" type="text" name="incorpTime" id="f-incorpTime" placeholder="18:00 o &quot;Mañana&quot;/&quot;Tarde&quot;"/></div></div>'+
-    '<div class="frow"><div class="fg"><label class="fl">Fin *</label><input class="fi" type="date" name="endDate" id="f-endDate"/></div><div class="fg"><label class="fl">Hora fin</label><input class="fi" type="text" name="endTime" id="f-endTime" placeholder="18:00 o &quot;Mañana&quot;/&quot;Tarde&quot;"/></div></div>'+
+    '<div class="frow"><div class="fg"><label class="fl">Fin * <span style="font-weight:400;text-transform:none">(opcional si es entrenamiento)</span></label><input class="fi" type="date" name="endDate" id="f-endDate"/></div><div class="fg"><label class="fl">Hora fin</label><input class="fi" type="text" name="endTime" id="f-endTime" placeholder="18:00 o &quot;Mañana&quot;/&quot;Tarde&quot;"/></div></div>'+
     '<div class="fg"><label class="fl">Lugar de concentración</label><input class="fi" type="text" name="location" placeholder="Ej: Ciudad del Fútbol, Las Rozas"/></div>'+
     '</div>'+
 '<div class="fblock fblock-conc">'+
@@ -2176,6 +2176,8 @@ function renderNueva(){
       matches:matchesData,
       players:players
     };
+    var isTrain=/entrenamient/i.test(data.title)||(matchesData.length>0&&matchesData.every(function(m){return m.matchType==="entrenamiento";}));
+    if(isTrain&&!data.endDate&&data.startDate)data.endDate=data.startDate;
     var errs=[];
     if(!data.selectionType)errs.push("Selecciona el tipo de selección");
     if(!data.selectionCategory)errs.push("Selecciona la categoría");
