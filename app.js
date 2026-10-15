@@ -1355,6 +1355,22 @@ function renderAgenda(viewMode){
           '<span style="font-size:12px;color:var(--text-muted)">'+esc(c.convType==="definitiva"?"Convocatoria":"Preconvocatoria")+' · '+fmtRange(c.startDate,c.endDate)+' · '+np+' jugadores</span></div>';
       }).join(""):
       '<p class="msub" style="margin:0">No hay convocatorias ese día</p>')+'</div>';
+    if(qRes.length>1){
+      var qBy={};
+      qRes.forEach(function(c){
+        (c.players||[]).forEach(function(p){
+          if(p.dropStatus&&p.dropStatus!=="active")return;
+          var k=p.playerId||normTxt(p.fullName);if(!k)return;
+          if(!qBy[k])qBy[k]={name:p.fullName,list:[]};
+          qBy[k].list.push(c);
+        });
+      });
+      var qDup=Object.keys(qBy).map(function(k){return qBy[k];}).filter(function(x){return x.list.length>1;});
+      qHtml+=qDup.length?
+        '<div class="conflict-alert" style="margin:0 14px 14px"><div class="conflict-alert-hdr">⚠️ '+qDup.length+' jugador'+(qDup.length===1?"":"es")+' coinciden en varias convocatorias</div>'+
+        qDup.map(function(x){return'<div class="conflict-alert-row"><b>'+esc(x.name)+'</b>: '+x.list.map(function(c){return esc((CAT[c.selectionCategory]||c.selectionCategory||"")+" · "+c.title);}).join(" ⇄ ")+'</div>';}).join("")+'</div>':
+        '<div style="margin:0 14px 14px;padding:8px 12px;border-radius:8px;background:#ECFDF5;border:1px solid #10B981;color:#065F46;font-size:12.5px;font-weight:600">✅ Ningún jugador coincide en esas convocatorias</div>';
+    }
   }
   qHtml+='</div>';
   var h='<div class="vh" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:8px;justify-content:space-between">'+
