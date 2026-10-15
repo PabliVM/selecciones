@@ -1226,6 +1226,30 @@ function conflictIsWithinMonth(c){
   var overlapEnd=(c.a.endDate||c.a.startDate)<(c.b.endDate||c.b.startDate)?(c.a.endDate||c.a.startDate):(c.b.endDate||c.b.startDate);
   return overlapStart<=monthAheadStr&&overlapEnd>=todayStr;
 }
+function findPlayerConflicts(){
+  var cs=getCallups({season:S.season}).filter(function(c){return c.convType!=="descartada"&&c.startDate;});
+  var byPlayer={};
+  cs.forEach(function(c){
+    (c.players||[]).forEach(function(p){
+      if(p.dropStatus&&p.dropStatus!=="active")return;
+      var k=p.playerId||normTxt(p.fullName);if(!k)return;
+      if(!byPlayer[k])byPlayer[k]={name:p.fullName,list:[]};
+      byPlayer[k].list.push(c);
+    });
+  });
+  var out=[];
+  Object.keys(byPlayer).forEach(function(k){
+    var l=byPlayer[k].list,pairs=[];
+    for(var i=0;i<l.length;i++)for(var j=i+1;j<l.length;j++){
+      var a=l[i],b=l[j];
+      if(a.id===b.id)continue;
+      var aEnd=a.endDate||a.startDate,bEnd=b.endDate||b.startDate;
+      if(a.startDate<=bEnd&&aEnd>=b.startDate)pairs.push([a,b]);
+    }
+    if(pairs.length)out.push({name:byPlayer[k].name,pairs:pairs});
+  });
+  return out;
+}
 function conflictRefIds(conflicts){
   var set={};
   conflicts.forEach(function(c){set[c.a.id]=1;set[c.b.id]=1;});
@@ -1244,6 +1268,15 @@ function renderAgenda(viewMode){
       return'<div class="conflict-alert-row">'+
         '<b>'+esc(CAT[c.cat]||c.cat)+'</b>: RFEF ('+fmtRange(c.a.startDate,c.a.endDate)+') se solapa con RFFM ('+fmtRange(c.b.startDate,c.b.endDate)+')'+
         "</div>";
+    }).join("")+
+    "</div>":"";
+  var pConf=findPlayerConflicts();
+  function pcLbl(c){return esc((c.convType==="definitiva"?"Convocatoria":"Preconvocatoria")+" "+(CAT[c.selectionCategory]||c.selectionCategory||"")+" · "+c.title)+" ("+fmtRange(c.startDate,c.endDate)+")";}
+  conflictHtml+=pConf.length?'<div class="conflict-alert">'+
+    '<div class="conflict-alert-hdr">⚠️ '+pConf.length+' jugador'+(pConf.length===1?"":"es")+' en 2 convocatorias a la vez</div>'+
+    pConf.map(function(pc){
+      return'<div class="conflict-alert-row"><b>'+esc(pc.name)+'</b>:<br>'+
+        pc.pairs.map(function(pr){return pcLbl(pr[0])+' ⇄ '+pcLbl(pr[1]);}).join("<br>")+"</div>";
     }).join("")+
     "</div>":"";
 
@@ -1305,12 +1338,31 @@ function renderAgenda(viewMode){
         '</div>';
     }
   }
+  var qHtml='<div class="agenda-upcoming" style="margin-bottom:14px"><div style="padding:10px 14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">'+
+    '<span style="font-size:13px;font-weight:700">🔎 ¿Qué hay el…?</span>'+
+    '<input type="date" class="fi" id="ag-qdate" value="'+(S.queryDate||"")+'" style="width:150px"/>'+
+    (S.queryDate?'<button class="btn btn-ghost btn-sm" id="ag-qclear">✕</button>':"")+'</div>';
+  if(S.queryDate){
+    var qd=S.queryDate;
+    var qRes=all.filter(function(c){return c.convType!=="descartada"&&c.startDate&&c.startDate<=qd&&(c.endDate||c.startDate)>=qd;});
+    qHtml+='<div style="padding:0 14px 12px">'+(qRes.length?
+      '<div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">'+qRes.length+' convocatoria'+(qRes.length===1?"":"s")+' el '+fmtDMY(qd)+'</div>'+
+      qRes.map(function(c){
+        var np=(c.players||[]).filter(function(p){return !p.dropStatus||p.dropStatus==="active";}).length;
+        return'<div class="ag-q-row" data-id="'+c.id+'" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 0;border-top:1px solid var(--border);cursor:pointer">'+
+          selBadge(c.selectionType,c.selectionCategory,c.pais)+
+          '<b style="font-size:13px">'+esc(c.title)+'</b>'+
+          '<span style="font-size:12px;color:var(--text-muted)">'+esc(c.convType==="definitiva"?"Convocatoria":"Preconvocatoria")+' · '+fmtRange(c.startDate,c.endDate)+' · '+np+' jugadores</span></div>';
+      }).join(""):
+      '<p class="msub" style="margin:0">No hay convocatorias ese día</p>')+'</div>';
+  }
+  qHtml+='</div>';
   var h='<div class="vh" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:8px;justify-content:space-between">'+
     '<h1 class="vt">Agenda</h1>'+
     '<div style="display:flex;gap:6px">'+
     '<button class="btn-print" id="btn-cmp-ficha" title="Comparar con ficha de control">🔍</button>'+
     '<button class="btn-print" id="btn-print-agenda">🖨️</button>'+
-    '</div></div></div>'+conflictHtml+tabsHtml+
+    '</div></div></div>'+conflictHtml+tabsHtml+qHtml+
     '<div class="view-toggle" style="flex-wrap:wrap;height:auto;margin-bottom:10px">'+
     '<button class="vtbtn'+(!S.filterType?" on":"")+'" data-f="">Todas</button>'+
     '<button class="vtbtn'+(S.filterType==="espanola"?" on":"")+'" data-f="espanola"><img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/flags/espa%C3%B1a.png" style="width:14px;height:10px;object-fit:cover;border-radius:1px;vertical-align:middle"/> RFEF</button>'+
@@ -1396,6 +1448,11 @@ function renderAgenda(viewMode){
   var btnDesc=document.getElementById("btn-show-desc");
   if(btnDesc)btnDesc.addEventListener("click",function(){S.showDescartadas=!S.showDescartadas;renderAgenda(S.agendaView);});
 
+  var qDate=$("ag-qdate");
+  if(qDate)qDate.addEventListener("change",function(){S.queryDate=qDate.value;renderAgenda(S.agendaView);});
+  var qClear=$("ag-qclear");
+  if(qClear)qClear.addEventListener("click",function(){S.queryDate="";renderAgenda(S.agendaView);});
+  document.querySelectorAll(".ag-q-row").forEach(function(r){r.addEventListener("click",function(){openDetail(r.dataset.id);});});
   var btnCmp=document.getElementById("btn-cmp-ficha");
   if(btnCmp)btnCmp.addEventListener("click",openCompareModal);
 
