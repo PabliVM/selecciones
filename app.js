@@ -3711,7 +3711,7 @@ function openPrivacyModal(){
   var last=Date.now();
   ["click","keydown","touchstart","scroll"].forEach(function(ev){document.addEventListener(ev,function(){last=Date.now();},{passive:true});});
   setInterval(function(){
-    if(window._fbUser&&Date.now()-last>SEC_IDLE_MIN*60000){
+    if(window._fbUser&&!(window._pendingWrites>0)&&Date.now()-last>SEC_IDLE_MIN*60000){
       last=Date.now();
       window._fbFns.signOut(window._auth).then(function(){toast("🔒 Sesión cerrada por inactividad");});
     }
@@ -3774,7 +3774,7 @@ function bindLoginBtn(){
   var btn=$("hdr-login-btn");if(!btn)return;
   btn.addEventListener("click",function(){
     if(window._fbUser){
-      if(confirm("¿Cerrar sesión?"))window._fbFns.signOut(window._auth).then(function(){toast("Sesión cerrada");route(S.view);});
+      if(confirm(window._pendingWrites>0?"⚠️ Hay cambios guardándose. Si cierras sesión ahora se pueden perder. ¿Cerrar sesión igualmente?":"¿Cerrar sesión?"))window._fbFns.signOut(window._auth).then(function(){toast("Sesión cerrada");route(S.view);});
       return;
     }
     var mo=document.createElement("div");mo.className="mo";
