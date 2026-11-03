@@ -26,9 +26,26 @@ function _initFirebase(){
       doc:function(d,c,i){return d.collection(c).doc(i);},
       signInWithEmailAndPassword:function(a,e,p){return a.signInWithEmailAndPassword(e,p);},
       signOut:function(a){return a.signOut();},
-      onAuthStateChanged:function(a,cb){return a.onAuthStateChanged(cb);}
+      onAuthStateChanged:function(a,cb){return a.onAuthStateChanged(cb);},
+      sendPasswordResetEmail:function(a,e){return a.sendPasswordResetEmail(e);}
     };
-    auth.onAuthStateChanged(function(u){window._fbUser=u||null;if(typeof window._onAuthChange==="function")window._onAuthChange(u);});
+    // Seguridad: sesión solo en esta pestaña (se cierra al cerrar el navegador)
+    try{auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);}catch(e){}
+    // Seguridad: los datos solo se descargan con sesión iniciada
+    var _dataUid=null;
+    auth.onAuthStateChanged(function(u){
+      window._fbUser=u||null;
+      if(u&&_dataUid!==u.uid){_dataUid=u.uid;_loadData(db);}
+      else if(!u){_dataUid=null;window._callups=[];window._players=[];window._refdates=[];window._seasonsData=[];}
+      if(typeof window._onAuthChange==="function")window._onAuthChange(u);
+    });
+  }catch(e){
+    console.error("Firebase error:",e);
+    _fbNotify("callups");_fbNotify("players");_fbNotify("refdates");_fbNotify("meta");
+  }
+}
+function _loadData(db){
+  try{
     db.collection("callups").get()
       .then(function(s){window._callups=[];s.forEach(function(d){window._callups.push(Object.assign({id:d.id},d.data()));});})
       .catch(function(e){console.error("callups:",e);})
@@ -46,7 +63,7 @@ function _initFirebase(){
       .catch(function(e){console.error("meta:",e);})
       .finally(function(){_fbNotify("meta");});
   }catch(e){
-    console.error("Firebase error:",e);
+    console.error("Firebase load error:",e);
     _fbNotify("callups");_fbNotify("players");_fbNotify("refdates");_fbNotify("meta");
   }
 }
