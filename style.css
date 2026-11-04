@@ -141,6 +141,11 @@ body.dark .nav{background:var(--surface)}
 .cc-plrow-dropped-orange .cc-plrow-dropbadge{color:#F59E0B}
 .cc-plrow-dropped-white .cc-plrow-n,.cc-plrow-dropped-white .cc-plrow-dropbadge{color:var(--text-muted)}
 .cc-plrow-dropbadge{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+/* Jugadores en ficha: columnas alineadas (nombre | equipo | estado) */
+.cc-plrows{display:grid;grid-template-columns:minmax(0,1fr) auto auto;column-gap:8px;row-gap:4px;align-items:baseline}
+.cc-plrow{display:contents}
+.cc-plrow-dropped>*{opacity:.7}
+.cc-plrow-dropbadge{white-space:nowrap}
 .cc-plrow-n{color:var(--text);font-weight:600}
 .cc-plrow-t{color:var(--text-muted);font-size:11px;flex-shrink:0}
 .cc-more-btn{background:none;border:none;color:var(--navy);font-size:12px;font-weight:700;cursor:pointer;padding:8px 0 0;text-align:left}
@@ -749,6 +754,8 @@ body.dark .agenda-upcoming-hdr{background:#15181d}
 }
 @media(max-width:360px){
   .ni{display:none}
+  .cc-plrows{grid-template-columns:minmax(0,1fr) auto fit-content(90px)}
+  .cc-plrow-dropbadge{white-space:normal}
 }
 
 /* ═══════════════════════════════════════════════
