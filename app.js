@@ -3718,6 +3718,7 @@ function syncTopbarSpacer(){
   if(ft){var fh=ft.offsetHeight;if(fh>0)main.style.paddingBottom=(fh+24)+"px";}
 }
 window.addEventListener("resize",syncTopbarSpacer);
+if(window.ResizeObserver){var _tbEl=document.querySelector(".app-topbar");if(_tbEl)new ResizeObserver(function(){syncTopbarSpacer();}).observe(_tbEl);}
 setTimeout(syncTopbarSpacer,50);
 setTimeout(syncTopbarSpacer,400);
 
