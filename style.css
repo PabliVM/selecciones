@@ -728,6 +728,24 @@ body.dark .agenda-upcoming-hdr{background:#15181d}
   .psheet thead th{color:#111;white-space:normal}
   .psheet tbody td{word-break:normal;overflow-wrap:break-word;hyphens:manual}
   .cc-tl>div{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:8px}
+  /* Móvil · Agenda: controles superiores compactos para que las fichas suban */
+  .vh{margin-bottom:10px!important;padding-bottom:8px}
+  .vt{font-size:20px}
+  .btn-print{padding:6px 10px}
+  .view-toggle{margin-bottom:8px!important}
+  .vtbtn{padding:5px 8px}
+  #ag-qdate{min-height:36px;padding:5px 10px}
+  .agenda-upcoming{margin-bottom:10px!important}
+  .fb{margin-bottom:10px}
+  .fin-summary{padding:10px 14px}
+  .fin-summary__label{font-size:15px}
+  /* Móvil · Fichas: tipo + badges en una sola fila */
+  .cc{display:flex;flex-wrap:wrap;align-items:center;column-gap:6px}
+  .cc>*{flex:0 0 100%;min-width:0}
+  .cc>.cc-convtype{flex:0 0 auto;margin:0 0 6px!important;padding:0!important;background:none!important;gap:4px!important}
+  .cc>.cc-convtype>span:nth-child(2){font-size:10px!important}
+  .cc>.cc-hdr{flex:1 1 auto;margin-bottom:6px}
+  .cc .badge{padding:2px 8px;font-size:10px;letter-spacing:.3px}
 }
 @media(max-width:360px){
   .ni{display:none}
