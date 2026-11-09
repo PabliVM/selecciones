@@ -1,0 +1,25 @@
+rules_version = '2';
+// Reglas de seguridad Firestore — RM Convocatorias
+// Publicar en: Firebase Console › Firestore › Reglas
+// Lectura: solo usuarios autenticados con rol asignado (lector/editor).
+// Escritura: solo editores. Roles en userRoles/{email}.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null && request.auth.token.email != null; }
+    function roleDoc() { return /databases/$(database)/documents/userRoles/$(request.auth.token.email.lower()); }
+    function hasRole() { return signedIn() && exists(roleDoc()); }
+    function isEditor() { return hasRole() && get(roleDoc()).data.role == "editor"; }
+    // Exigir 2FA en servidor (descomentar tras activar MFA):
+    // function mfa() { return request.auth.token.firebase.sign_in_second_factor != null; }
+
+    match /callups/{id}  { allow read: if hasRole(); allow write: if isEditor(); }
+    match /players/{id}  { allow read: if hasRole(); allow write: if isEditor(); }
+    match /refdates/{id} { allow read: if hasRole(); allow write: if isEditor(); }
+    match /meta/{id}     { allow read: if hasRole(); allow write: if isEditor(); }
+    match /userRoles/{email} {
+      allow read: if hasRole();
+      allow write: if isEditor();
+    }
+    match /{document=**} { allow read, write: if false; }
+  }
+}

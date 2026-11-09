@@ -1,9 +1,26 @@
+// Seguridad: solo usuarios autenticados en Firebase pueden usar el endpoint
+const FIREBASE_WEB_KEY = process.env.FIREBASE_WEB_API_KEY || "AIzaSyBP3EtZNGNscSUxh6XxZ1viiFN6SNIBA7s";
+async function verifyFirebaseToken(idToken) {
+  const r = await fetch("https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=" + FIREBASE_WEB_KEY, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ idToken })
+  });
+  if (!r.ok) return null;
+  const d = await r.json();
+  return d.users && d.users[0] ? d.users[0] : null;
+}
+
 export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  if (req.method === "OPTIONS") return res.status(200).end();
+  // Mismo origen: sin CORS abierto
+  if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
+  const auth = req.headers.authorization || "";
+  const idToken = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+  if (!idToken) return res.status(401).json({ error: "No autorizado" });
+  const user = await verifyFirebaseToken(idToken).catch(() => null);
+  if (!user || user.disabled) return res.status(401).json({ error: "No autorizado" });
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return res.status(500).json({ error: "API key not configured" });
@@ -53,6 +70,7 @@ export default async function handler(req, res) {
     const data = await response.json();
     res.status(response.status).json(data);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("convocatoria:", err);
+    res.status(500).json({ error: "Error interno" });
   }
 }

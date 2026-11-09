@@ -750,6 +750,7 @@ function renderLoginGate(){
     '<div id="gate-err" style="color:#EF4444;font-size:12px;margin-bottom:8px;display:none"></div>'+
     '<button class="btn btn-primary" id="gate-login-btn" style="width:100%">Iniciar sesión</button>'+
     '<a href="#" id="gate-forgot" class="login-forgot">¿Olvidaste tu contraseña?</a>'+
+    '<p style="font-size:11px;margin-top:12px;opacity:.75">Acceso restringido a personal autorizado. Datos tratados conforme al RGPD. <a href="#" id="gate-privacy">Protección de datos</a></p>'+
     "</div></div>";
   document.querySelectorAll(".nb").forEach(function(b){b.style.display="none";});
   var emailEl=$("gate-email"),passEl=$("gate-pass"),errEl=$("gate-err");
@@ -757,11 +758,12 @@ function renderLoginGate(){
     var email=(emailEl.value||"").trim(),pass=passEl.value||"";
     if(!email||!pass){errEl.style.display="block";errEl.textContent="Introduce email y contraseña.";return;}
     var btn=$("gate-login-btn");btn.disabled=true;btn.textContent="Entrando...";
-    window._fbFns.signInWithEmailAndPassword(window._auth,email,pass)
+    _signIn(email,pass)
       .then(function(){toast("🔓 Sesión iniciada");})
-      .catch(function(e){errEl.style.display="block";errEl.textContent=e.code==="auth/invalid-credential"?"Email o contraseña incorrectos.":"Error: "+e.message;btn.disabled=false;btn.textContent="Iniciar sesión";});
+      .catch(function(e){errEl.style.display="block";errEl.textContent=_authErrMsg(e);btn.disabled=false;btn.textContent="Iniciar sesión";});
   }
   $("gate-login-btn").addEventListener("click",doLogin);
+  $("gate-privacy").addEventListener("click",function(e){e.preventDefault();openPrivacyModal();});
   passEl.addEventListener("keydown",function(e){if(e.key==="Enter")doLogin();});
   $("gate-forgot").addEventListener("click",function(e){
     e.preventDefault();
@@ -778,6 +780,7 @@ function route(v){
   try{localStorage.setItem("rmconv_view",v);}catch(e){}
   document.querySelectorAll(".nb").forEach(function(b){b.classList.toggle("active",b.dataset.v===v);b.style.display="";});
   if(!isLoggedIn()){renderLoginGate();return;}
+  if(SEC_REQUIRE_2FA&&!_has2FA()){render2FAGate();return;}
   document.body.classList.remove("gate-active");
   if(typeof syncTopbarSpacer==="function")setTimeout(syncTopbarSpacer,50);
   document.querySelectorAll(".nb-new,.nb[data-v='jugadores']").forEach(function(b){b.style.display=canEdit()?"":"none";});
@@ -1675,7 +1678,7 @@ function openCompareModal(){
       var freader=new FileReader();
       freader.onload=function(e){
         var prompt="Extrae TODAS las filas de jugadores de esta tabla de convocatorias de fútbol. Devuelve SOLO un array JSON, sin markdown:\n[{\"sel\":\"selección y categoría, ej ESPAÑOLA SUB-20\",\"decision\":\"texto de la columna decisión tal cual aparece\",\"player\":\"nombre jugador\",\"pre\":\"fecha preconvocatoria tal cual aparece\",\"conv\":\"fecha convocatoria tal cual aparece\",\"lleg\":\"fecha incorporación/salida tal cual aparece\",\"partidos\":\"fechas partidos tal cual aparece\",\"vuelta\":\"fecha vuelta/llegada tal cual aparece\",\"lugar\":\"lugar tal cual aparece\"}]\nUna fila por jugador. Si un dato no aparece usa \"\".";
-        fetch("/api/convocatoria",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:prompt,image:e.target.result.split(",")[1],imageType:actualFile.type||"image/jpeg"})})
+        _authFetch("/api/convocatoria",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:prompt,image:e.target.result.split(",")[1],imageType:actualFile.type||"image/jpeg"})})
           .then(function(r){return r.json();})
           .then(function(data){
             if(data&&data.error)throw new Error(data.error.message||JSON.stringify(data.error));
@@ -2260,7 +2263,7 @@ function bindAiParser(){
       var prompt="Eres un experto en convocatorias del Real Madrid Cantera. Analiza el texto y devuelve SOLO JSON válido, sin markdown.\nHoy es "+today+". Fechas en formato YYYY-MM-DD. Si un dato no aparece usa null o [].\nJSON schema:\n{\"tipoDocumento\":\"prelista|lista_definitiva|otro\",\"selectionType\":\"madrilena|espanola|internacional\",\"convType\":\"definitiva|provisional\",\"selectionCategory\":\"sub12|sub14|sub15|sub16|sub17|sub18|sub19|sub20|sub21|sub23|abs\",\"pais\":\"pais si internacional sino null\",\"title\":\"titulo descriptivo\",\"startDate\":\"YYYY-MM-DD\",\"endDate\":\"YYYY-MM-DD\",\"rival\":\"rivales\",\"location\":\"lugar\",\"conc\":{\"date\":\"YYYY-MM-DD\",\"time\":\"hora exacta HH:MM o texto libre tipo 'Mañana'/'Tarde' si no hay hora exacta\",\"lugar\":\"lugar citacion\",\"hotel\":\"alojamiento\"},\"traslado\":{\"date\":\"YYYY-MM-DD\",\"time\":\"hora exacta HH:MM o texto libre tipo 'Mañana'/'Tarde' si no hay hora exacta\",\"lugar\":\"punto salida\",\"transporte\":\"vuelo/tren ida\"},\"vuelta\":{\"date\":\"YYYY-MM-DD\",\"time\":\"hora exacta HH:MM o texto libre tipo 'Mañana'/'Tarde' si no hay hora exacta\",\"lugar\":\"punto salida vuelta\",\"transporte\":\"vuelo/tren vuelta\"},\"matches\":[{\"date\":\"YYYY-MM-DD\",\"time\":\"HH:MM\",\"rival\":\"rival\",\"matchType\":\"amistoso|oficial|entrenamiento\"}],\"notes\":\"obs\",\"players\":[\"NOMBRE APELLIDO\"]}\ntipoDocumento: pon \"prelista\" si el texto/imagen menciona prelista, preconvocatoria, preseleccionados o similar. Pon \"lista_definitiva\" si menciona lista definitiva, lista final, convocatoria definitiva o similar. Si no está claro, pon \"otro\".\nTEXTO:\n"+text;
 
       function doFetch(body){
-        return fetch("/api/convocatoria",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)})
+        return _authFetch("/api/convocatoria",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)})
           .then(function(r){if(!r.ok)return r.text().then(function(t){throw new Error("Servidor: "+t.slice(0,120));});return r.json();});
       }
 
@@ -3574,6 +3577,147 @@ function openFechaAddBulk(tipos){
   });
 }
 
+// ── SEGURIDAD (RGPD / ISO 27001 / 2FA) ──
+var SEC_REQUIRE_2FA=false; // Poner true tras activar MFA (SMS) en Firebase/Identity Platform: obliga 2FA a todos
+var SEC_IDLE_MIN=30;       // Cierre de sesión por inactividad (minutos)
+function _authFetch(url,opts){
+  opts=opts||{};
+  var u=window._fbUser;
+  if(!u)return Promise.reject(new Error("Sesión no iniciada"));
+  return u.getIdToken().then(function(tk){
+    opts.headers=Object.assign({},opts.headers||{},{"Authorization":"Bearer "+tk});
+    return fetch(url,opts);
+  });
+}
+function _secPrompt(title,sub,placeholder,type){
+  return new Promise(function(resolve){
+    var mo=document.createElement("div");mo.className="mo";
+    mo.innerHTML='<div class="modal" style="padding-bottom:40px"><button class="mcl" id="sp-close">×</button>'+
+      '<div class="mtitle">'+esc(title)+'</div><p class="msub">'+esc(sub)+'</p>'+
+      '<div class="fg"><input class="fi" id="sp-val" type="'+(type||"text")+'" placeholder="'+esc(placeholder||"")+'" autocomplete="one-time-code"/></div>'+
+      '<div style="display:flex;gap:8px;margin-top:16px">'+
+      '<button class="btn btn-ghost" id="sp-cancel" style="flex:1">Cancelar</button>'+
+      '<button class="btn btn-primary" id="sp-ok" style="flex:1">Aceptar</button></div></div>';
+    document.body.appendChild(mo);
+    var inp=$("sp-val");setTimeout(function(){if(inp)inp.focus();},100);
+    function done(v){if(mo.parentNode)mo.parentNode.removeChild(mo);resolve(v);}
+    $("sp-close").addEventListener("click",function(){done(null);});
+    $("sp-cancel").addEventListener("click",function(){done(null);});
+    $("sp-ok").addEventListener("click",function(){done((inp.value||"").trim()||null);});
+    inp.addEventListener("keydown",function(e){if(e.key==="Enter")$("sp-ok").click();});
+  });
+}
+function _recaptcha(){
+  var box=$("sec-recaptcha");
+  if(box&&box.parentNode)box.parentNode.removeChild(box);
+  box=document.createElement("div");box.id="sec-recaptcha";document.body.appendChild(box);
+  return new firebase.auth.RecaptchaVerifier("sec-recaptcha",{size:"invisible"});
+}
+function _has2FA(){
+  var u=window._fbUser;
+  return !!(u&&u.multiFactor&&u.multiFactor.enrolledFactors&&u.multiFactor.enrolledFactors.length);
+}
+// Login con soporte de segundo factor (SMS)
+function _signIn(email,pass){
+  return window._fbFns.signInWithEmailAndPassword(window._auth,email,pass).catch(function(e){
+    if(e.code!=="auth/multi-factor-auth-required"||!e.resolver)throw e;
+    var resolver=e.resolver,hint=resolver.hints[0],rv=_recaptcha();
+    return new firebase.auth.PhoneAuthProvider().verifyPhoneNumber({multiFactorHint:hint,session:resolver.session},rv)
+      .then(function(vid){
+        return _secPrompt("Verificación en dos pasos","Código enviado por SMS a "+(hint.phoneNumber||"tu móvil")+".","123456","tel").then(function(code){
+          if(!code)throw{code:"sec/cancel",message:"Verificación cancelada."};
+          var cred=firebase.auth.PhoneAuthProvider.credential(vid,code);
+          return resolver.resolveSignIn(firebase.auth.PhoneMultiFactorGenerator.assertion(cred));
+        });
+      })
+      .finally(function(){try{rv.clear();}catch(x){}});
+  });
+}
+function _authErrMsg(e){
+  if(e.code==="auth/invalid-credential")return"Email o contraseña incorrectos.";
+  if(e.code==="auth/invalid-verification-code")return"Código de verificación incorrecto.";
+  if(e.code==="auth/too-many-requests")return"Demasiados intentos. Prueba más tarde.";
+  return"Error: "+e.message;
+}
+function open2FAModal(){
+  var u=window._fbUser;if(!u)return;
+  if(_has2FA()){
+    if(!confirm("La verificación en dos pasos está ACTIVA.\n¿Desactivarla?"))return;
+    u.multiFactor.unenroll(u.multiFactor.enrolledFactors[0])
+      .then(function(){toast("2FA desactivada");route(S.view);})
+      .catch(function(e){alert(e.code==="auth/requires-recent-login"?"Por seguridad, cierra sesión y vuelve a entrar antes de hacer esto.":_authErrMsg(e));});
+    return;
+  }
+  if(!u.emailVerified){
+    u.sendEmailVerification().then(function(){alert("Primero verifica tu email: te hemos enviado un enlace a "+u.email+". Después cierra sesión, vuelve a entrar y activa la 2FA.");})
+      .catch(function(e){alert(_authErrMsg(e));});
+    return;
+  }
+  var rv=null;
+  _secPrompt("Activar verificación en dos pasos","Introduce tu móvil con prefijo internacional.","+34600000000","tel").then(function(phone){
+    if(!phone)return;
+    rv=_recaptcha();
+    return u.multiFactor.getSession().then(function(session){
+      return new firebase.auth.PhoneAuthProvider().verifyPhoneNumber({phoneNumber:phone,session:session},rv);
+    }).then(function(vid){
+      return _secPrompt("Confirma tu móvil","Introduce el código recibido por SMS.","123456","tel").then(function(code){
+        if(!code)return;
+        var cred=firebase.auth.PhoneAuthProvider.credential(vid,code);
+        return u.multiFactor.enroll(firebase.auth.PhoneMultiFactorGenerator.assertion(cred),"Móvil").then(function(){toast("🛡️ 2FA activada");route(S.view);});
+      });
+    });
+  }).catch(function(e){
+    alert(e.code==="auth/requires-recent-login"?"Por seguridad, cierra sesión y vuelve a entrar antes de activar la 2FA.":_authErrMsg(e));
+  }).finally(function(){if(rv)try{rv.clear();}catch(x){}});
+}
+function render2FAGate(){
+  document.body.classList.add("gate-active");
+  $("main").innerHTML='<div class="login-gate"><div class="login-card">'+
+    '<h1 class="login-title">🛡️ Verificación en dos pasos obligatoria</h1>'+
+    '<p class="login-sub">Activa la 2FA para acceder a la aplicación.</p>'+
+    '<button class="btn btn-primary" id="gate-2fa-btn" style="width:100%">Activar 2FA</button>'+
+    '<a href="#" id="gate-2fa-out" class="login-forgot">Cerrar sesión</a>'+
+    "</div></div>";
+  document.querySelectorAll(".nb").forEach(function(b){b.style.display="none";});
+  $("gate-2fa-btn").addEventListener("click",open2FAModal);
+  $("gate-2fa-out").addEventListener("click",function(e){e.preventDefault();window._fbFns.signOut(window._auth);});
+}
+function bind2FABtn(){
+  var b=$("hdr-2fa-btn");if(!b)return;
+  b.style.display=window._fbUser?"":"none";
+  b.textContent=_has2FA()?"🛡️":"⚠️";
+  b.title=_has2FA()?"2FA activa":"Activar verificación en dos pasos";
+  if(!b._bound){b._bound=true;b.addEventListener("click",open2FAModal);}
+}
+function openPrivacyModal(){
+  var mo=document.createElement("div");mo.className="mo";
+  mo.innerHTML='<div class="modal" style="padding-bottom:40px"><button class="mcl" id="pv-close">×</button>'+
+    '<div class="mtitle">Protección de datos</div>'+
+    '<div class="msub" style="font-size:12.5px;line-height:1.5">'+
+    '<p><b>Responsable:</b> Real Madrid C.F. — Cantera.</p>'+
+    '<p><b>Finalidad:</b> gestión interna de convocatorias de jugadores a selecciones.</p>'+
+    '<p><b>Base jurídica:</b> interés legítimo y relación deportiva con el club (art. 6 RGPD).</p>'+
+    '<p><b>Acceso:</b> solo personal autorizado con usuario, rol y verificación en dos pasos.</p>'+
+    '<p><b>Seguridad:</b> cifrado en tránsito (HTTPS/TLS) y en reposo (Google Cloud AES-256).</p>'+
+    '<p><b>Derechos:</b> acceso, rectificación, supresión, oposición, limitación y portabilidad ante el DPO del club.</p>'+
+    "</div></div>";
+  document.body.appendChild(mo);
+  function closeMo(){if(mo.parentNode)mo.parentNode.removeChild(mo);}
+  $("pv-close").addEventListener("click",closeMo);
+  mo.addEventListener("click",function(e){if(e.target===mo)closeMo();});
+}
+// Cierre de sesión por inactividad
+(function(){
+  var last=Date.now();
+  ["click","keydown","touchstart","scroll"].forEach(function(ev){document.addEventListener(ev,function(){last=Date.now();},{passive:true});});
+  setInterval(function(){
+    if(window._fbUser&&!(window._pendingWrites>0)&&Date.now()-last>SEC_IDLE_MIN*60000){
+      last=Date.now();
+      window._fbFns.signOut(window._auth).then(function(){toast("🔒 Sesión cerrada por inactividad");});
+    }
+  },60000);
+})();
+
 // ── LOGIN ──
 function renderUsersBtn(){
   var slot=$("hdr-users-slot");if(!slot)return;
@@ -3630,7 +3774,7 @@ function bindLoginBtn(){
   var btn=$("hdr-login-btn");if(!btn)return;
   btn.addEventListener("click",function(){
     if(window._fbUser){
-      if(confirm("¿Cerrar sesión?"))window._fbFns.signOut(window._auth).then(function(){toast("Sesión cerrada");route(S.view);});
+      if(confirm(window._pendingWrites>0?"⚠️ Hay cambios guardándose. Si cierras sesión ahora se pueden perder. ¿Cerrar sesión igualmente?":"¿Cerrar sesión?"))window._fbFns.signOut(window._auth).then(function(){toast("Sesión cerrada");route(S.view);});
       return;
     }
     var mo=document.createElement("div");mo.className="mo";
@@ -3652,9 +3796,9 @@ function bindLoginBtn(){
       var email=(emailEl?emailEl.value:"").trim(),pass=passEl?passEl.value:"";
       if(!email||!pass){errEl.style.display="block";errEl.textContent="Introduce email y contraseña.";return;}
       var okBtn=$("lm-ok");okBtn.disabled=true;okBtn.textContent="Entrando...";
-      window._fbFns.signInWithEmailAndPassword(window._auth,email,pass)
+      _signIn(email,pass)
         .then(function(){closeMo();toast("🔓 Sesión iniciada");route(S.view);})
-        .catch(function(e){errEl.style.display="block";errEl.textContent=e.code==="auth/invalid-credential"?"Email o contraseña incorrectos.":"Error: "+e.message;okBtn.disabled=false;okBtn.textContent="Entrar";});
+        .catch(function(e){errEl.style.display="block";errEl.textContent=_authErrMsg(e);okBtn.disabled=false;okBtn.textContent="Entrar";});
     });
     if(passEl)passEl.addEventListener("keydown",function(e){if(e.key==="Enter")$("lm-ok").click();});
   });
@@ -3668,7 +3812,7 @@ window._onAuthChange = function(user){
   }
   if(!user){window._userRoles={};window._userRolesList=[];}
   document.querySelectorAll(".nb-new,.nb[data-v='jugadores']").forEach(function(b){b.style.display=user?"":"none";});
-  renderUsersBtn();
+  renderUsersBtn();bind2FABtn();
   if(user){
     loadUserRoles(function(){renderUsersBtn();route(S.view||"agenda");});
   } else {
