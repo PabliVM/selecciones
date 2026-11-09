@@ -29,7 +29,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 
 /* HEADER */
 .app-topbar{position:fixed;top:0;left:0;right:0;z-index:100}
-@media(max-width:639px){.main{padding-top:104px!important}}
+@media(max-width:639px){.main{padding-top:104px}}
 body.gate-active{background:var(--navy)}
 body.gate-active .app-topbar,body.gate-active .app-footer{display:none}
 .login-gate{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--navy);z-index:200}
@@ -141,6 +141,11 @@ body.dark .nav{background:var(--surface)}
 .cc-plrow-dropped-orange .cc-plrow-dropbadge{color:#F59E0B}
 .cc-plrow-dropped-white .cc-plrow-n,.cc-plrow-dropped-white .cc-plrow-dropbadge{color:var(--text-muted)}
 .cc-plrow-dropbadge{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+/* Jugadores en ficha: columnas alineadas (nombre | equipo | estado) */
+.cc-plrows{display:grid;grid-template-columns:minmax(0,1fr) auto auto;column-gap:8px;row-gap:4px;align-items:baseline}
+.cc-plrow{display:contents}
+.cc-plrow-dropped>*{opacity:.7}
+.cc-plrow-dropbadge{white-space:nowrap}
 .cc-plrow-n{color:var(--text);font-weight:600}
 .cc-plrow-t{color:var(--text-muted);font-size:11px;flex-shrink:0}
 .cc-more-btn{background:none;border:none;color:var(--navy);font-size:12px;font-weight:700;cursor:pointer;padding:8px 0 0;text-align:left}
@@ -687,6 +692,70 @@ body.dark .agenda-upcoming-hdr{background:#15181d}
   .main{padding:10px 12px}
   .nav{padding:8px 12px;gap:6px}
   .nb{padding:7px 12px}
+  /* Móvil: header compacto */
+  .hdr{gap:8px}
+  .hdr-emblem-img{width:30px;height:30px;padding:2px}
+  .hdr-title{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hdr-sub{display:none}
+  .season-sel{font-size:11px;padding:4px 20px 4px 8px;min-height:30px;max-width:92px;background-position:right 5px center}
+  .hdr-newseason-btn{width:30px;height:30px;font-size:14px}
+  .btn-dark,.hdr-login-btn{width:30px;height:30px}
+  /* Móvil: nav a ancho completo, sin scroll */
+  .nav{gap:6px;padding:6px 8px}
+  .nb{flex:1 1 0;min-width:0;justify-content:center;padding:8px 4px;gap:4px}
+  .nl{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* Móvil: formularios sin desbordes ni zoom iOS */
+  .frow{gap:8px}
+  .frow>*{min-width:0}
+  .rc-group{gap:6px}
+  .rc{min-width:0;padding:12px 4px}
+  .rc-lbl{font-size:11.5px}
+  .fi,.fsel,.fta{font-size:16px}
+  .toast{white-space:normal;max-width:calc(100vw - 32px);text-align:center}
+  /* Móvil · Agenda: cabecera de sección */
+  .agenda-upcoming-hdr{flex-wrap:wrap;row-gap:6px;padding:8px 10px}
+  .agenda-upcoming-hdr .mini-toggle{margin-left:auto}
+  /* Móvil · Agenda: fichas compactas */
+  .cc{padding:12px}
+  .cc-convtype{margin:-12px -12px 8px!important;padding:6px 12px!important}
+  .cc-convtype>span:first-child{font-size:16px!important}
+  .cc-hdr{margin-bottom:6px}
+  .cc-badges{gap:4px}
+  .cc-title{font-size:15px;margin-bottom:6px}
+  .cc-meta{gap:2px;margin-bottom:4px}
+  .cc-mi{font-size:12.5px;align-items:flex-start}
+  .cc-plcount{font-size:10.5px;letter-spacing:.1px;padding:8px 0;text-align:left}
+  .cc-plrow{flex-wrap:wrap;column-gap:6px;row-gap:0}
+  /* Móvil · Agenda: tablas con scroll horizontal, sin cortar palabras */
+  .tabla-wrap{overscroll-behavior-x:contain}
+  .psheet{min-width:1000px;table-layout:auto}
+  .psheet td.psheet-upper,.psheet td:first-child{white-space:nowrap}
+  .psheet thead th{color:#111;white-space:normal}
+  .psheet tbody td{word-break:normal;overflow-wrap:break-word;hyphens:manual}
+  .cc-tl>div{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:8px}
+  /* Móvil · Agenda: controles superiores compactos para que las fichas suban */
+  .vh{margin-bottom:10px!important;padding-bottom:8px}
+  .vt{font-size:20px}
+  .btn-print{padding:6px 10px}
+  .view-toggle{margin-bottom:8px!important}
+  .vtbtn{padding:5px 8px}
+  #ag-qdate{min-height:36px;padding:5px 10px}
+  .agenda-upcoming{margin-bottom:10px!important}
+  .fb{margin-bottom:10px}
+  .fin-summary{padding:10px 14px}
+  .fin-summary__label{font-size:15px}
+  /* Móvil · Fichas: tipo + badges en una sola fila */
+  .cc{display:flex;flex-wrap:wrap;align-items:center;column-gap:6px}
+  .cc>*{flex:0 0 100%;min-width:0}
+  .cc>.cc-convtype{flex:0 0 auto;margin:0 0 6px!important;padding:0!important;background:none!important;gap:4px!important}
+  .cc>.cc-convtype>span:nth-child(2){font-size:10px!important}
+  .cc>.cc-hdr{flex:1 1 auto;margin-bottom:6px}
+  .cc .badge{padding:2px 8px;font-size:10px;letter-spacing:.3px}
+}
+@media(max-width:360px){
+  .ni{display:none}
+  .cc-plrows{grid-template-columns:minmax(0,1fr) auto fit-content(90px)}
+  .cc-plrow-dropbadge{white-space:normal}
 }
 
 /* ═══════════════════════════════════════════════
