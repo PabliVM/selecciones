@@ -3684,7 +3684,7 @@ function render2FAGate(){
 }
 function bind2FABtn(){
   var b=$("hdr-2fa-btn");if(!b)return;
-  b.style.display=window._fbUser?"":"none";
+  b.style.display=(window._fbUser&&_has2FA())?"":"none"; // 2FA desactivada: solo visible para quitarla si ya estaba activa
   b.textContent=_has2FA()?"🛡️":"⚠️";
   b.title=_has2FA()?"2FA activa":"Activar verificación en dos pasos";
   if(!b._bound){b._bound=true;b.addEventListener("click",open2FAModal);}
