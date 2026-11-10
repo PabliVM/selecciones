@@ -1381,14 +1381,14 @@ function renderAgenda(viewMode){
     '<div style="display:flex;gap:6px">'+
     '<button class="btn-print" id="btn-cmp-ficha" title="Comparar con ficha de control">🔍</button>'+
     '<button class="btn-print" id="btn-print-agenda">🖨️</button>'+
-    '</div></div></div>'+conflictHtml+tabsHtml+qHtml+
+    '</div></div></div>'+tabsHtml+
     '<div class="view-toggle" style="flex-wrap:wrap;height:auto;margin-bottom:10px">'+
     '<button class="vtbtn'+(!S.filterType?" on":"")+'" data-f="">Todas</button>'+
     '<button class="vtbtn'+(S.filterType==="espanola"?" on":"")+'" data-f="espanola"><img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/flags/espa%C3%B1a.png" style="width:14px;height:10px;object-fit:cover;border-radius:1px;vertical-align:middle"/> RFEF</button>'+
     '<button class="vtbtn'+(S.filterType==="madrilena"?" on":"")+'" data-f="madrilena"><img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/flags/madrid.png" style="width:14px;height:10px;object-fit:cover;border-radius:1px;vertical-align:middle"/> RFFM</button>'+
     '<button class="vtbtn'+(S.filterType==="internacional"?" on":"")+'" data-f="internacional">🌍 OTRAS</button>'+
     (descartadas.length?'<button class="vtbtn"'+(S.showDescartadas?' style="color:#EF4444"':"")+' id="btn-show-desc">❌ Descartadas ('+descartadas.length+')</button>':"")+
-    '</div>'+paisPills+catPills;
+    '</div>'+paisPills+catPills+conflictHtml+qHtml;
 
   var miniToggle='<div class="mini-toggle"><button class="mini-toggle-btn'+(viewMode==="fichas"?" on":"")+'" data-vm="fichas">⊢□ Fichas</button>'+
     '<button class="mini-toggle-btn'+(viewMode==="tabla"?" on":"")+'" data-vm="tabla">≡ Tabla</button>'+
