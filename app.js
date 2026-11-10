@@ -871,6 +871,7 @@ function openDetail(id){
         '<option value="">Selecciona un motivo</option>'+
         '<option value="Preconvocatoria">Preconvocatoria</option>'+
         '<option value="No convocado">No convocado</option>'+
+        '<option value="Lesión">Lesión</option>'+
         '<option value="Desconvocado">Desconvocado</option></select></div>'+
         '<div class="fg" id="dr-otros-wrap" style="display:none"><label class="fl">Escribe el motivo *</label><input class="fi" type="text" id="dr-otros-text" placeholder="Motivo" autocomplete="off"/></div>'+
         '<div id="dr-err" class="ferr" style="display:none"></div>'+
