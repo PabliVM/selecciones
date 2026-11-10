@@ -1258,6 +1258,30 @@ function conflictRefIds(conflicts){
   conflicts.forEach(function(c){set[c.a.id]=1;set[c.b.id]=1;});
   return set;
 }
+function agPlayerSearchHtml(q,all){
+  var nq=normTxt(q);if(nq.length<2)return"";
+  var toks=nq.split(" ");
+  var rows=[];
+  (all||[]).forEach(function(c){
+    if(c.convType==="descartada")return;
+    (c.players||[]).forEach(function(p){
+      var n=normTxt(p.fullName);
+      if(toks.every(function(t){return n.indexOf(t)!==-1;}))rows.push({c:c,p:p});
+    });
+  });
+  if(!rows.length)return'<p class="msub" style="margin:0;padding:0 14px 12px">Ningún jugador encontrado</p>';
+  rows.sort(function(a,b){return(a.c.startDate||"").localeCompare(b.c.startDate||"");});
+  var st={en_curso:"🔴 En curso",proxima:"🟠 Próxima",finalizada:"⚪ Finalizada"};
+  return'<div style="padding:0 14px 12px">'+rows.slice(0,40).map(function(r){
+    var c=r.c,p=r.p,s=calcStatus(c.startDate,c.endDate||c.startDate);
+    var drop=p.dropStatus&&p.dropStatus!=="active";
+    var est=drop?'<span style="color:#EF4444;font-weight:700">'+esc(dropWord(p))+(dropReasonTxt(p)?" · "+esc(dropReasonTxt(p)):"")+'</span>':'<span style="color:#059669;font-weight:700">'+(c.convType==="definitiva"?"Convocado":"Preconvocado")+'</span>';
+    return'<div class="ag-pq-row" data-id="'+c.id+'" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 0;border-top:1px solid var(--border);cursor:pointer'+(s==="finalizada"?";opacity:.6":"")+'">'+
+      '<b style="font-size:13px">'+esc(p.fullName)+'</b>'+selBadge(c.selectionType,c.selectionCategory,c.pais)+
+      '<span style="font-size:12.5px">'+esc(c.title)+'</span>'+
+      '<span style="font-size:12px;color:var(--text-muted)">'+fmtRange(c.startDate,c.endDate||c.startDate)+' · '+st[s]+' · </span>'+'<span style="font-size:12px">'+est+'</span></div>';
+  }).join("")+'</div>';
+}
 function renderAgenda(viewMode){
   viewMode=viewMode||S.agendaView||"fichas";S.agendaView=viewMode;
   if(!S.agendaTab)S.agendaTab="conv";
@@ -1376,6 +1400,10 @@ function renderAgenda(viewMode){
     }
   }
   qHtml+='</div>';
+  qHtml+='<div class="agenda-upcoming" style="margin-bottom:14px"><div style="padding:10px 14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">'+
+    '<span style="font-size:13px;font-weight:700">👤 ¿Dónde está…?</span>'+
+    '<input type="search" class="fi" id="ag-pq" value="'+esc(S.playerQuery||"")+'" placeholder="Nombre del jugador" autocomplete="off" style="flex:1;min-width:150px"/></div>'+
+    '<div id="ag-pq-res">'+agPlayerSearchHtml(S.playerQuery,all)+'</div></div>';
   var h='<div class="vh" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:8px;justify-content:space-between">'+
     '<h1 class="vt">Agenda</h1>'+
     '<div style="display:flex;gap:6px">'+
@@ -1472,6 +1500,12 @@ function renderAgenda(viewMode){
   var qClear=$("ag-qclear");
   if(qClear)qClear.addEventListener("click",function(){S.queryDate="";renderAgenda(S.agendaView);});
   document.querySelectorAll(".ag-q-row").forEach(function(r){r.addEventListener("click",function(){openDetail(r.dataset.id);});});
+  var pq=$("ag-pq");
+  if(pq){
+    var bindPqRows=function(){document.querySelectorAll(".ag-pq-row").forEach(function(r){r.addEventListener("click",function(){openDetail(r.dataset.id);});});};
+    pq.addEventListener("input",function(){S.playerQuery=pq.value;$("ag-pq-res").innerHTML=agPlayerSearchHtml(S.playerQuery,all);bindPqRows();});
+    bindPqRows();
+  }
   var btnCmp=document.getElementById("btn-cmp-ficha");
   if(btnCmp)btnCmp.addEventListener("click",openCompareModal);
 
