@@ -1292,8 +1292,9 @@ function playerStatsData(type){
     (c.players||[]).forEach(function(p){
       if(p.dropStatus&&p.dropStatus!=="active")return;
       var k=p.playerId||normTxt(p.fullName);if(!k)return;
-      if(!by[k])by[k]={name:p.fullName,s:{},tot:0,pre:0};
+      if(!by[k])by[k]={name:p.fullName,s:{},tot:0,pre:0,list:[]};
       var r=by[k];if(!r.s[sea])r.s[sea]={c:0,p:0};
+      r.list.push(c);
       if(def){r.s[sea].c++;r.tot++;}else{r.s[sea].p++;r.pre++;}
     });
   });
@@ -1313,17 +1314,27 @@ function openPlayerStatsModal(type){
     var td='style="padding:6px 8px;text-align:center;font-size:13px;border-bottom:1px solid var(--border)"';
     var tbl=rows.length?'<div style="overflow-x:auto;margin-top:10px"><table style="border-collapse:collapse;width:100%">'+
       '<thead><tr><th '+th.replace("center","left")+'>Jugador</th>'+d.seasons.map(function(s){return'<th '+th+'>'+esc(s)+'</th>';}).join("")+'<th '+th+'>Total</th></tr></thead><tbody>'+
-      rows.map(function(r){
-        return'<tr><td '+td.replace("center","left")+'><b>'+esc(r.name)+'</b></td>'+
+      rows.map(function(r,i){
+        var open=openRows[r.name];
+        var det=open?'<tr><td colspan="'+(d.seasons.length+2)+'" style="padding:4px 8px 10px;background:var(--surface-2,rgba(0,0,0,.03));border-bottom:1px solid var(--border)">'+
+          r.list.slice().sort(function(a,b){return(b.startDate||"").localeCompare(a.startDate||"");}).map(function(c){
+            return'<div class="st-conv" data-id="'+c.id+'" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:6px 0;border-top:1px solid var(--border);cursor:pointer;font-size:12.5px">'+
+              selBadge(c.selectionType,c.selectionCategory,c.pais)+'<b>'+esc(c.title||"")+'</b>'+
+              '<span style="color:var(--text-muted)">'+esc(c.season||"")+' · '+fmtRange(c.startDate,c.endDate||c.startDate)+' · '+(c.convType==="definitiva"?"Convocatoria":"Preconvocatoria")+'</span></div>';
+          }).join("")+'</td></tr>':"";
+        return'<tr class="st-row" data-n="'+esc(r.name)+'" style="cursor:pointer"><td '+td.replace("center","left")+'><span style="color:var(--text-muted);font-size:10px">'+(open?"▼":"▶")+'</span> <b>'+esc(r.name)+'</b></td>'+
           d.seasons.map(function(s){var v=r.s[s];if(!v)return'<td '+td+' ><span style="color:var(--text-muted)">–</span></td>';
             return'<td '+td+'><b>'+v.c+'</b>'+(v.p?'<span style="font-size:10.5px;color:var(--text-muted)"> +'+v.p+' pre</span>':"")+'</td>';}).join("")+
-          '<td '+td+'><b>'+r.tot+'</b>'+(r.pre?'<span style="font-size:10.5px;color:var(--text-muted)"> +'+r.pre+' pre</span>':"")+'</td></tr>';
+          '<td '+td+'><b>'+r.tot+'</b>'+(r.pre?'<span style="font-size:10.5px;color:var(--text-muted)"> +'+r.pre+' pre</span>':"")+'</td></tr>'+det;
       }).join("")+'</tbody></table></div>':'<p class="msub" style="margin-top:12px">Sin datos</p>';
     $("st-body").innerHTML=tbl;
+    mo.querySelectorAll(".st-row").forEach(function(tr){tr.addEventListener("click",function(){var n=tr.dataset.n;openRows[n]=!openRows[n];draw();});});
+    mo.querySelectorAll(".st-conv").forEach(function(el){el.addEventListener("click",function(){closeMo();openDetail(el.dataset.id);});});
   }
+  var openRows={};
   mo.innerHTML='<div class="modal" style="padding-bottom:40px"><button class="mcl" id="st-close">×</button>'+
     '<div class="mtitle">📊 Veces convocado</div>'+
-    '<p class="msub">Por jugador y temporada. Número = convocatorias definitivas; “+pre” = preconvocatorias. No cuenta descartados ni convocatorias descartadas.</p>'+
+    '<p class="msub">Por jugador y temporada. Número = convocatorias definitivas; “+pre” = preconvocatorias. No cuenta descartados ni convocatorias descartadas. Pulsa un jugador para ver en cuáles ha estado.</p>'+
     '<div class="view-toggle" style="margin:8px 0">'+
     '<button class="vtbtn'+(type==="madrilena"?" on":"")+'" data-st="madrilena">RFFM</button>'+
     '<button class="vtbtn'+(type==="espanola"?" on":"")+'" data-st="espanola">RFEF</button>'+
