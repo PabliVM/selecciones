@@ -1284,21 +1284,24 @@ function agPlayerSearchHtml(q,all){
   }).join("")+'</div>';
 }
 // Aviso: jugador que va 3 o más veces con la Madrileña en la misma temporada
+function madWarnHtml(list){
+  if(!list.length)return"";
+  return'<div class="conflict-alert" style="margin-bottom:12px"><div class="conflict-alert-hdr">⚠️ Selección Madrileña: '+list.length+' jugador'+(list.length===1?"":"es")+' con 3 o más convocatorias esta temporada</div>'+
+    list.map(function(w){return'<div class="conflict-alert-row"><b>'+esc(w.name)+'</b>: sería su '+w.n+'ª convocatoria</div>';}).join("")+'</div>';
+}
 function madThirdWarnings(data,eid){
   if(selKey(data.selectionType)!=="madrilena"||data.convType==="descartada")return[];
   var isAct=function(p){return!p.dropStatus||p.dropStatus==="active";};
-  var keyOf=function(p){return p.playerId||normTxt(p.fullName);};
+  var same=function(a,b){var ia=a.playerId&&String(a.playerId).indexOf("manual_")!==0?a.playerId:"",ib=b.playerId&&String(b.playerId).indexOf("manual_")!==0?b.playerId:"";return(ia&&ia===ib)||normTxt(a.fullName)===normTxt(b.fullName);};
   var prev=null,sea=S.season;
   if(eid){prev=getCallups_raw().find(function(c){return c.id===eid;});if(prev&&prev.season)sea=prev.season;}
-  var prevKeys={};
-  if(prev)(prev.players||[]).forEach(function(p){if(isAct(p))prevKeys[keyOf(p)]=true;});
   var others=getCallups({season:sea,type:"madrilena",excludeDescartadas:true}).filter(function(c){return c.id!==eid;});
   var out=[];
   (data.players||[]).forEach(function(p){
     if(!isAct(p))return;
-    var k=keyOf(p);if(!k||prevKeys[k])return;
+    if(!normTxt(p.fullName))return;
     var n=1;
-    others.forEach(function(c){if((c.players||[]).some(function(x){return isAct(x)&&keyOf(x)===k;}))n++;});
+    others.forEach(function(c){if((c.players||[]).some(function(x){return isAct(x)&&same(x,p);}))n++;});
     if(n>=3)out.push({name:p.fullName,n:n});
   });
   return out;
@@ -2042,6 +2045,7 @@ function renderNueva(){
   $("main").innerHTML=
     '<div class="vh" style="margin-bottom:8px"><h1 class="vt">'+(S.editingId?"Editar Convocatoria":"Nueva Convocatoria")+'</h1><span class="vs">'+S.season+"</span></div>"+
     '<div id="ai-parser-wrap" style="margin-bottom:12px"><button type="button" class="btn-ai-parser" id="btn-ai-parser">✨ Rellenar con nota de prensa</button></div>'+
+    '<div class="mad-warn"></div>'+
     '<form id="cf" autocomplete="off">'+
     '<div class="fblock fblock-info">'+
     '<div class="fsec fsec-info"><span class="fsec-ico">📋</span><span class="fsec-lbl">Información general</span></div>'+
@@ -2098,6 +2102,7 @@ function renderNueva(){
     '<div class="fblock fblock-players">'+
     '<div class="fsec fsec-players"><span class="fsec-ico">👕</span><span class="fsec-lbl">Jugadores convocados</span></div>'+
     '<div class="fg">'+
+    '<div class="mad-warn"></div>'+
     '<input class="fi" type="text" id="psearch" placeholder="🔍 Buscar jugador..." autocomplete="off" style="margin-bottom:8px"/>'+
     '<div class="psel" id="psel">'+pselHTML+'</div><div id="sprev" class="sp"></div></div>'+
     '<div class="fg" style="border-top:1px solid var(--border);padding-top:10px;margin-top:6px">'+
@@ -2198,6 +2203,7 @@ function renderNueva(){
   });
 
   function updatePreview(){
+    setTimeout(updMadWarn,0);
     var checked=Array.prototype.slice.call(document.querySelectorAll('[name="pids"]:checked'));
     var prev=$("sprev");if(!checked.length){prev.innerHTML="";return;}
     prev.innerHTML='<div class="sp-label">Seleccionados ('+checked.length+')</div><div class="sp-chips">'+
@@ -2246,6 +2252,19 @@ function renderNueva(){
     renderManualPlayers();
   });
   renderManualPlayers();
+
+  function updMadWarn(){
+    var sel=document.querySelector('[name="selType"]:checked');
+    var ec=S.editingId?getCallups_raw().find(function(c){return c.id===S.editingId;}):null,dropped={};
+    if(ec)(ec.players||[]).forEach(function(p){if(p.dropStatus&&p.dropStatus!=="active")dropped[p.playerId]=true;});
+    var pls=Array.prototype.slice.call(document.querySelectorAll('[name="pids"]:checked')).filter(function(cb){return!dropped[cb.value];}).map(function(cb){return{playerId:cb.value,fullName:cb.dataset.n};})
+      .concat(manualPlayers.filter(function(p){return!p.dropStatus||p.dropStatus==="active";}).map(function(p){return{playerId:p.playerId,fullName:p.fullName};}));
+    var html=madWarnHtml(madThirdWarnings({selectionType:sel?sel.value:"",players:pls},S.editingId));
+    document.querySelectorAll(".mad-warn").forEach(function(el){el.innerHTML=html;});
+  }
+  var cfEl=$("cf");
+  if(cfEl){cfEl.addEventListener("change",function(){setTimeout(updMadWarn,0);});cfEl.addEventListener("click",function(){setTimeout(updMadWarn,0);});}
+  setTimeout(updMadWarn,0);
 
   var matchCount=0;
   function addMatchRow(date,time,rival,mtype){
@@ -2323,8 +2342,6 @@ function renderNueva(){
     var errDiv=$("ferr");
     if(errs.length){errDiv.style.display="block";errDiv.innerHTML=errs.map(function(x){return"<p>• "+x+"</p>";}).join("");errDiv.scrollIntoView({behavior:"smooth",block:"center"});return;}
     errDiv.style.display="none";
-    var madW=madThirdWarnings(data,S.editingId);
-    if(madW.length&&!confirm("⚠️ AVISO SELECCIÓN MADRILEÑA\n\n"+madW.map(function(w){return"• "+w.name+": "+w.n+"ª convocatoria esta temporada";}).join("\n")+"\n\n¿Guardar igualmente?"))return;
     var btn=$("btn-submit");btn.disabled=true;btn.textContent="Guardando...";
     var eid=S.editingId;S.editingId=null;
     if(eid){updateCallup(eid,data,function(){toast("✅ Convocatoria actualizada");route("agenda");});}
