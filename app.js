@@ -1286,8 +1286,8 @@ function agPlayerSearchHtml(q,all){
 // Aviso: jugador que va 3 o más veces con la Madrileña en la misma temporada
 function madWarnHtml(list){
   if(!list.length)return"";
-  return'<div class="conflict-alert" style="margin-bottom:12px"><div class="conflict-alert-hdr">⚠️ Selección Madrileña: '+list.length+' jugador'+(list.length===1?"":"es")+' con 3 o más convocatorias esta temporada</div>'+
-    list.map(function(w){return'<div class="conflict-alert-row"><b>'+esc(w.name)+'</b>: sería su '+w.n+'ª convocatoria</div>';}).join("")+'</div>';
+  return'<div class="conflict-alert" style="margin-bottom:12px"><div class="conflict-alert-hdr">⚠️ Selección Madrileña: '+list.length+' jugador'+(list.length===1?"":"es")+' superaría 2 convocatorias esta temporada</div>'+
+    list.map(function(w){return'<div class="conflict-alert-row"><b>'+esc(w.name)+'</b>: ya tiene '+(w.n-1)+' convocatorias, esta sería la '+w.n+'ª</div>';}).join("")+'</div>';
 }
 function madThirdWarnings(data,eid){
   if(selKey(data.selectionType)!=="madrilena"||data.convType==="descartada")return[];
