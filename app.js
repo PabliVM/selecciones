@@ -1283,6 +1283,58 @@ function agPlayerSearchHtml(q,all){
       '<span style="font-size:12px;color:var(--text-muted)">'+fmtRange(c.startDate,c.endDate||c.startDate)+' · '+st[s]+' · </span>'+'<span style="font-size:12px">'+est+'</span></div>';
   }).join("")+'</div>';
 }
+// ── Estadística: veces convocado por jugador y temporada ──
+function playerStatsData(type){
+  var by={},seasons={};
+  getCallups({type:type,excludeDescartadas:true}).forEach(function(c){
+    var sea=c.season||"—";seasons[sea]=true;
+    var def=c.convType==="definitiva";
+    (c.players||[]).forEach(function(p){
+      if(p.dropStatus&&p.dropStatus!=="active")return;
+      var k=p.playerId||normTxt(p.fullName);if(!k)return;
+      if(!by[k])by[k]={name:p.fullName,s:{},tot:0,pre:0};
+      var r=by[k];if(!r.s[sea])r.s[sea]={c:0,p:0};
+      if(def){r.s[sea].c++;r.tot++;}else{r.s[sea].p++;r.pre++;}
+    });
+  });
+  var rows=Object.keys(by).map(function(k){return by[k];});
+  rows.sort(function(a,b){return b.tot-a.tot||b.pre-a.pre||a.name.localeCompare(b.name);});
+  return{rows:rows,seasons:Object.keys(seasons).sort()};
+}
+function openPlayerStatsModal(type){
+  var mo=document.createElement("div");mo.className="mo";
+  document.body.appendChild(mo);
+  function closeMo(){if(mo.parentNode)mo.parentNode.removeChild(mo);}
+  mo.addEventListener("click",function(e){if(e.target===mo)closeMo();});
+  function draw(){
+    var d=playerStatsData(type),q=normTxt(($("st-q")||{}).value||"");
+    var rows=q?d.rows.filter(function(r){return normTxt(r.name).indexOf(q)!==-1;}):d.rows;
+    var th='style="padding:6px 8px;text-align:center;font-size:11px;white-space:nowrap;border-bottom:1px solid var(--border)"';
+    var td='style="padding:6px 8px;text-align:center;font-size:13px;border-bottom:1px solid var(--border)"';
+    var tbl=rows.length?'<div style="overflow-x:auto;margin-top:10px"><table style="border-collapse:collapse;width:100%">'+
+      '<thead><tr><th '+th.replace("center","left")+'>Jugador</th>'+d.seasons.map(function(s){return'<th '+th+'>'+esc(s)+'</th>';}).join("")+'<th '+th+'>Total</th></tr></thead><tbody>'+
+      rows.map(function(r){
+        return'<tr><td '+td.replace("center","left")+'><b>'+esc(r.name)+'</b></td>'+
+          d.seasons.map(function(s){var v=r.s[s];if(!v)return'<td '+td+' ><span style="color:var(--text-muted)">–</span></td>';
+            return'<td '+td+'><b>'+v.c+'</b>'+(v.p?'<span style="font-size:10.5px;color:var(--text-muted)"> +'+v.p+' pre</span>':"")+'</td>';}).join("")+
+          '<td '+td+'><b>'+r.tot+'</b>'+(r.pre?'<span style="font-size:10.5px;color:var(--text-muted)"> +'+r.pre+' pre</span>':"")+'</td></tr>';
+      }).join("")+'</tbody></table></div>':'<p class="msub" style="margin-top:12px">Sin datos</p>';
+    $("st-body").innerHTML=tbl;
+  }
+  mo.innerHTML='<div class="modal" style="padding-bottom:40px"><button class="mcl" id="st-close">×</button>'+
+    '<div class="mtitle">📊 Veces convocado</div>'+
+    '<p class="msub">Por jugador y temporada. Número = convocatorias definitivas; “+pre” = preconvocatorias. No cuenta descartados ni convocatorias descartadas.</p>'+
+    '<div class="view-toggle" style="margin:8px 0">'+
+    '<button class="vtbtn'+(type==="madrilena"?" on":"")+'" data-st="madrilena">RFFM</button>'+
+    '<button class="vtbtn'+(type==="espanola"?" on":"")+'" data-st="espanola">RFEF</button>'+
+    '<button class="vtbtn'+(type==="internacional"?" on":"")+'" data-st="internacional">OTRAS</button></div>'+
+    '<input type="search" class="fi" id="st-q" placeholder="Buscar jugador" autocomplete="off"/>'+
+    '<div id="st-body"></div></div>';
+  $("st-close").addEventListener("click",closeMo);
+  mo.querySelectorAll("[data-st]").forEach(function(b){b.addEventListener("click",function(){closeMo();openPlayerStatsModal(b.dataset.st);});});
+  $("st-q").addEventListener("input",draw);
+  draw();
+}
 function renderAgenda(viewMode){
   viewMode=viewMode||S.agendaView||"fichas";S.agendaView=viewMode;
   if(!S.agendaTab)S.agendaTab="conv";
@@ -1408,6 +1460,7 @@ function renderAgenda(viewMode){
   var h='<div class="vh" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:8px;justify-content:space-between">'+
     '<h1 class="vt">Agenda</h1>'+
     '<div style="display:flex;gap:6px">'+
+    '<button class="btn-print" id="btn-stats-jug" title="Veces convocado por jugador y temporada">📊</button>'+
     '<button class="btn-print" id="btn-cmp-ficha" title="Comparar con ficha de control">🔍</button>'+
     '<button class="btn-print" id="btn-print-agenda">🖨️</button>'+
     '</div></div></div>'+tabsHtml+
@@ -1507,6 +1560,8 @@ function renderAgenda(viewMode){
     pq.addEventListener("input",function(){S.playerQuery=pq.value;$("ag-pq-res").innerHTML=agPlayerSearchHtml(S.playerQuery,all);bindPqRows();});
     bindPqRows();
   }
+  var btnStats=document.getElementById("btn-stats-jug");
+  if(btnStats)btnStats.addEventListener("click",function(){openPlayerStatsModal("madrilena");});
   var btnCmp=document.getElementById("btn-cmp-ficha");
   if(btnCmp)btnCmp.addEventListener("click",openCompareModal);
 
