@@ -1283,6 +1283,26 @@ function agPlayerSearchHtml(q,all){
       '<span style="font-size:12px;color:var(--text-muted)">'+fmtRange(c.startDate,c.endDate||c.startDate)+' · '+st[s]+' · </span>'+'<span style="font-size:12px">'+est+'</span></div>';
   }).join("")+'</div>';
 }
+// Aviso: jugador que va 3 o más veces con la Madrileña en la misma temporada
+function madThirdWarnings(data,eid){
+  if(selKey(data.selectionType)!=="madrilena"||data.convType==="descartada")return[];
+  var isAct=function(p){return!p.dropStatus||p.dropStatus==="active";};
+  var keyOf=function(p){return p.playerId||normTxt(p.fullName);};
+  var prev=null,sea=S.season;
+  if(eid){prev=getCallups_raw().find(function(c){return c.id===eid;});if(prev&&prev.season)sea=prev.season;}
+  var prevKeys={};
+  if(prev)(prev.players||[]).forEach(function(p){if(isAct(p))prevKeys[keyOf(p)]=true;});
+  var others=getCallups({season:sea,type:"madrilena",excludeDescartadas:true}).filter(function(c){return c.id!==eid;});
+  var out=[];
+  (data.players||[]).forEach(function(p){
+    if(!isAct(p))return;
+    var k=keyOf(p);if(!k||prevKeys[k])return;
+    var n=1;
+    others.forEach(function(c){if((c.players||[]).some(function(x){return isAct(x)&&keyOf(x)===k;}))n++;});
+    if(n>=3)out.push({name:p.fullName,n:n});
+  });
+  return out;
+}
 // ── Estadística: veces convocado por jugador y temporada ──
 function playerStatsData(type,cat){
   var by={},seasons={},cats={};
@@ -2303,6 +2323,8 @@ function renderNueva(){
     var errDiv=$("ferr");
     if(errs.length){errDiv.style.display="block";errDiv.innerHTML=errs.map(function(x){return"<p>• "+x+"</p>";}).join("");errDiv.scrollIntoView({behavior:"smooth",block:"center"});return;}
     errDiv.style.display="none";
+    var madW=madThirdWarnings(data,S.editingId);
+    if(madW.length&&!confirm("⚠️ AVISO SELECCIÓN MADRILEÑA\n\n"+madW.map(function(w){return"• "+w.name+": "+w.n+"ª convocatoria esta temporada";}).join("\n")+"\n\n¿Guardar igualmente?"))return;
     var btn=$("btn-submit");btn.disabled=true;btn.textContent="Guardando...";
     var eid=S.editingId;S.editingId=null;
     if(eid){updateCallup(eid,data,function(){toast("✅ Convocatoria actualizada");route("agenda");});}
