@@ -150,7 +150,7 @@ SELS["madrilena"] = {
     sub16:{badge:"#1E40AF"}
   }
 };SELS["espanola"]  = {label:"Española",short:"ESP",cats:["sub14","sub15","sub16","sub17","sub18","sub19","sub20","sub21","sub23","abs"],colors:{sub14:{badge:"#DC2626"},sub15:{badge:"#DC2626"},sub16:{badge:"#B91C1C"},sub17:{badge:"#B91C1C"},sub18:{badge:"#991B1B"},sub19:{badge:"#7F1D1D"},sub20:{badge:"#7F1D1D"},sub21:{badge:"#450A0A"},sub23:{badge:"#2C0000"},abs:{badge:"#1A0000"}}};
-SELS["internacional"]={label:"Internacional",short:"INT",cats:["sub16","sub17","sub18","sub19","sub20","sub21","sub23","abs"],colors:{sub16:{badge:"#10B981"},sub17:{badge:"#10B981"},sub18:{badge:"#047857"},sub19:{badge:"#047857"},sub20:{badge:"#065F46"},sub21:{badge:"#065F46"},sub23:{badge:"#033B2E"},abs:{badge:"#064E3B"}}};
+SELS["internacional"]={label:"Internacional",short:"INT",cats:["sub15","sub16","sub17","sub18","sub19","sub20","sub21","sub23","abs"],colors:{sub15:{badge:"#34D399"},sub16:{badge:"#10B981"},sub17:{badge:"#10B981"},sub18:{badge:"#047857"},sub19:{badge:"#047857"},sub20:{badge:"#065F46"},sub21:{badge:"#065F46"},sub23:{badge:"#033B2E"},abs:{badge:"#064E3B"}}};
 
 var CAT={todas:"Todas",sub12:"U12",sub14:"U14",sub15:"U15",sub16:"U16",sub17:"U17",sub18:"U18",sub19:"U19",sub20:"U20",sub21:"U21",sub23:"U23",abs:"Absoluta"};
 var STATUS={proxima:{c:"s-prox",i:"⏰",l:"PRÓXIMA"},en_curso:{c:"s-cur",i:"●",l:"EN CURSO"},finalizada:{c:"s-fin",i:"✓",l:"FINALIZADA"}};
