@@ -199,7 +199,7 @@ var PAIS_ADJ={
 
 function selKey(type){if(!type)return"";var t=type.toLowerCase();if(t.indexOf("madril")!==-1)return"madrilena";if(t.indexOf("espa")!==-1)return"espanola";if(t.indexOf("intern")!==-1)return"internacional";return t;}
 function paisAdj(p){return PAIS_ADJ[p]||p;}
-var FLAG_IMAGES={};
+var FLAG_IMAGES={"Inglaterra":"Inglaterra.jpg","Uruguay":"Uruguay.jpg"};
 function getFlag(p){
   var emoji=FLAGS[p]||"🏴";
   var base="https://raw.githubusercontent.com/PabliVM/selecciones/main/flags/";
