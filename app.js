@@ -142,11 +142,10 @@ var SELS = {};
 SELS["madrilena"] = {
   label:"Madrileña",
   short:"MAD",
-  cats:["sub12","sub14","sub15","sub16"],
+  cats:["sub12","sub14","sub16"],
   colors:{
     sub12:{badge:"#2563EB"},
     sub14:{badge:"#1D4ED8"},
-    sub15:{badge:"#1E3A8A"},
     sub16:{badge:"#1E40AF"}
   }
 };SELS["espanola"]  = {label:"Española",short:"ESP",cats:["sub14","sub15","sub16","sub17","sub18","sub19","sub20","sub21","sub23","abs"],colors:{sub14:{badge:"#DC2626"},sub15:{badge:"#DC2626"},sub16:{badge:"#B91C1C"},sub17:{badge:"#B91C1C"},sub18:{badge:"#991B1B"},sub19:{badge:"#7F1D1D"},sub20:{badge:"#7F1D1D"},sub21:{badge:"#450A0A"},sub23:{badge:"#2C0000"},abs:{badge:"#1A0000"}}};
@@ -3182,7 +3181,6 @@ var FIXED_LANE_ORDER=[
   {label:"España U15",match:function(e){return isEspanolaEvent(e,"sub15");}},
   {label:"España U14",match:function(e){return isEspanolaEvent(e,"sub14");}},
   {label:"Madrileña U16",match:function(e){return isMadrilenaEvent(e,"sub16");}},
-  {label:"Madrileña U15",match:function(e){return isMadrilenaEvent(e,"sub15");}},
   {label:"Madrileña U14",match:function(e){return isMadrilenaEvent(e,"sub14");}},
   {label:"Madrileña U12",match:function(e){return isMadrilenaEvent(e,"sub12");}}
 ];
