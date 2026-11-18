@@ -271,25 +271,26 @@ function dropReasonTxt(p){
   if(p.dropStatus==="No liberado"||p.dropStatus==="Preconvocado")return"Preconvocatoria";
   return p.dropStatus;
 }
-function calcStatus(s,e){var n=new Date();n.setHours(0,0,0,0);var a=new Date(s+"T00:00:00"),b=new Date(e+"T23:59:59");return n<a?"proxima":n>b?"finalizada":"en_curso";}
+function calcStatus(s,e){if(!s)return"proxima";var n=new Date();n.setHours(0,0,0,0);var a=new Date(s+"T00:00:00");if(!e)return n<a?"proxima":"en_curso";var b=new Date(e+"T23:59:59");return n<a?"proxima":n>b?"finalizada":"en_curso";}
 function daysUntil(dateStr){if(!dateStr)return 999;var now=new Date();now.setHours(0,0,0,0);var d=new Date(dateStr+"T00:00:00");return Math.ceil((d-now)/(1000*60*60*24));}
 function provAlertBadge(c){if(c.convType!=="provisional")return"";var days=daysUntil(c.startDate);if(days>7)return"";if(days<0)return'<span class="badge prov-alert prov-alert-late">⚠️ Sin confirmar</span>';if(days===0)return'<span class="badge prov-alert prov-alert-today">⚠️ HOY</span>';return'<span class="badge prov-alert prov-alert-soon">⚠️ '+days+'d</span>';}
-function fmtRange(s,e){if(!s)return"—";var a=new Date(s+"T12:00:00"),b=new Date(e+"T12:00:00");return a.toLocaleDateString("es-ES",{day:"2-digit",month:"short"})+" — "+b.toLocaleDateString("es-ES",{day:"2-digit",month:"short",year:"numeric"});}
+function fmtRange(s,e){if(!s)return"Fecha por confirmar";if(!e)return new Date(s+"T12:00:00").toLocaleDateString("es-ES",{day:"2-digit",month:"short",year:"numeric"})+" — sin fin";var a=new Date(s+"T12:00:00"),b=new Date(e+"T12:00:00");return a.toLocaleDateString("es-ES",{day:"2-digit",month:"short"})+" — "+b.toLocaleDateString("es-ES",{day:"2-digit",month:"short",year:"numeric"});}
 function fmtRangeWithTimes(s,e,st,et){
-  if(!s)return"—";
-  var a=new Date(s+"T12:00:00"),b=new Date(e+"T12:00:00");
   var stTxt=fmtTimePart(st),etTxt=fmtTimePart(et);
+  if(!s)return(stTxt||"Fecha por confirmar")+(e?" — "+new Date(e+"T12:00:00").toLocaleDateString("es-ES",{day:"2-digit",month:"short",year:"numeric"})+(etTxt?" "+etTxt:""):"");
+  if(!e)return new Date(s+"T12:00:00").toLocaleDateString("es-ES",{day:"2-digit",month:"short",year:"numeric"})+(stTxt?" "+stTxt:"")+" — sin fin";
+  var a=new Date(s+"T12:00:00"),b=new Date(e+"T12:00:00");
   return a.toLocaleDateString("es-ES",{day:"2-digit",month:"short"})+(stTxt?" "+stTxt:"")+" — "+b.toLocaleDateString("es-ES",{day:"2-digit",month:"short",year:"numeric"})+(etTxt?" "+etTxt:"");
 }
 function fmtDateShort(d){if(!d)return"";var dt=new Date(d+"T12:00:00");return dt.toLocaleDateString("es-ES",{day:"2-digit",month:"short"});}
 function fmtDMY(d,t){if(!d)return"";var p=d.split("-");if(p.length!==3)return"";return p[2]+"/"+p[1]+"/"+p[0]+(t?" "+t+"h":"");}
 function fmtTimePart(t){if(!t)return"";return/^\d{1,2}:\d{2}$/.test(t)?t+"h":t;}
-function fmtDMYSep(d,t){if(!d)return"";var tp=fmtTimePart(t);return tp?fmtDMY(d)+" - "+tp:fmtDMY(d);}
+function fmtDMYSep(d,t){if(!d)return fmtTimePart(t);var tp=fmtTimePart(t);return tp?fmtDMY(d)+" - "+tp:fmtDMY(d);}
 function teamNow(p){if(!p||!p.teamHistory||!p.teamHistory.length)return null;for(var i=0;i<p.teamHistory.length;i++){if(p.teamHistory[i].to===null)return p.teamHistory[i];}return p.teamHistory[p.teamHistory.length-1];}
 function teamInSeason(p,sea){if(!p||!p.teamHistory)return null;var hs=p.teamHistory.filter(function(h){return h.season===sea;});if(!hs.length)return null;hs.sort(function(a,b){return new Date(b.from)-new Date(a.from);});return hs[0];}
 function nextSea(s){var y=parseInt(s.split("-")[0])+1;return y+"-"+String(y+1).slice(2);}
 function gid(){return Date.now().toString(36)+Math.random().toString(36).slice(2);}
-function sortDate(arr,dir){dir=dir||"asc";return arr.slice().sort(function(a,b){return(dir==="asc"?1:-1)*(new Date(a.startDate)-new Date(b.startDate));});}
+function sortDate(arr,dir){dir=dir||"asc";var k=function(x){return x.startDate||"9999-12-31";};return arr.slice().sort(function(a,b){return(dir==="asc"?1:-1)*k(a).localeCompare(k(b));});}
 function $(id){return document.getElementById(id);}
 
 function getCallups(f){
@@ -644,7 +645,7 @@ function callupDetail(c){
     '<h2 class="dp-title">'+esc(c.title)+"</h2>"+
     '<p class="dp-sea">Temporada '+c.season+"</p></div>"+
     '<div class="dp-grid">'+
-    '<div class="di"><span class="di-l">📅 Período</span><span class="di-v">'+fmtRange(c.startDate,c.endDate)+"</span></div>"+
+    '<div class="di"><span class="di-l">📅 Período</span><span class="di-v">'+fmtRangeWithTimes(c.startDate,c.endDate,c.incorpTime,c.endTime)+"</span></div>"+
     (c.rival?'<div class="di"><span class="di-l">🆚 Rival/Torneo</span><span class="di-v">'+esc(c.rival)+"</span></div>":"")+
     (c.location?'<div class="di"><span class="di-l">📍 Lugar</span><span class="di-v">'+esc(c.location)+"</span></div>":"")+
     (c.limitDate&&c.convType==="provisional"?'<div class="di"><span class="di-l">⏰ Límite confirmación</span><span class="di-v">'+fmtDateShort(c.limitDate)+"</span></div>":"")+
@@ -2062,8 +2063,8 @@ function renderNueva(){
     '<div class="fg" id="limit-date-g"><label class="fl">Fecha límite confirmación</label><input class="fi" type="date" name="limitDate"/><p style="font-size:11px;color:var(--text-muted);margin-top:4px">Si no se confirma antes de esta fecha, se descartará automáticamente</p></div>'+
     '<div class="fg"><label class="fl">Fecha de envío de la preconvocatoria</label><input class="fi" type="date" name="preconvDate"/><p style="font-size:11px;color:var(--text-muted);margin-top:4px">Día en que la federación envió/publicó la preconvocatoria (rellena si lo sabes)</p></div>'+
     '<div class="fg"><label class="fl">Fecha de envío de la convocatoria</label><input class="fi" type="date" name="convDate"/><p style="font-size:11px;color:var(--text-muted);margin-top:4px">Día en que la federación envió/publicó la convocatoria (rellena si lo sabes)</p></div>'+
-    '<div class="frow"><div class="fg"><label class="fl">Inicio (incorporación) *</label><input class="fi" type="date" name="startDate" id="f-startDate"/></div><div class="fg"><label class="fl">Hora incorporación</label><input class="fi" type="text" name="incorpTime" id="f-incorpTime" placeholder="18:00 o &quot;Mañana&quot;/&quot;Tarde&quot;"/></div></div>'+
-    '<div class="frow"><div class="fg"><label class="fl">Fin * <span style="font-weight:400;text-transform:none">(opcional si es entrenamiento)</span></label><input class="fi" type="date" name="endDate" id="f-endDate"/></div><div class="fg"><label class="fl">Hora fin</label><input class="fi" type="text" name="endTime" id="f-endTime" placeholder="18:00 o &quot;Mañana&quot;/&quot;Tarde&quot;"/></div></div>'+
+    '<div class="frow"><div class="fg"><label class="fl">Inicio (incorporación)</label><input class="fi" type="date" name="startDate" id="f-startDate"/></div><div class="fg"><label class="fl">Hora / texto incorporación</label><input class="fi" type="text" name="incorpTime" id="f-incorpTime" placeholder="18:00, Mañana, Tras el partido…"/></div></div>'+
+    '<div class="frow"><div class="fg"><label class="fl">Fin <span style="font-weight:400;text-transform:none">(opcional)</span></label><input class="fi" type="date" name="endDate" id="f-endDate"/></div><div class="fg"><label class="fl">Hora fin</label><input class="fi" type="text" name="endTime" id="f-endTime" placeholder="18:00 o &quot;Mañana&quot;/&quot;Tarde&quot;"/></div></div>'+
     '<div class="fg"><label class="fl">Lugar de concentración</label><input class="fi" type="text" name="location" placeholder="Ej: Ciudad del Fútbol, Las Rozas"/></div>'+
     '</div>'+
 '<div class="fblock fblock-conc">'+
@@ -2337,8 +2338,7 @@ function renderNueva(){
     if(!data.selectionCategory)errs.push("Selecciona la categoría");
     if(data.selectionType==="internacional"&&!data.pais)errs.push("Introduce el país");
     if(!data.title)errs.push("El título es obligatorio");
-    if(!data.startDate)errs.push("La fecha de inicio es obligatoria");
-    if(!data.endDate)errs.push("La fecha de fin es obligatoria");
+    if(!data.startDate&&!data.incorpTime)errs.push("Pon fecha de inicio o un texto en «Hora / texto incorporación»");
     if(data.startDate&&data.endDate&&data.startDate>data.endDate)errs.push("Fecha inicio no puede ser posterior a fin");
     var errDiv=$("ferr");
     if(errs.length){errDiv.style.display="block";errDiv.innerHTML=errs.map(function(x){return"<p>• "+x+"</p>";}).join("");errDiv.scrollIntoView({behavior:"smooth",block:"center"});return;}
@@ -2855,6 +2855,7 @@ function renderPlayerDetail(pid){
 function getCalEvents(season){
   var events=[];
   getCallups({season:season}).forEach(function(c){
+    if(!c.startDate)return;
     var k=selKey(c.selectionType);
     var sel=SELS[k];
     var col=(sel&&sel.colors&&sel.colors[c.selectionCategory])?sel.colors[c.selectionCategory].badge:"#1A3A8F";
