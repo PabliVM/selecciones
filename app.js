@@ -2355,16 +2355,16 @@ function bindAiParser(){
   btn.addEventListener("click",function(){
     var mo=document.createElement("div");mo.className="mo";
     mo.innerHTML='<div class="modal modal-tall" style="padding-bottom:40px"><button class="mcl" id="aip-close">×</button>'+
-      '<div class="mtitle">✨ Rellenar con IA</div><p class="msub">Pega texto o sube una foto del documento.</p>'+
+      '<div class="mtitle">✨ Rellenar con IA</div><p class="msub">Pega texto o sube una foto o PDF del documento.</p>'+
       '<div style="display:flex;gap:6px;margin-bottom:12px">'+
       '<button class="plan-tbtn on" id="aip-tab-text" style="flex:1">📝 Texto</button>'+
-      '<button class="plan-tbtn" id="aip-tab-img" style="flex:1">📷 Foto</button>'+
+      '<button class="plan-tbtn" id="aip-tab-img" style="flex:1">📷 Foto / 📄 PDF</button>'+
       '</div>'+
       '<div id="aip-text-panel"><textarea class="ai-textarea" id="aip-text" placeholder="Pega aquí el texto de la convocatoria..."></textarea></div>'+
       '<div id="aip-img-panel" style="display:none">'+
         '<label style="display:block;border:2px dashed var(--gold);border-radius:10px;padding:24px;text-align:center;cursor:pointer;color:var(--gold);font-weight:600;font-size:14px" id="aip-img-label">'+
-          '📷 Toca para subir · o pega (Ctrl+V)<br><span style="font-size:11px;color:var(--text-muted);font-weight:400">JPG, PNG</span>'+
-          '<input type="file" id="aip-file" accept="image/*" style="display:none"/>'+
+          '📷📄 Toca para subir · o pega (Ctrl+V)<br><span style="font-size:11px;color:var(--text-muted);font-weight:400">JPG, PNG, PDF (máx. 3 MB)</span>'+
+          '<input type="file" id="aip-file" accept="image/*,application/pdf,.pdf" style="display:none"/>'+
         '</label>'+
         '<div id="aip-img-preview" style="margin-top:8px;text-align:center"></div>'+
       '</div>'+
@@ -2385,6 +2385,10 @@ function bindAiParser(){
     var fileInput=$("aip-file");var pastedFile=null;
     if(fileInput)fileInput.addEventListener("change",function(){
       var f=fileInput.files[0];if(!f)return;pastedFile=f;
+      if(f.type==="application/pdf"||/\.pdf$/i.test(f.name)){
+        $("aip-img-preview").innerHTML='<div style="font-size:40px">📄</div><div style="font-size:12px;color:var(--text-muted);margin-top:4px">'+esc(f.name)+" · "+Math.round(f.size/1024)+" KB</div>";
+        return;
+      }
       var url=URL.createObjectURL(f);
       $("aip-img-preview").innerHTML='<img src="'+url+'" style="max-width:100%;max-height:160px;border-radius:8px"/><div style="font-size:12px;color:var(--text-muted);margin-top:4px">'+esc(f.name)+"</div>";
     });
@@ -2407,7 +2411,9 @@ function bindAiParser(){
       var text=($("aip-text")?$("aip-text").value||"":"").trim();
       var imgFile=fileInput&&fileInput.files&&fileInput.files[0]?fileInput.files[0]:null;
       if(!isImg&&!text){status.textContent="Pega un texto primero.";return;}
-      if(isImg&&!imgFile&&!pastedFile){status.textContent="Sube o pega una foto primero.";return;}
+      if(isImg&&!imgFile&&!pastedFile){status.textContent="Sube o pega una foto o PDF primero.";return;}
+      var _af=imgFile||pastedFile;
+      if(isImg&&_af&&_af.size>3*1024*1024){status.textContent="El archivo pesa más de 3 MB. Usa uno más pequeño o haz una foto.";return;}
       status.className="ai-status";status.textContent="⏳ Analizando...";okBtn.disabled=true;okBtn.textContent="Analizando...";
       var today=new Date().toISOString().slice(0,10);
       var prompt="Eres un experto en convocatorias del Real Madrid Cantera. Analiza el texto y devuelve SOLO JSON válido, sin markdown.\nHoy es "+today+". Fechas en formato YYYY-MM-DD. Si un dato no aparece usa null o [].\nJSON schema:\n{\"tipoDocumento\":\"prelista|lista_definitiva|otro\",\"selectionType\":\"madrilena|espanola|internacional\",\"convType\":\"definitiva|provisional\",\"selectionCategory\":\"sub12|sub14|sub15|sub16|sub17|sub18|sub19|sub20|sub21|sub23|abs\",\"pais\":\"pais si internacional sino null\",\"title\":\"titulo descriptivo\",\"startDate\":\"YYYY-MM-DD\",\"endDate\":\"YYYY-MM-DD\",\"rival\":\"rivales\",\"location\":\"lugar\",\"conc\":{\"date\":\"YYYY-MM-DD\",\"time\":\"hora exacta HH:MM o texto libre tipo 'Mañana'/'Tarde' si no hay hora exacta\",\"lugar\":\"lugar citacion\",\"hotel\":\"alojamiento\"},\"traslado\":{\"date\":\"YYYY-MM-DD\",\"time\":\"hora exacta HH:MM o texto libre tipo 'Mañana'/'Tarde' si no hay hora exacta\",\"lugar\":\"punto salida\",\"transporte\":\"vuelo/tren ida\"},\"vuelta\":{\"date\":\"YYYY-MM-DD\",\"time\":\"hora exacta HH:MM o texto libre tipo 'Mañana'/'Tarde' si no hay hora exacta\",\"lugar\":\"punto salida vuelta\",\"transporte\":\"vuelo/tren vuelta\"},\"matches\":[{\"date\":\"YYYY-MM-DD\",\"time\":\"HH:MM\",\"rival\":\"rival\",\"matchType\":\"amistoso|oficial|entrenamiento\"}],\"notes\":\"obs\",\"players\":[\"NOMBRE APELLIDO\"]}\ntipoDocumento: pon \"prelista\" si el texto/imagen menciona prelista, preconvocatoria, preseleccionados o similar. Pon \"lista_definitiva\" si menciona lista definitiva, lista final, convocatoria definitiva o similar. Si no está claro, pon \"otro\".\nTEXTO:\n"+text;
@@ -2422,7 +2428,8 @@ function bindAiParser(){
       if(isImg&&actualFile){
         fetchPromise=new Promise(function(resolve,reject){
           var reader=new FileReader();
-          reader.onload=function(e){resolve(doFetch({prompt:prompt,image:e.target.result.split(",")[1],imageType:actualFile.type||"image/jpeg"}));};
+          var isPdf=actualFile.type==="application/pdf"||/\.pdf$/i.test(actualFile.name||"");
+          reader.onload=function(e){resolve(doFetch({prompt:prompt,image:e.target.result.split(",")[1],imageType:isPdf?"application/pdf":(actualFile.type||"image/jpeg")}));};
           reader.onerror=reject;
           reader.readAsDataURL(actualFile);
         }).then(function(p){return p;});

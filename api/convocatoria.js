@@ -35,14 +35,9 @@ export default async function handler(req, res) {
       messages = [{
         role: "user",
         content: [
-          {
-            type: "image",
-            source: {
-              type: "base64",
-              media_type: imageType || "image/jpeg",
-              data: image
-            }
-          },
+          imageType === "application/pdf"
+            ? { type: "document", source: { type: "base64", media_type: "application/pdf", data: image } }
+            : { type: "image", source: { type: "base64", media_type: imageType || "image/jpeg", data: image } },
           {
             type: "text",
             text: prompt || "Analiza esta imagen de una convocatoria de fútbol y extrae los datos en JSON según el formato indicado."
