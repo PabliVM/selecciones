@@ -633,7 +633,9 @@ function callupDetail(c){
   var promBtn=canEdit()&&c.convType==="provisional"?'<button class="btn btn-gold btn-sm" data-promote="'+c.id+'" style="flex:1">✅ Confirmar convocatoria</button>':"";
   var descBtn=canEdit()&&c.convType==="provisional"?'<button class="btn btn-danger btn-sm" data-descartar="'+c.id+'" style="flex:1">❌ Descartar</button>':"";
   var restoreBtn=canEdit()&&c.convType==="descartada"?'<button class="btn btn-gold btn-sm" data-restore-conv="'+c.id+'" style="flex:1">↩ Restaurar a preconvocatoria</button>':"";
-  var printBtn='<button class="btn btn-ghost btn-sm btn-print-ficha" style="flex:1">🖨️ Imprimir ficha</button>';
+  var printBtn='<button class="btn btn-ghost btn-sm" data-share-conv="1" style="flex:1">📤 Compartir</button>'+
+    (c.startDate?'<button class="btn btn-ghost btn-sm" data-cal-conv="1" style="flex:1">📅 Al calendario</button>':"")+
+    '<button class="btn btn-ghost btn-sm btn-print-ficha" style="flex:1">🖨️ Imprimir ficha</button>';
   var editBtn=canEdit()?'<button class="btn btn-ghost btn-sm" data-edit="'+c.id+'" style="flex:1">✎ Editar</button>':"";
   var delBtn=canEdit()?'<button class="btn btn-danger btn-sm" data-del="'+c.id+'" style="flex:1">🗑 Eliminar</button>':"";
 
@@ -836,6 +838,45 @@ function bindCards(){
 }
 
 // ── DETAIL MODAL ──
+// ── Compartir / calendario ──
+function callupShareText(c){
+  var sel=SELS[selKey(c.selectionType)],lbl=(sel?sel.label:"")+(c.pais?" "+c.pais:"")+" "+(CAT[c.selectionCategory]||c.selectionCategory||"");
+  var L=[];
+  L.push("*"+lbl.trim()+"* — "+(c.title||""));
+  L.push((c.convType==="definitiva"?"✅ Convocatoria":"⏳ Preconvocatoria"));
+  L.push("📅 "+fmtRangeWithTimes(c.startDate,c.endDate,c.incorpTime,c.endTime));
+  if(c.location)L.push("📍 "+c.location);
+  if(c.conc&&(c.conc.date||c.conc.lugar))L.push("🏁 Concentración: "+[c.conc.date?fmtDMY(c.conc.date):"",c.conc.time?fmtTimePart(c.conc.time):"",c.conc.lugar||""].filter(Boolean).join(" · "));
+  (c.matches||[]).slice().sort(function(a,b){return((a.date||"")+(a.time||"")).localeCompare((b.date||"")+(b.time||""));}).forEach(function(m){L.push((m.matchType==="entrenamiento"?"🏋 ":"⚽ ")+[m.date?fmtDMY(m.date):"",m.time?fmtTimePart(m.time):"",m.rival?(m.matchType==="entrenamiento"?m.rival:"vs "+m.rival):""].filter(Boolean).join(" · "));});
+  var act=(c.players||[]).filter(function(p){return!p.dropStatus||p.dropStatus==="active";});
+  if(act.length){L.push("");L.push("👕 Jugadores ("+act.length+"):");act.forEach(function(p){L.push("• "+p.fullName+(p.teamName?" ("+p.teamName+")":""));});}
+  return L.join("\n");
+}
+function shareCallup(c){
+  var text=callupShareText(c);
+  if(navigator.share){navigator.share({title:c.title||"Convocatoria",text:text}).catch(function(){});return;}
+  window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank");
+}
+function addCallupToCalendar(c){
+  if(!c.startDate)return;
+  var d=function(x){return x.replace(/-/g,"");};
+  var endEx=new Date((c.endDate||c.startDate)+"T12:00:00");endEx.setDate(endEx.getDate()+1);
+  var endStr=endEx.getFullYear()+String(endEx.getMonth()+1).padStart(2,"0")+String(endEx.getDate()).padStart(2,"0");
+  var escI=function(t){return String(t||"").replace(/\\/g,"\\\\").replace(/;/g,"\\;").replace(/,/g,"\\,").replace(/\r?\n/g,"\\n");};
+  var now=new Date().toISOString().replace(/[-:]/g,"").replace(/\.\d+/,"");
+  var ics=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//RM Convocatorias//ES","CALSCALE:GREGORIAN","METHOD:PUBLISH","BEGIN:VEVENT",
+    "UID:"+(c.id||Date.now())+"@selecciones","DTSTAMP:"+now,"DTSTART;VALUE=DATE:"+d(c.startDate),"DTEND;VALUE=DATE:"+endStr,
+    "SUMMARY:"+escI(((SELS[selKey(c.selectionType)]||{}).short||"")+" "+(CAT[c.selectionCategory]||"")+" · "+(c.title||"")),
+    (c.location?"LOCATION:"+escI(c.location):""),"DESCRIPTION:"+escI(callupShareText(c).replace(/\*/g,"")),"END:VEVENT","END:VCALENDAR"].filter(Boolean).join("\r\n");
+  var blob=new Blob([ics],{type:"text/calendar;charset=utf-8"});
+  var name=((c.title||"convocatoria").replace(/[^a-z0-9áéíóúñ ]/gi,"").trim().replace(/\s+/g,"_")||"convocatoria")+".ics";
+  try{
+    var f=new File([blob],name,{type:"text/calendar"});
+    if(navigator.canShare&&navigator.canShare({files:[f]})&&/iPhone|iPad|Android/i.test(navigator.userAgent)){navigator.share({files:[f],title:c.title||"Convocatoria"}).catch(function(){});return;}
+  }catch(e){}
+  var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},1000);
+}
 function openDetail(id){
   var raw=getCallups_raw();
   var c=null;
@@ -996,6 +1037,10 @@ if(c.llegada){var lf={llegadaDate:c.llegada.date,llegadaTime:c.llegada.time,lleg
     deleteCallup(id,function(){close();toast("🗑 Eliminada");route(S.view);});
   });
 
+  var shareBtn=ov.querySelector("[data-share-conv]");
+  if(shareBtn)shareBtn.addEventListener("click",function(){shareCallup(c);});
+  var calBtn=ov.querySelector("[data-cal-conv]");
+  if(calBtn)calBtn.addEventListener("click",function(){addCallupToCalendar(c);});
   var printFichaBtn=ov.querySelector(".btn-print-ficha");
   if(printFichaBtn)printFichaBtn.addEventListener("click",function(){
     var win=window.open("","_blank","width=800,height=600");
