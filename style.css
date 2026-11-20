@@ -858,3 +858,11 @@ body.dark .agenda-upcoming-hdr{background:#15181d}
 }
 .btn-print:active { background:var(--navy); color:#fff; }
 .print-header { display:none; }
+
+/* ── Móvil: experiencia tipo app ── */
+@media(max-width:639px){
+  /* iOS no hace zoom al escribir si la letra es ≥16px */
+  input,select,textarea,.fi,.fsel,.fta{font-size:16px}
+  button,a,label,.nb,.fbtn,.vtbtn{-webkit-tap-highlight-color:transparent}
+  body{-webkit-text-size-adjust:100%}
+}
