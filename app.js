@@ -844,8 +844,8 @@ function callupShareText(c){
   var sel=SELS[selKey(c.selectionType)],lbl=(sel?sel.label:"")+(c.pais?" "+c.pais:"")+" "+(CAT[c.selectionCategory]||c.selectionCategory||"");
   var dm=function(d){if(!d)return"";var x=new Date(d+"T12:00:00");return x.toLocaleDateString("es-ES",{day:"numeric",month:"short"}).replace(".","");};
   var dmy=function(d){return d?dm(d)+" "+d.slice(2,4):"";};
-  var wd=function(d){if(!d)return"";var x=new Date(d+"T12:00:00");return x.toLocaleDateString("es-ES",{weekday:"short"}).replace(".","")+" "+dm(d);};
-  var tm=function(t){return t?fmtTimePart(t):"";};
+  var wd=function(d){if(!d)return"";var p=d.split("-");return(+p[2])+"/"+(+p[1]);};
+  var tm=function(t){return t||"";};
   var range=c.startDate?(c.endDate&&c.endDate!==c.startDate?dm(c.startDate)+" – "+dmy(c.endDate):dmy(c.startDate)):(c.incorpTime||"Fecha por confirmar");
   var L=[];
   L.push("*"+lbl.trim()+"*");
@@ -855,12 +855,12 @@ function callupShareText(c){
   L.push("📅 "+range);
   if(c.location)L.push("📍 "+c.location);
   var log=[];
-  if(c.conc&&(c.conc.date||c.conc.lugar))log.push("🏁 Citación: "+[wd(c.conc.date),tm(c.conc.time),c.conc.lugar||""].filter(Boolean).join(" · "));
+  if(c.conc&&(c.conc.date||c.conc.lugar))log.push("🏁 "+[wd(c.conc.date),tm(c.conc.time),c.conc.lugar||""].filter(Boolean).join(" "));
   (c.matches||[]).slice().sort(function(a,b){return((a.date||"")+(a.time||"")).localeCompare((b.date||"")+(b.time||""));}).forEach(function(m){
     var isT=m.matchType==="entrenamiento";
-    log.push((isT?"🏋 ":"⚽ ")+[wd(m.date),tm(m.time),isT?(m.rival||"Entrenamiento"):(m.rival?"vs "+m.rival:"")].filter(Boolean).join(" · "));
+    log.push((isT?"🏋 ":"⚽ ")+[wd(m.date),tm(m.time),isT?(m.rival&&!/^entren/i.test(m.rival)?m.rival:"Entreno"):(m.rival?"vs "+m.rival:"")].filter(Boolean).join(" "));
   });
-  if(c.vuelta&&(c.vuelta.date||c.vuelta.lugar))log.push("🔙 Vuelta: "+[wd(c.vuelta.date),tm(c.vuelta.time),c.vuelta.lugar||""].filter(Boolean).join(" · "));
+  if(c.vuelta&&(c.vuelta.date||c.vuelta.lugar))log.push("🔙 "+[wd(c.vuelta.date),tm(c.vuelta.time),c.vuelta.lugar||""].filter(Boolean).join(" "));
   if(log.length){L.push("");L=L.concat(log);}
   var act=(c.players||[]).filter(function(p){return!p.dropStatus||p.dropStatus==="active";});
   if(act.length){L.push("");L.push("👕 *Jugadores ("+act.length+")*");act.forEach(function(p){L.push("• "+p.fullName+(p.teamName?" · "+p.teamName:""));});}
