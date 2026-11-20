@@ -854,7 +854,7 @@ function openDetail(id){
       if(!confirm("¿Eliminar a "+pname+" de esta convocatoria?"))return;
       conv.players.splice(idx,1);
       if(window._db&&window._fbUser){var fns=window._fbFns;fns.setDoc(fns.doc(window._db,"callups",id),Object.assign({},conv)).catch(function(e){console.error(e);});}
-      toast("🗑 "+pname+" eliminado");close();openDetail(id);
+      toast("🗑 "+pname+" eliminado");close();route(S.view);openDetail(id);
     });
   });
 
@@ -899,7 +899,7 @@ function openDetail(id){
         conv.players[idx].dropStatus=reason;
         conv.players[idx].dropConvType=conv.convType;
         if(window._db&&window._fbUser){var fns=window._fbFns;fns.setDoc(fns.doc(window._db,"callups",id),Object.assign({},conv)).catch(function(e){console.error(e);});}
-        toast("❌ "+pname+" descartado");closeMo2();close();openDetail(id);
+        toast("❌ "+pname+" descartado");closeMo2();close();route(S.view);openDetail(id);
       });
     });
   });
@@ -913,7 +913,7 @@ function openDetail(id){
       var pname=conv.players[idx].fullName;
       conv.players[idx].dropStatus="active";
       if(window._db&&window._fbUser){var fns=window._fbFns;fns.setDoc(fns.doc(window._db,"callups",id),Object.assign({},conv)).catch(function(e){console.error(e);});}
-      toast("✅ "+pname+" restaurado");close();openDetail(id);
+      toast("✅ "+pname+" restaurado");close();route(S.view);openDetail(id);
     });
   });
 
@@ -964,7 +964,7 @@ if(c.llegada){var lf={llegadaDate:c.llegada.date,llegadaTime:c.llegada.time,lleg
     if(!conv)return;
     conv.convType="definitiva";
     if(window._db&&window._fbUser){var fns=window._fbFns;fns.setDoc(fns.doc(window._db,"callups",id),Object.assign({},conv)).catch(function(e){console.error(e);});}
-    toast("✅ Confirmada como convocatoria");close();openDetail(id);
+    toast("✅ Confirmada como convocatoria");close();route(S.view);openDetail(id);
   });
 
   var descBtn2=ov.querySelector("[data-descartar]");
@@ -983,7 +983,7 @@ if(c.llegada){var lf={llegadaDate:c.llegada.date,llegadaTime:c.llegada.time,lleg
     if(!conv)return;
     conv.convType="provisional";
     if(window._db&&window._fbUser){var fns=window._fbFns;fns.setDoc(fns.doc(window._db,"callups",id),{convType:"provisional"},{merge:true}).catch(function(e){console.error(e);});}
-    toast("↩ Restaurada a preconvocatoria");close();openDetail(id);
+    toast("↩ Restaurada a preconvocatoria");close();route(S.view);openDetail(id);
   });
 
   var delBtn=ov.querySelector("[data-del]");
@@ -2416,7 +2416,7 @@ function bindAiParser(){
       if(isImg&&_af&&_af.size>3*1024*1024){status.textContent="El archivo pesa más de 3 MB. Usa uno más pequeño o haz una foto.";return;}
       status.className="ai-status";status.textContent="⏳ Analizando...";okBtn.disabled=true;okBtn.textContent="Analizando...";
       var today=new Date().toISOString().slice(0,10);
-      var prompt="Eres un experto en convocatorias del Real Madrid Cantera. Analiza el texto y devuelve SOLO JSON válido, sin markdown.\nHoy es "+today+". Fechas en formato YYYY-MM-DD. Si un dato no aparece usa null o [].\nJSON schema:\n{\"tipoDocumento\":\"prelista|lista_definitiva|otro\",\"selectionType\":\"madrilena|espanola|internacional\",\"convType\":\"definitiva|provisional\",\"selectionCategory\":\"sub12|sub14|sub15|sub16|sub17|sub18|sub19|sub20|sub21|sub23|abs\",\"pais\":\"pais si internacional sino null\",\"title\":\"titulo descriptivo\",\"startDate\":\"YYYY-MM-DD\",\"endDate\":\"YYYY-MM-DD\",\"rival\":\"rivales\",\"location\":\"lugar\",\"conc\":{\"date\":\"YYYY-MM-DD\",\"time\":\"hora exacta HH:MM o texto libre tipo 'Mañana'/'Tarde' si no hay hora exacta\",\"lugar\":\"lugar citacion\",\"hotel\":\"alojamiento\"},\"traslado\":{\"date\":\"YYYY-MM-DD\",\"time\":\"hora exacta HH:MM o texto libre tipo 'Mañana'/'Tarde' si no hay hora exacta\",\"lugar\":\"punto salida\",\"transporte\":\"vuelo/tren ida\"},\"vuelta\":{\"date\":\"YYYY-MM-DD\",\"time\":\"hora exacta HH:MM o texto libre tipo 'Mañana'/'Tarde' si no hay hora exacta\",\"lugar\":\"punto salida vuelta\",\"transporte\":\"vuelo/tren vuelta\"},\"matches\":[{\"date\":\"YYYY-MM-DD\",\"time\":\"HH:MM\",\"rival\":\"rival\",\"matchType\":\"amistoso|oficial|entrenamiento\"}],\"notes\":\"obs\",\"players\":[\"NOMBRE APELLIDO\"]}\ntipoDocumento: pon \"prelista\" si el texto/imagen menciona prelista, preconvocatoria, preseleccionados o similar. Pon \"lista_definitiva\" si menciona lista definitiva, lista final, convocatoria definitiva o similar. Si no está claro, pon \"otro\".\nTEXTO:\n"+text;
+      var prompt="Eres un experto en convocatorias del Real Madrid Cantera. Analiza el texto y devuelve SOLO JSON válido, sin markdown.\nHoy es "+today+". Fechas en formato YYYY-MM-DD. Si un dato no aparece usa null o [].\nJSON schema:\n{\"tipoDocumento\":\"prelista|lista_definitiva|otro\",\"selectionType\":\"madrilena|espanola|internacional\",\"convType\":\"definitiva|provisional\",\"selectionCategory\":\"sub12|sub14|sub15|sub16|sub17|sub18|sub19|sub20|sub21|sub23|abs\",\"pais\":\"pais si internacional sino null\",\"title\":\"titulo descriptivo\",\"startDate\":\"YYYY-MM-DD\",\"endDate\":\"YYYY-MM-DD\",\"rival\":\"rivales\",\"location\":\"lugar\",\"conc\":{\"date\":\"YYYY-MM-DD\",\"time\":\"hora exacta HH:MM o texto libre tipo 'Mañana'/'Tarde' si no hay hora exacta\",\"lugar\":\"lugar citacion\",\"hotel\":\"alojamiento\"},\"traslado\":{\"date\":\"YYYY-MM-DD\",\"time\":\"hora exacta HH:MM o texto libre tipo 'Mañana'/'Tarde' si no hay hora exacta\",\"lugar\":\"punto salida\",\"transporte\":\"vuelo/tren ida\"},\"vuelta\":{\"date\":\"YYYY-MM-DD\",\"time\":\"hora exacta HH:MM o texto libre tipo 'Mañana'/'Tarde' si no hay hora exacta\",\"lugar\":\"punto salida vuelta\",\"transporte\":\"vuelo/tren vuelta\"},\"matches\":[{\"date\":\"YYYY-MM-DD\",\"time\":\"HH:MM\",\"rival\":\"rival\",\"matchType\":\"amistoso|oficial|entrenamiento\"}],\"notes\":\"obs\",\"players\":[\"NOMBRE APELLIDO\"]}\ntipoDocumento: pon \"prelista\" si el texto/imagen menciona prelista, preconvocatoria, preseleccionados o similar. Pon \"lista_definitiva\" si menciona lista definitiva, lista final, convocatoria definitiva o similar. Si no está claro, pon \"otro\".\nmatches: incluye CADA partido y TAMBIÉN CADA sesión de entrenamiento que aparezca (aunque no tenga rival), una entrada por día y sesión. Para entrenamientos usa matchType \"entrenamiento\" y en rival pon una descripción corta (ej. \"Entrenamiento\" o el lugar). time siempre HH:MM (24h) o null.\nTEXTO:\n"+text;
 
       function doFetch(body){
         return _authFetch("/api/convocatoria",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)})
@@ -2465,7 +2465,7 @@ function bindAiParser(){
                 row.innerHTML='<input class="fi" type="date" name="mdate_'+i+'" value="'+(m.date||"")+'" style="flex:1.2"/>'+
                   '<input class="fi" type="time" name="mtime_'+i+'" value="'+(m.time||"")+'" style="flex:.8"/>'+
                   '<input class="fi" type="text" name="mrival_'+i+'" value="'+esc(m.rival||"")+'" placeholder="Rival / Descripción" style="flex:1.5"/>'+
-                  matchTypeSelectHTML("mtype_"+i, m.matchType||"amistoso")+
+                  matchTypeSelectHTML("mtype_"+i, (function(){var t=String(m.matchType||"").toLowerCase();if(/entren/.test(t)||(!m.matchType&&/entren/i.test(m.rival||"")))return"entrenamiento";if(/ofic/.test(t))return"oficial";return"amistoso";})())+
                   '<button type="button" class="btn-rm">×</button>';
                 row.querySelector(".btn-rm").addEventListener("click",function(){row.remove();});
                 ml.appendChild(row);
