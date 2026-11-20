@@ -778,6 +778,7 @@ function renderLoginGate(){
   });
 }
 function route(v){
+  if(v!==S.view||v==="agenda")S.agSearchOpen=false;
   S.view=v;
   try{localStorage.setItem("rmconv_view",v);}catch(e){}
   document.querySelectorAll(".nb").forEach(function(b){b.classList.toggle("active",b.dataset.v===v);b.style.display="";});
@@ -1536,7 +1537,7 @@ function renderAgenda(viewMode){
     '<span style="font-size:13px;font-weight:700">👤 ¿Dónde está…?</span>'+
     '<input type="search" class="fi" id="ag-pq" value="'+esc(S.playerQuery||"")+'" placeholder="Nombre del jugador" autocomplete="off" style="flex:1;min-width:150px"/></div>'+
     '<div id="ag-pq-res">'+agPlayerSearchHtml(S.playerQuery,all)+'</div></div>';
-  var agSOpen=!!(S.agSearchOpen||S.queryDate||S.playerQuery);
+  var agSOpen=!!S.agSearchOpen;
   qHtml='<details class="ag-search" id="ag-search"'+(agSOpen?" open":"")+'><summary class="ag-search-sum">🔎 Buscar por fecha o jugador</summary>'+qHtml+'</details>';
   var h='<div class="vh" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:8px;justify-content:space-between">'+
     '<h1 class="vt">Agenda</h1>'+
