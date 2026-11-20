@@ -855,7 +855,7 @@ function callupShareText(c){
   L.push("📅 "+range);
   if(c.location)L.push("📍 "+c.location);
   var log=[];
-  if(c.conc&&(c.conc.date||c.conc.lugar))log.push("🏁 "+[wd(c.conc.date),tm(c.conc.time),c.conc.lugar||""].filter(Boolean).join(" "));
+  if(c.conc&&(c.conc.date||c.conc.lugar)){log.push("🏁 "+[wd(c.conc.date),tm(c.conc.time),c.conc.lugar||""].filter(Boolean).join(" "));if((c.matches||[]).length)log.push("");}
   (c.matches||[]).slice().sort(function(a,b){return((a.date||"")+(a.time||"")).localeCompare((b.date||"")+(b.time||""));}).forEach(function(m){
     var isT=m.matchType==="entrenamiento";
     log.push((isT?"🏋 ":"⚽ ")+[wd(m.date),tm(m.time),isT?(m.rival&&!/^entren/i.test(m.rival)?m.rival:"Entreno"):(m.rival?"vs "+m.rival:"")].filter(Boolean).join(" "));
