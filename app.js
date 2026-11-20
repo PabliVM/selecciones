@@ -630,14 +630,15 @@ function callupDetail(c){
         '<button class="pl-restore-btn" data-pidx="'+dp2.idx+'" title="Restaurar">↩</button>'+"</li>";
     }
   }
-  var promBtn=canEdit()&&c.convType==="provisional"?'<button class="btn btn-gold btn-sm" data-promote="'+c.id+'" style="flex:1">✅ Confirmar convocatoria</button>':"";
-  var descBtn=canEdit()&&c.convType==="provisional"?'<button class="btn btn-danger btn-sm" data-descartar="'+c.id+'" style="flex:1">❌ Descartar</button>':"";
-  var restoreBtn=canEdit()&&c.convType==="descartada"?'<button class="btn btn-gold btn-sm" data-restore-conv="'+c.id+'" style="flex:1">↩ Restaurar a preconvocatoria</button>':"";
-  var printBtn='<button class="btn btn-ghost btn-sm" data-share-conv="1" style="flex:1">📤 Compartir</button>'+
-    (c.startDate?'<button class="btn btn-ghost btn-sm" data-cal-conv="1" style="flex:1">📅 Al calendario</button>':"")+
-    '<button class="btn btn-ghost btn-sm btn-print-ficha" style="flex:1">🖨️ Imprimir ficha</button>';
-  var editBtn=canEdit()?'<button class="btn btn-ghost btn-sm" data-edit="'+c.id+'" style="flex:1">✎ Editar</button>':"";
-  var delBtn=canEdit()?'<button class="btn btn-danger btn-sm" data-del="'+c.id+'" style="flex:1">🗑 Eliminar</button>':"";
+  var promBtn=canEdit()&&c.convType==="provisional"?'<button class="dp-main dp-main-ok" data-promote="'+c.id+'">✅ Confirmar convocatoria</button>':"";
+  var descBtn=canEdit()&&c.convType==="provisional"?'<button class="dp-main dp-main-no" data-descartar="'+c.id+'">Descartar</button>':"";
+  var restoreBtn=canEdit()&&c.convType==="descartada"?'<button class="dp-main dp-main-ok" data-restore-conv="'+c.id+'">↩ Restaurar a preconvocatoria</button>':"";
+  var tool=function(attr,ico,lbl,cls){return'<button class="dp-tool'+(cls?" "+cls:"")+'" '+attr+'><span class="dp-tool-i">'+ico+'</span><span class="dp-tool-l">'+lbl+'</span></button>';};
+  var printBtn=tool('data-share-conv="1"',"📤","Compartir")+
+    (c.startDate?tool('data-cal-conv="1"',"📅","Calendario"):"")+
+    tool("","🖨️","Imprimir","btn-print-ficha");
+  var editBtn=canEdit()?tool('data-edit="'+c.id+'"',"✎","Editar"):"";
+  var delBtn=canEdit()?'<button class="dp-del" data-del="'+c.id+'">Eliminar convocatoria</button>':"";
 
   return'<div class="dp-hdr">'+
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'+
@@ -705,7 +706,8 @@ function callupDetail(c){
     })()+
     '<div style="margin-bottom:16px"><h4 class="dp-st">👕 Jugadores convocados ('+pc+")</h4><ul class=\"pl\">"+rows+"</ul></div>"+
     (c.notes?'<div class="dp-notes"><h4 class="dp-st">📝 Observaciones</h4><p class="notes-t">'+esc(c.notes)+"</p></div>":"")+
-    '<div class="dp-act" style="display:flex;gap:8px;flex-wrap:wrap">'+promBtn+descBtn+restoreBtn+printBtn+editBtn+delBtn+"</div>";
+    '<div class="dp-act">'+((promBtn||descBtn||restoreBtn)?'<div class="dp-mainrow">'+promBtn+descBtn+restoreBtn+'</div>':"")+
+    '<div class="dp-tools">'+printBtn+editBtn+'</div>'+delBtn+"</div>";
 }
 
 // ── STATE ──
