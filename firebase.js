@@ -76,6 +76,7 @@ function _loadData(db){
     _unsubs.push(db.collection("meta").doc("app").onSnapshot(function(d){
       window._seasonsData=(d.exists&&d.data().seasons)?d.data().seasons:[];
       window._madLimit=d.exists?d.data().madLimit:undefined;
+      window._selLimits=(d.exists&&d.data().selLimits)?d.data().selLimits:{};
       if(firstMeta){firstMeta=false;_fbNotify("meta");}
     },function(e){console.error("meta:",e);if(firstMeta){firstMeta=false;_fbNotify("meta");}}));
   }catch(e){

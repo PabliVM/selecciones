@@ -1285,33 +1285,41 @@ function agPlayerSearchHtml(q,all){
   }).join("")+'</div>';
 }
 // Aviso: jugador que va 3 o más veces con la Madrileña en la misma temporada
-// Límite de convocatorias Madrileña por temporada (configurable, compartido en meta/app.madLimit)
-function getMadLimit(){var n=parseInt(window._madLimit,10);return n>=1?n:3;}
-function setMadLimit(n,cb){
-  n=parseInt(n,10);if(!(n>=1&&n<=20))return;
-  window._madLimit=n;
-  if(window._db&&window._fbUser){var f=window._fbFns;f.setDoc(f.doc(window._db,"meta","app"),{madLimit:n},{merge:true}).then(function(){if(cb)cb();}).catch(function(e){console.error("madLimit:",e);});}
+// Límite de convocatorias por temporada y selección (configurable; meta/app.selLimits; 0 = sin aviso)
+function getSelLimit(type){
+  var L=window._selLimits||{},v=L[type];
+  if(v===undefined||v===null||v===""){if(type==="madrilena"){var m=parseInt(window._madLimit,10);return m>=1?m:3;}return 0;}
+  v=parseInt(v,10);return v>=1?v:0;
+}
+function setSelLimit(type,n,cb){
+  n=parseInt(n,10);if(!(n>=1&&n<=20))n=0;
+  if(!window._selLimits)window._selLimits={};
+  window._selLimits[type]=n;
+  var upd={selLimits:{}};upd.selLimits[type]=n;
+  if(window._db&&window._fbUser){var f=window._fbFns;f.setDoc(f.doc(window._db,"meta","app"),upd,{merge:true}).then(function(){if(cb)cb();}).catch(function(e){console.error("selLimits:",e);});}
   else if(cb)cb();
 }
-function madWarnHtml(list){
+function madWarnHtml(list,type){
   if(!list.length)return"";
-  return'<div class="conflict-alert" style="margin-bottom:12px"><div class="conflict-alert-hdr">⚠️ Selección Madrileña: '+list.length+' jugador'+(list.length===1?"":"es")+' superaría '+(getMadLimit()-1)+' convocatoria'+(getMadLimit()-1===1?"":"s")+' esta temporada</div>'+
+  var lim=getSelLimit(type),lbl=(SELS[type]&&SELS[type].label)||"";
+  return'<div class="conflict-alert" style="margin-bottom:12px"><div class="conflict-alert-hdr">⚠️ Selección '+esc(lbl)+': '+list.length+' jugador'+(list.length===1?"":"es")+' superaría '+(lim-1)+' convocatoria'+(lim-1===1?"":"s")+' esta temporada</div>'+
     list.map(function(w){return'<div class="conflict-alert-row"><b>'+esc(w.name)+'</b>: ya tiene '+(w.n-1)+' convocatoria'+(w.n-1===1?"":"s")+', esta sería la '+w.n+'ª</div>';}).join("")+'</div>';
 }
 function madThirdWarnings(data,eid){
-  if(selKey(data.selectionType)!=="madrilena"||data.convType==="descartada")return[];
+  var type=selKey(data.selectionType),lim=getSelLimit(type);
+  if(!lim||data.convType==="descartada")return[];
   var isAct=function(p){return!p.dropStatus||p.dropStatus==="active";};
   var same=function(a,b){var ia=a.playerId&&String(a.playerId).indexOf("manual_")!==0?a.playerId:"",ib=b.playerId&&String(b.playerId).indexOf("manual_")!==0?b.playerId:"";return(ia&&ia===ib)||normTxt(a.fullName)===normTxt(b.fullName);};
   var prev=null,sea=S.season;
   if(eid){prev=getCallups_raw().find(function(c){return c.id===eid;});if(prev&&prev.season)sea=prev.season;}
-  var others=getCallups({season:sea,type:"madrilena",excludeDescartadas:true}).filter(function(c){return c.id!==eid;});
+  var others=getCallups({season:sea,type:type,excludeDescartadas:true}).filter(function(c){return c.id!==eid;});
   var out=[];
   (data.players||[]).forEach(function(p){
     if(!isAct(p))return;
     if(!normTxt(p.fullName))return;
     var n=1;
     others.forEach(function(c){if((c.players||[]).some(function(x){return isAct(x)&&same(x,p);}))n++;});
-    if(n>=getMadLimit())out.push({name:p.fullName,n:n});
+    if(n>=lim)out.push({name:p.fullName,n:n});
   });
   return out;
 }
@@ -1362,7 +1370,7 @@ function openPlayerStatsModal(type){
         return'<tr class="st-row" data-n="'+esc(r.name)+'" style="cursor:pointer"><td '+td.replace("center","left")+'><span style="color:var(--text-muted);font-size:10px">'+(open?"▼":"▶")+'</span> <b>'+esc(r.name)+'</b>'+
           '<div style="font-size:10.5px;color:var(--text-muted);margin-left:14px">'+esc(r.catList.join(" · "))+'</div></td>'+
           d.seasons.map(function(s){var v=r.s[s];if(!v)return'<td '+td+' ><span style="color:var(--text-muted)">–</span></td>';
-            var hot=type==="madrilena"&&(v.c+v.p)>=getMadLimit();
+            var lim=getSelLimit(type),hot=lim&&(v.c+v.p)>=lim;
             return'<td '+(hot?td.replace('style="','style="background:rgba(239,68,68,.18);color:#B91C1C;'):td)+'><b>'+v.c+'</b>'+(v.p?'<span style="font-size:10.5px;color:var(--text-muted)"> +'+v.p+' pre</span>':"")+'</td>';}).join("")+
           '<td '+td+'><b>'+r.tot+'</b>'+(r.pre?'<span style="font-size:10.5px;color:var(--text-muted)"> +'+r.pre+' pre</span>':"")+'</td></tr>'+det;
       }).join("")+'</tbody></table></div>':'<p class="msub" style="margin-top:12px">Sin datos</p>';
@@ -1375,25 +1383,35 @@ function openPlayerStatsModal(type){
     mo.querySelectorAll(".st-conv").forEach(function(el){el.addEventListener("click",function(){closeMo();openDetail(el.dataset.id);});});
   }
   var openRows={},stCat="";
-  mo.innerHTML='<div class="modal" style="padding-bottom:40px"><button class="mcl" id="st-close">×</button>'+
+  mo.innerHTML='<div class="modal" style="padding-bottom:40px;height:85dvh;max-height:85dvh"><button class="mcl" id="st-close">×</button>'+
     '<div class="mtitle">📊 Veces convocado</div>'+
     '<p class="msub">Por jugador y temporada. Número = convocatorias definitivas; “+pre” = preconvocatorias. No cuenta descartados ni convocatorias descartadas. Pulsa un jugador para ver en cuáles ha estado.</p>'+
     '<div class="view-toggle" style="margin:8px 0">'+
-    '<button class="vtbtn'+(type==="madrilena"?" on":"")+'" data-st="madrilena">RFFM</button>'+
-    '<button class="vtbtn'+(type==="espanola"?" on":"")+'" data-st="espanola">RFEF</button>'+
-    '<button class="vtbtn'+(type==="internacional"?" on":"")+'" data-st="internacional">OTRAS</button></div>'+
-    (type==="madrilena"?'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;font-size:12.5px">'+
+    '<button class="vtbtn" data-st="madrilena">RFFM</button>'+
+    '<button class="vtbtn" data-st="espanola">RFEF</button>'+
+    '<button class="vtbtn" data-st="internacional">OTRAS</button></div>'+
+    '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;font-size:12.5px">'+
       '<span>🚨 Aviso y <span style="background:rgba(239,68,68,.18);color:#B91C1C;padding:1px 6px;border-radius:4px;font-weight:700">rojo</span> desde la convocatoria nº</span>'+
-      '<input type="number" class="fi" id="st-lim" min="1" max="20" value="'+getMadLimit()+'" style="width:70px;min-height:32px"'+(canEdit()?"":" disabled")+'/>'+
-      '<span style="color:var(--text-muted)">(por temporada)</span></div>':"")+
+      '<input type="number" class="fi" id="st-lim" min="0" max="20" placeholder="—" style="width:70px;min-height:32px;flex:none;min-width:0"'+(canEdit()?"":" disabled")+'/>'+
+      '<span style="color:var(--text-muted)">(por temporada · vacío = sin aviso)</span></div>'+
     '<input type="search" class="fi" id="st-q" placeholder="Buscar jugador" autocomplete="off"/>'+
     '<div id="st-body"></div></div>';
-  $("st-close").addEventListener("click",closeMo);
-  mo.querySelectorAll("[data-st]").forEach(function(b){b.addEventListener("click",function(){closeMo();openPlayerStatsModal(b.dataset.st);});});
-  $("st-q").addEventListener("input",draw);
   var stLim=$("st-lim");
-  if(stLim)stLim.addEventListener("change",function(){setMadLimit(stLim.value,function(){toast("✅ Aviso a partir de la "+getMadLimit()+"ª convocatoria");});stLim.value=getMadLimit();draw();});
-  draw();
+  function setType(t){
+    type=t;stCat="";openRows={};
+    mo.querySelectorAll("[data-st]").forEach(function(b){b.classList.toggle("on",b.dataset.st===type);});
+    var l=getSelLimit(type);stLim.value=l?l:"";
+    draw();
+  }
+  $("st-close").addEventListener("click",closeMo);
+  mo.querySelectorAll("[data-st]").forEach(function(b){b.addEventListener("click",function(){setType(b.dataset.st);});});
+  $("st-q").addEventListener("input",draw);
+  stLim.addEventListener("change",function(){
+    var t=type;
+    setSelLimit(t,stLim.value,function(){var l=getSelLimit(t);toast(l?"✅ Aviso a partir de la "+l+"ª convocatoria":"🔕 Sin aviso para esta selección");});
+    var l=getSelLimit(t);stLim.value=l?l:"";draw();
+  });
+  setType(type);
 }
 function renderAgenda(viewMode){
   viewMode=viewMode||S.agendaView||"fichas";S.agendaView=viewMode;
@@ -2275,7 +2293,7 @@ function renderNueva(){
     if(ec)(ec.players||[]).forEach(function(p){if(p.dropStatus&&p.dropStatus!=="active")dropped[p.playerId]=true;});
     var pls=Array.prototype.slice.call(document.querySelectorAll('[name="pids"]:checked')).filter(function(cb){return!dropped[cb.value];}).map(function(cb){return{playerId:cb.value,fullName:cb.dataset.n};})
       .concat(manualPlayers.filter(function(p){return!p.dropStatus||p.dropStatus==="active";}).map(function(p){return{playerId:p.playerId,fullName:p.fullName};}));
-    var html=madWarnHtml(madThirdWarnings({selectionType:sel?sel.value:"",players:pls},S.editingId));
+    var html=madWarnHtml(madThirdWarnings({selectionType:sel?sel.value:"",players:pls},S.editingId),selKey(sel?sel.value:""));
     document.querySelectorAll(".mad-warn").forEach(function(el){el.innerHTML=html;});
   }
   var cfEl=$("cf");
