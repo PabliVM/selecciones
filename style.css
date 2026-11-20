@@ -901,3 +901,4 @@ body.dark .agenda-upcoming-hdr{background:#15181d}
 .ag-s-f{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:4px}
 .ag-s-f .fi{width:100%;min-width:0;height:44px;min-height:44px;box-sizing:border-box}
 .ag-s-l{font-size:11.5px;font-weight:700;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ag-desc-link{background:none;border:none;color:var(--text-muted);font-size:12px;text-decoration:underline;cursor:pointer;padding:6px 10px;font-family:inherit}

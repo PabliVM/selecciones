@@ -1552,7 +1552,6 @@ function renderAgenda(viewMode){
     '<button class="vtbtn'+(S.filterType==="espanola"?" on":"")+'" data-f="espanola"><img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/flags/espa%C3%B1a.png" style="width:14px;height:10px;object-fit:cover;border-radius:1px;vertical-align:middle"/> RFEF</button>'+
     '<button class="vtbtn'+(S.filterType==="madrilena"?" on":"")+'" data-f="madrilena"><img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/flags/madrid.png" style="width:14px;height:10px;object-fit:cover;border-radius:1px;vertical-align:middle"/> RFFM</button>'+
     '<button class="vtbtn'+(S.filterType==="internacional"?" on":"")+'" data-f="internacional">🌍 OTRAS</button>'+
-    (descartadas.length?'<button class="vtbtn"'+(S.showDescartadas?' style="color:#EF4444"':"")+' id="btn-show-desc">❌ Descartadas ('+descartadas.length+')</button>':"")+
     '</div>'+paisPills+catPills+conflictHtml+qHtml;
 
   var miniToggle='<div class="mini-toggle"><button class="mini-toggle-btn'+(viewMode==="fichas"?" on":"")+'" data-vm="fichas">⊢□ Fichas</button>'+
@@ -1613,6 +1612,7 @@ function renderAgenda(viewMode){
       "</div>";
     if(done.length)h+='<details class="fin-details"'+(S.finOpen?" open":"")+'><summary class="fin-summary"><span class="fin-summary__label">Finalizadas</span><span class="fin-summary__count">'+done.length+'</span></summary><div class="cl cl-past" style="margin-top:10px">'+done.map(callupCard).join("")+"</div></details>";
   }
+  if(descartadas.length)h+='<div style="text-align:center;margin:14px 0 4px"><button type="button" id="btn-show-desc" class="ag-desc-link">'+(S.showDescartadas?"Ocultar descartadas":"Ver descartadas ("+descartadas.length+")")+'</button></div>';
   $("main").innerHTML=h;
 
   var det=$("main").querySelector(".fin-details");
