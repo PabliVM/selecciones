@@ -273,13 +273,13 @@ function dropReasonTxt(p){
 function calcStatus(s,e){if(!s)return"proxima";var n=new Date();n.setHours(0,0,0,0);var a=new Date(s+"T00:00:00");if(!e)return n<a?"proxima":"en_curso";var b=new Date(e+"T23:59:59");return n<a?"proxima":n>b?"finalizada":"en_curso";}
 function daysUntil(dateStr){if(!dateStr)return 999;var now=new Date();now.setHours(0,0,0,0);var d=new Date(dateStr+"T00:00:00");return Math.ceil((d-now)/(1000*60*60*24));}
 function provAlertBadge(c){if(c.convType!=="provisional")return"";var days=daysUntil(c.startDate);if(days>7)return"";if(days<0)return'<span class="badge prov-alert prov-alert-late">⚠️ Sin confirmar</span>';if(days===0)return'<span class="badge prov-alert prov-alert-today">⚠️ HOY</span>';return'<span class="badge prov-alert prov-alert-soon">⚠️ '+days+'d</span>';}
-function fmtRange(s,e){if(!s)return"Fecha por confirmar";if(!e)return new Date(s+"T12:00:00").toLocaleDateString("es-ES",{day:"2-digit",month:"short",year:"numeric"})+" — sin fin";var a=new Date(s+"T12:00:00"),b=new Date(e+"T12:00:00");return a.toLocaleDateString("es-ES",{day:"2-digit",month:"short"})+" — "+b.toLocaleDateString("es-ES",{day:"2-digit",month:"short",year:"numeric"});}
+function fmtRange(s,e){if(!s)return"Fecha por confirmar";if(!e)return new Date(s+"T12:00:00").toLocaleDateString("es-ES",{day:"2-digit",month:"short",year:"2-digit"})+" — sin fin";var a=new Date(s+"T12:00:00"),b=new Date(e+"T12:00:00");return a.toLocaleDateString("es-ES",{day:"2-digit",month:"short"})+" — "+b.toLocaleDateString("es-ES",{day:"2-digit",month:"short",year:"2-digit"});}
 function fmtRangeWithTimes(s,e,st,et){
   var stTxt=fmtTimePart(st),etTxt=fmtTimePart(et);
-  if(!s)return(stTxt||"Fecha por confirmar")+(e?" — "+new Date(e+"T12:00:00").toLocaleDateString("es-ES",{day:"2-digit",month:"short",year:"numeric"})+(etTxt?" "+etTxt:""):"");
-  if(!e)return new Date(s+"T12:00:00").toLocaleDateString("es-ES",{day:"2-digit",month:"short",year:"numeric"})+(stTxt?" "+stTxt:"")+" — sin fin";
+  if(!s)return(stTxt||"Fecha por confirmar")+(e?" — "+new Date(e+"T12:00:00").toLocaleDateString("es-ES",{day:"2-digit",month:"short",year:"2-digit"})+(etTxt?" "+etTxt:""):"");
+  if(!e)return new Date(s+"T12:00:00").toLocaleDateString("es-ES",{day:"2-digit",month:"short",year:"2-digit"})+(stTxt?" "+stTxt:"")+" — sin fin";
   var a=new Date(s+"T12:00:00"),b=new Date(e+"T12:00:00");
-  return a.toLocaleDateString("es-ES",{day:"2-digit",month:"short"})+(stTxt?" "+stTxt:"")+" — "+b.toLocaleDateString("es-ES",{day:"2-digit",month:"short",year:"numeric"})+(etTxt?" "+etTxt:"");
+  return a.toLocaleDateString("es-ES",{day:"2-digit",month:"short"})+(stTxt?" "+stTxt:"")+" — "+b.toLocaleDateString("es-ES",{day:"2-digit",month:"short",year:"2-digit"})+(etTxt?" "+etTxt:"");
 }
 function fmtDateShort(d){if(!d)return"";var dt=new Date(d+"T12:00:00");return dt.toLocaleDateString("es-ES",{day:"2-digit",month:"short"});}
 function fmtDMY(d,t){if(!d)return"";var p=d.split("-");if(p.length!==3)return"";return p[2]+"/"+p[1]+"/"+p[0]+(t?" "+t+"h":"");}
@@ -636,6 +636,7 @@ function callupDetail(c){
   var tool=function(attr,ico,lbl,cls){return'<button class="dp-tool'+(cls?" "+cls:"")+'" '+attr+'><span class="dp-tool-i">'+ico+'</span><span class="dp-tool-l">'+lbl+'</span></button>';};
   var printBtn=tool('data-share-conv="1"',"📤","Compartir")+
     (c.startDate?tool('data-cal-conv="1"',"📅","Calendario"):"")+
+    tool('data-copy-conv="1"',"📋","Copiar")+
     tool("","🖨️","Imprimir","btn-print-ficha");
   var editBtn=canEdit()?tool('data-edit="'+c.id+'"',"✎","Editar"):"";
   var delBtn=canEdit()?'<button class="dp-del" data-del="'+c.id+'">Eliminar convocatoria</button>':"";
@@ -843,17 +844,31 @@ function bindCards(){
 // ── Compartir / calendario ──
 function callupShareText(c){
   var sel=SELS[selKey(c.selectionType)],lbl=(sel?sel.label:"")+(c.pais?" "+c.pais:"")+" "+(CAT[c.selectionCategory]||c.selectionCategory||"");
+  var dm=function(d){if(!d)return"";var x=new Date(d+"T12:00:00");return x.toLocaleDateString("es-ES",{day:"numeric",month:"short"}).replace(".","");};
+  var dmy=function(d){return d?dm(d)+" "+d.slice(2,4):"";};
+  var wd=function(d){if(!d)return"";var x=new Date(d+"T12:00:00");return x.toLocaleDateString("es-ES",{weekday:"short"}).replace(".","")+" "+dm(d);};
+  var tm=function(t){return t?fmtTimePart(t):"";};
+  var range=c.startDate?(c.endDate&&c.endDate!==c.startDate?dm(c.startDate)+" – "+dmy(c.endDate):dmy(c.startDate)):(c.incorpTime||"Fecha por confirmar");
   var L=[];
-  L.push("*"+lbl.trim()+"* — "+(c.title||""));
-  L.push((c.convType==="definitiva"?"✅ Convocatoria":"⏳ Preconvocatoria"));
-  L.push("📅 "+fmtRangeWithTimes(c.startDate,c.endDate,c.incorpTime,c.endTime));
+  L.push("*"+lbl.trim()+"*");
+  L.push(c.title||"");
+  L.push(c.convType==="definitiva"?"✅ Convocatoria":"⏳ Preconvocatoria");
+  L.push("");
+  L.push("📅 "+range);
   if(c.location)L.push("📍 "+c.location);
-  if(c.conc&&(c.conc.date||c.conc.lugar))L.push("🏁 Concentración: "+[c.conc.date?fmtDMY(c.conc.date):"",c.conc.time?fmtTimePart(c.conc.time):"",c.conc.lugar||""].filter(Boolean).join(" · "));
-  (c.matches||[]).slice().sort(function(a,b){return((a.date||"")+(a.time||"")).localeCompare((b.date||"")+(b.time||""));}).forEach(function(m){L.push((m.matchType==="entrenamiento"?"🏋 ":"⚽ ")+[m.date?fmtDMY(m.date):"",m.time?fmtTimePart(m.time):"",m.rival?(m.matchType==="entrenamiento"?m.rival:"vs "+m.rival):""].filter(Boolean).join(" · "));});
+  var log=[];
+  if(c.conc&&(c.conc.date||c.conc.lugar))log.push("🏁 Citación: "+[wd(c.conc.date),tm(c.conc.time),c.conc.lugar||""].filter(Boolean).join(" · "));
+  (c.matches||[]).slice().sort(function(a,b){return((a.date||"")+(a.time||"")).localeCompare((b.date||"")+(b.time||""));}).forEach(function(m){
+    var isT=m.matchType==="entrenamiento";
+    log.push((isT?"🏋 ":"⚽ ")+[wd(m.date),tm(m.time),isT?(m.rival||"Entrenamiento"):(m.rival?"vs "+m.rival:"")].filter(Boolean).join(" · "));
+  });
+  if(c.vuelta&&(c.vuelta.date||c.vuelta.lugar))log.push("🔙 Vuelta: "+[wd(c.vuelta.date),tm(c.vuelta.time),c.vuelta.lugar||""].filter(Boolean).join(" · "));
+  if(log.length){L.push("");L=L.concat(log);}
   var act=(c.players||[]).filter(function(p){return!p.dropStatus||p.dropStatus==="active";});
-  if(act.length){L.push("");L.push("👕 Jugadores ("+act.length+"):");act.forEach(function(p){L.push("• "+p.fullName+(p.teamName?" ("+p.teamName+")":""));});}
+  if(act.length){L.push("");L.push("👕 *Jugadores ("+act.length+")*");act.forEach(function(p){L.push("• "+p.fullName+(p.teamName?" · "+p.teamName:""));});}
   return L.join("\n");
 }
+function fallbackCopy(t){var ta=document.createElement("textarea");ta.value=t;ta.setAttribute("readonly","");ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();try{document.execCommand("copy");}catch(e){}ta.remove();}
 function shareCallup(c){
   var text=callupShareText(c);
   if(navigator.share){navigator.share({title:c.title||"Convocatoria",text:text}).catch(function(){});return;}
@@ -1041,6 +1056,13 @@ if(c.llegada){var lf={llegadaDate:c.llegada.date,llegadaTime:c.llegada.time,lleg
 
   var shareBtn=ov.querySelector("[data-share-conv]");
   if(shareBtn)shareBtn.addEventListener("click",function(){shareCallup(c);});
+  var copyBtn=ov.querySelector("[data-copy-conv]");
+  if(copyBtn)copyBtn.addEventListener("click",function(){
+    var t=callupShareText(c).replace(/\*/g,"");
+    var ok=function(){toast("📋 Copiado");};
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(ok,function(){fallbackCopy(t);ok();});}
+    else{fallbackCopy(t);ok();}
+  });
   var calBtn=ov.querySelector("[data-cal-conv]");
   if(calBtn)calBtn.addEventListener("click",function(){addCallupToCalendar(c);});
   var printFichaBtn=ov.querySelector(".btn-print-ficha");
