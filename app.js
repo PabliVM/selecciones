@@ -634,9 +634,7 @@ function callupDetail(c){
   var descBtn=canEdit()&&c.convType==="provisional"?'<button class="dp-main dp-main-no" data-descartar="'+c.id+'">Descartar</button>':"";
   var restoreBtn=canEdit()&&c.convType==="descartada"?'<button class="dp-main dp-main-ok" data-restore-conv="'+c.id+'">↩ Restaurar a preconvocatoria</button>':"";
   var tool=function(attr,ico,lbl,cls){return'<button class="dp-tool'+(cls?" "+cls:"")+'" '+attr+'><span class="dp-tool-i">'+ico+'</span><span class="dp-tool-l">'+lbl+'</span></button>';};
-  var printBtn=tool('data-share-conv="1"',"📤","Compartir")+
-    (c.startDate?tool('data-cal-conv="1"',"📅","Calendario"):"")+
-    tool('data-copy-conv="1"',"📋","Copiar")+
+  var printBtn=tool('data-copy-conv="1"',"📋","Copiar")+
     tool("","🖨️","Imprimir","btn-print-ficha");
   var editBtn=canEdit()?tool('data-edit="'+c.id+'"',"✎","Editar"):"";
   var delBtn=canEdit()?'<button class="dp-del" data-del="'+c.id+'">Eliminar convocatoria</button>':"";
