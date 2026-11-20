@@ -1285,10 +1285,18 @@ function agPlayerSearchHtml(q,all){
   }).join("")+'</div>';
 }
 // Aviso: jugador que va 3 o más veces con la Madrileña en la misma temporada
+// Límite de convocatorias Madrileña por temporada (configurable, compartido en meta/app.madLimit)
+function getMadLimit(){var n=parseInt(window._madLimit,10);return n>=1?n:3;}
+function setMadLimit(n,cb){
+  n=parseInt(n,10);if(!(n>=1&&n<=20))return;
+  window._madLimit=n;
+  if(window._db&&window._fbUser){var f=window._fbFns;f.setDoc(f.doc(window._db,"meta","app"),{madLimit:n},{merge:true}).then(function(){if(cb)cb();}).catch(function(e){console.error("madLimit:",e);});}
+  else if(cb)cb();
+}
 function madWarnHtml(list){
   if(!list.length)return"";
-  return'<div class="conflict-alert" style="margin-bottom:12px"><div class="conflict-alert-hdr">⚠️ Selección Madrileña: '+list.length+' jugador'+(list.length===1?"":"es")+' superaría 2 convocatorias esta temporada</div>'+
-    list.map(function(w){return'<div class="conflict-alert-row"><b>'+esc(w.name)+'</b>: ya tiene '+(w.n-1)+' convocatorias, esta sería la '+w.n+'ª</div>';}).join("")+'</div>';
+  return'<div class="conflict-alert" style="margin-bottom:12px"><div class="conflict-alert-hdr">⚠️ Selección Madrileña: '+list.length+' jugador'+(list.length===1?"":"es")+' superaría '+(getMadLimit()-1)+' convocatoria'+(getMadLimit()-1===1?"":"s")+' esta temporada</div>'+
+    list.map(function(w){return'<div class="conflict-alert-row"><b>'+esc(w.name)+'</b>: ya tiene '+(w.n-1)+' convocatoria'+(w.n-1===1?"":"s")+', esta sería la '+w.n+'ª</div>';}).join("")+'</div>';
 }
 function madThirdWarnings(data,eid){
   if(selKey(data.selectionType)!=="madrilena"||data.convType==="descartada")return[];
@@ -1303,7 +1311,7 @@ function madThirdWarnings(data,eid){
     if(!normTxt(p.fullName))return;
     var n=1;
     others.forEach(function(c){if((c.players||[]).some(function(x){return isAct(x)&&same(x,p);}))n++;});
-    if(n>=3)out.push({name:p.fullName,n:n});
+    if(n>=getMadLimit())out.push({name:p.fullName,n:n});
   });
   return out;
 }
@@ -1354,7 +1362,8 @@ function openPlayerStatsModal(type){
         return'<tr class="st-row" data-n="'+esc(r.name)+'" style="cursor:pointer"><td '+td.replace("center","left")+'><span style="color:var(--text-muted);font-size:10px">'+(open?"▼":"▶")+'</span> <b>'+esc(r.name)+'</b>'+
           '<div style="font-size:10.5px;color:var(--text-muted);margin-left:14px">'+esc(r.catList.join(" · "))+'</div></td>'+
           d.seasons.map(function(s){var v=r.s[s];if(!v)return'<td '+td+' ><span style="color:var(--text-muted)">–</span></td>';
-            return'<td '+td+'><b>'+v.c+'</b>'+(v.p?'<span style="font-size:10.5px;color:var(--text-muted)"> +'+v.p+' pre</span>':"")+'</td>';}).join("")+
+            var hot=type==="madrilena"&&(v.c+v.p)>=getMadLimit();
+            return'<td '+(hot?td.replace('style="','style="background:rgba(239,68,68,.18);color:#B91C1C;'):td)+'><b>'+v.c+'</b>'+(v.p?'<span style="font-size:10.5px;color:var(--text-muted)"> +'+v.p+' pre</span>':"")+'</td>';}).join("")+
           '<td '+td+'><b>'+r.tot+'</b>'+(r.pre?'<span style="font-size:10.5px;color:var(--text-muted)"> +'+r.pre+' pre</span>':"")+'</td></tr>'+det;
       }).join("")+'</tbody></table></div>':'<p class="msub" style="margin-top:12px">Sin datos</p>';
     var pills='<div class="fb" style="margin:8px 0 0;flex-wrap:wrap">'+
@@ -1373,11 +1382,17 @@ function openPlayerStatsModal(type){
     '<button class="vtbtn'+(type==="madrilena"?" on":"")+'" data-st="madrilena">RFFM</button>'+
     '<button class="vtbtn'+(type==="espanola"?" on":"")+'" data-st="espanola">RFEF</button>'+
     '<button class="vtbtn'+(type==="internacional"?" on":"")+'" data-st="internacional">OTRAS</button></div>'+
+    (type==="madrilena"?'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;font-size:12.5px">'+
+      '<span>🚨 Aviso y <span style="background:rgba(239,68,68,.18);color:#B91C1C;padding:1px 6px;border-radius:4px;font-weight:700">rojo</span> desde la convocatoria nº</span>'+
+      '<input type="number" class="fi" id="st-lim" min="1" max="20" value="'+getMadLimit()+'" style="width:70px;min-height:32px"'+(canEdit()?"":" disabled")+'/>'+
+      '<span style="color:var(--text-muted)">(por temporada)</span></div>':"")+
     '<input type="search" class="fi" id="st-q" placeholder="Buscar jugador" autocomplete="off"/>'+
     '<div id="st-body"></div></div>';
   $("st-close").addEventListener("click",closeMo);
   mo.querySelectorAll("[data-st]").forEach(function(b){b.addEventListener("click",function(){closeMo();openPlayerStatsModal(b.dataset.st);});});
   $("st-q").addEventListener("input",draw);
+  var stLim=$("st-lim");
+  if(stLim)stLim.addEventListener("change",function(){setMadLimit(stLim.value,function(){toast("✅ Aviso a partir de la "+getMadLimit()+"ª convocatoria");});stLim.value=getMadLimit();draw();});
   draw();
 }
 function renderAgenda(viewMode){
