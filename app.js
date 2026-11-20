@@ -849,7 +849,7 @@ function callupShareText(c){
   var range=c.startDate?(c.endDate&&c.endDate!==c.startDate?dm(c.startDate)+" – "+dmy(c.endDate):dmy(c.startDate)):(c.incorpTime||"Fecha por confirmar");
   var L=[];
   L.push("*"+lbl.trim()+"*");
-  L.push(c.title||"");
+  if(c.title)L.push("*"+c.title+"*");
   L.push(c.convType==="definitiva"?"✅ Convocatoria":"⏳ Preconvocatoria");
   L.push("");
   L.push("📅 "+range);
@@ -1056,7 +1056,7 @@ if(c.llegada){var lf={llegadaDate:c.llegada.date,llegadaTime:c.llegada.time,lleg
   if(shareBtn)shareBtn.addEventListener("click",function(){shareCallup(c);});
   var copyBtn=ov.querySelector("[data-copy-conv]");
   if(copyBtn)copyBtn.addEventListener("click",function(){
-    var t=callupShareText(c).replace(/\*/g,"");
+    var t=callupShareText(c);
     var ok=function(){toast("📋 Copiado");};
     if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(ok,function(){fallbackCopy(t);ok();});}
     else{fallbackCopy(t);ok();}
