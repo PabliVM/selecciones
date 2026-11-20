@@ -1498,10 +1498,13 @@ function renderAgenda(viewMode){
         '</div>';
     }
   }
-  var qHtml='<div class="agenda-upcoming" style="margin-bottom:14px"><div style="padding:10px 14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">'+
-    '<span style="font-size:13px;font-weight:700">🔎 ¿Qué hay el…?</span>'+
-    '<input type="date" class="fi" id="ag-qdate" value="'+(S.queryDate||"")+'" style="width:150px"/>'+
-    (S.queryDate?'<button class="btn btn-ghost btn-sm" id="ag-qclear">✕</button>':"")+'</div>';
+  var qHtml='<div class="agenda-upcoming" style="margin-bottom:14px"><div class="ag-s-row">'+
+    '<div class="ag-s-f"><label class="ag-s-l" for="ag-qdate">📅 ¿Qué hay el…?</label><div style="display:flex;gap:4px">'+
+    '<input type="date" class="fi" id="ag-qdate" value="'+(S.queryDate||"")+'"/>'+
+    (S.queryDate?'<button class="btn btn-ghost btn-sm" id="ag-qclear">✕</button>':"")+'</div></div>'+
+    '<div class="ag-s-f"><label class="ag-s-l" for="ag-pq">👤 ¿Dónde está…?</label>'+
+    '<input type="search" class="fi" id="ag-pq" value="'+esc(S.playerQuery||"")+'" placeholder="Jugador" autocomplete="off"/></div>'+
+    '</div>';
   if(S.queryDate){
     var qd=S.queryDate;
     var qRes=all.filter(function(c){return c.convType!=="descartada"&&c.startDate&&c.startDate<=qd&&(c.endDate||c.startDate)>=qd;});
@@ -1532,11 +1535,7 @@ function renderAgenda(viewMode){
         '<div style="margin:0 14px 14px;padding:8px 12px;border-radius:8px;background:#ECFDF5;border:1px solid #10B981;color:#065F46;font-size:12.5px;font-weight:600">✅ Ningún jugador coincide en esas convocatorias</div>';
     }
   }
-  qHtml+='</div>';
-  qHtml+='<div class="agenda-upcoming" style="margin-bottom:14px"><div style="padding:10px 14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">'+
-    '<span style="font-size:13px;font-weight:700">👤 ¿Dónde está…?</span>'+
-    '<input type="search" class="fi" id="ag-pq" value="'+esc(S.playerQuery||"")+'" placeholder="Nombre del jugador" autocomplete="off" style="flex:1;min-width:150px"/></div>'+
-    '<div id="ag-pq-res">'+agPlayerSearchHtml(S.playerQuery,all)+'</div></div>';
+  qHtml+='<div id="ag-pq-res">'+agPlayerSearchHtml(S.playerQuery,all)+'</div></div>';
   var agSOpen=!!S.agSearchOpen;
   qHtml='<details class="ag-search" id="ag-search"'+(agSOpen?" open":"")+'><summary class="ag-search-sum">🔎 Buscar por fecha o jugador</summary>'+qHtml+'</details>';
   var h='<div class="vh" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:8px;justify-content:space-between">'+
