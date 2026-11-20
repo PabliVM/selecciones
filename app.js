@@ -746,10 +746,12 @@ function renderLoginGate(){
     '<img src="https://raw.githubusercontent.com/PabliVM/selecciones/main/flags/Rm__.png" class="login-emblem" alt="Real Madrid"/>'+
     '<h1 class="login-title">Selecciones - Convocatorias</h1>'+
     '<p class="login-sub">Real Madrid · Cantera</p>'+
-    '<div class="fg"><input class="fi" id="gate-email" type="email" placeholder="Email" autocomplete="email"/></div>'+
-    '<div class="fg"><input class="fi" id="gate-pass" type="password" placeholder="Contraseña" autocomplete="current-password"/></div>'+
+    '<form id="gate-form" autocomplete="on" onsubmit="return false">'+
+    '<div class="fg"><input class="fi" id="gate-email" name="username" type="email" inputmode="email" placeholder="Email" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false"/></div>'+
+    '<div class="fg"><input class="fi" id="gate-pass" name="password" type="password" placeholder="Contraseña" autocomplete="current-password"/></div>'+
     '<div id="gate-err" style="color:#EF4444;font-size:12px;margin-bottom:8px;display:none"></div>'+
-    '<button class="btn btn-primary" id="gate-login-btn" style="width:100%">Iniciar sesión</button>'+
+    '<button type="submit" class="btn btn-primary" id="gate-login-btn" style="width:100%">Iniciar sesión</button>'+
+    '</form>'+
     '<a href="#" id="gate-forgot" class="login-forgot">¿Olvidaste tu contraseña?</a>'+
     '<p style="font-size:11px;margin-top:12px;opacity:.75">Acceso restringido a personal autorizado. Datos tratados conforme al RGPD. <a href="#" id="gate-privacy">Protección de datos</a></p>'+
     "</div></div>";
@@ -758,6 +760,7 @@ function renderLoginGate(){
   try{var _re=localStorage.getItem("rmconv_email");if(_re&&!emailEl.value)emailEl.value=_re;}catch(e){}
   function doLogin(){
     var email=(emailEl.value||"").trim(),pass=passEl.value||"";
+    if(email){try{localStorage.setItem("rmconv_email",email);}catch(e){}}
     if(!email||!pass){errEl.style.display="block";errEl.textContent="Introduce email y contraseña.";return;}
     var btn=$("gate-login-btn");btn.disabled=true;btn.textContent="Entrando...";
     _signIn(email,pass)
@@ -766,7 +769,6 @@ function renderLoginGate(){
   }
   $("gate-login-btn").addEventListener("click",doLogin);
   $("gate-privacy").addEventListener("click",function(e){e.preventDefault();openPrivacyModal();});
-  passEl.addEventListener("keydown",function(e){if(e.key==="Enter")doLogin();});
   $("gate-forgot").addEventListener("click",function(e){
     e.preventDefault();
     var email=(emailEl.value||"").trim();
@@ -3992,7 +3994,7 @@ function bindLoginBtn(){
     var mo=document.createElement("div");mo.className="mo";
     mo.innerHTML='<div class="modal" style="padding-bottom:40px"><button class="mcl" id="lm-close">×</button>'+
       '<div class="mtitle">Acceso editor</div><p class="msub">Solo para personal autorizado.</p>'+
-      '<div class="fg"><label class="fl">Email</label><input class="fi" id="lm-email" type="email" placeholder="email@realmadrid.es" autocomplete="email"/></div>'+
+      '<div class="fg"><label class="fl">Email</label><input class="fi" id="lm-email" name="username" type="email" inputmode="email" placeholder="email@realmadrid.es" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false"/></div>'+
       '<div class="fg"><label class="fl">Contraseña</label><input class="fi" id="lm-pass" type="password" placeholder="••••••••" autocomplete="current-password"/></div>'+
       '<div id="lm-err" style="color:#EF4444;font-size:12px;margin-top:6px;display:none"></div>'+
       '<div style="display:flex;gap:8px;margin-top:16px">'+
@@ -4000,6 +4002,7 @@ function bindLoginBtn(){
       '<button class="btn btn-primary" id="lm-ok" style="flex:1">Entrar</button></div></div>';
     document.body.appendChild(mo);
     var emailEl=$("lm-email"),passEl=$("lm-pass"),errEl=$("lm-err");
+    try{var _re2=localStorage.getItem("rmconv_email");if(_re2&&emailEl&&!emailEl.value)emailEl.value=_re2;}catch(e){}
     setTimeout(function(){if(emailEl)emailEl.focus();},100);
     function closeMo(){if(mo.parentNode)mo.parentNode.removeChild(mo);}
     $("lm-close").addEventListener("click",closeMo);$("lm-cancel").addEventListener("click",closeMo);
