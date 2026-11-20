@@ -755,6 +755,7 @@ function renderLoginGate(){
     "</div></div>";
   document.querySelectorAll(".nb").forEach(function(b){b.style.display="none";});
   var emailEl=$("gate-email"),passEl=$("gate-pass"),errEl=$("gate-err");
+  try{var _re=localStorage.getItem("rmconv_email");if(_re&&!emailEl.value)emailEl.value=_re;}catch(e){}
   function doLogin(){
     var email=(emailEl.value||"").trim(),pass=passEl.value||"";
     if(!email||!pass){errEl.style.display="block";errEl.textContent="Introduce email y contraseña.";return;}
@@ -1535,6 +1536,8 @@ function renderAgenda(viewMode){
     '<span style="font-size:13px;font-weight:700">👤 ¿Dónde está…?</span>'+
     '<input type="search" class="fi" id="ag-pq" value="'+esc(S.playerQuery||"")+'" placeholder="Nombre del jugador" autocomplete="off" style="flex:1;min-width:150px"/></div>'+
     '<div id="ag-pq-res">'+agPlayerSearchHtml(S.playerQuery,all)+'</div></div>';
+  var agSOpen=!!(S.agSearchOpen||S.queryDate||S.playerQuery);
+  qHtml='<details class="ag-search" id="ag-search"'+(agSOpen?" open":"")+'><summary class="ag-search-sum">🔎 Buscar por fecha o jugador</summary>'+qHtml+'</details>';
   var h='<div class="vh" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:8px;justify-content:space-between">'+
     '<h1 class="vt">Agenda</h1>'+
     '<div style="display:flex;gap:6px">'+
@@ -1632,6 +1635,7 @@ function renderAgenda(viewMode){
   var qClear=$("ag-qclear");
   if(qClear)qClear.addEventListener("click",function(){S.queryDate="";renderAgenda(S.agendaView);});
   document.querySelectorAll(".ag-q-row").forEach(function(r){r.addEventListener("click",function(){openDetail(r.dataset.id);});});
+  var agS=$("ag-search");if(agS)agS.addEventListener("toggle",function(){S.agSearchOpen=agS.open;});
   var pq=$("ag-pq");
   if(pq){
     var bindPqRows=function(){document.querySelectorAll(".ag-pq-row").forEach(function(r){r.addEventListener("click",function(){openDetail(r.dataset.id);});});};
@@ -3810,7 +3814,7 @@ function _has2FA(){
 }
 // Login con soporte de segundo factor (SMS)
 function _signIn(email,pass){
-  return window._fbFns.signInWithEmailAndPassword(window._auth,email,pass).catch(function(e){
+  return window._fbFns.signInWithEmailAndPassword(window._auth,email,pass).then(function(r){try{localStorage.setItem("rmconv_email",email);}catch(e){}return r;}).catch(function(e){
     if(e.code!=="auth/multi-factor-auth-required"||!e.resolver)throw e;
     var resolver=e.resolver,hint=resolver.hints[0],rv=_recaptcha();
     return new firebase.auth.PhoneAuthProvider().verifyPhoneNumber({multiFactorHint:hint,session:resolver.session},rv)
@@ -3961,6 +3965,23 @@ function openUsersModal(){
     setUserRole(email,role,function(){toast("✅ Usuario añadido");closeMo();openUsersModal();renderUsersBtn();});
   });
 }
+function bindMoreMenu(){
+  var mb=$("hdr-more");if(!mb||mb._bound)return;mb._bound=true;
+  mb.addEventListener("click",function(e){
+    e.stopPropagation();
+    var old=$("hdr-more-menu");if(old){old.parentNode.removeChild(old);return;}
+    var items=[];
+    var dk=$("darkBtn");if(dk)items.push({t:document.body.classList.contains("dark")?"☀️ Modo claro":"🌙 Modo oscuro",el:dk});
+    var ub=$("hdr-users-btn");if(ub)items.push({t:"👥 Usuarios",el:ub});
+    var tf=$("hdr-2fa-btn");if(tf&&tf.style.display!=="none")items.push({t:"🛡️ Verificación en dos pasos",el:tf});
+    var lb=$("hdr-login-btn");if(lb)items.push({t:window._fbUser?"🔓 Cerrar sesión":"🔒 Iniciar sesión",el:lb});
+    var m=document.createElement("div");m.id="hdr-more-menu";m.className="hdr-more-menu";
+    m.innerHTML=items.map(function(it,i){return'<button type="button" data-i="'+i+'">'+it.t+"</button>";}).join("");
+    document.body.appendChild(m);
+    m.querySelectorAll("button").forEach(function(b){b.addEventListener("click",function(){m.parentNode.removeChild(m);items[+b.dataset.i].el.click();});});
+    setTimeout(function(){document.addEventListener("click",function cl(ev){if(!m.contains(ev.target)){if(m.parentNode)m.parentNode.removeChild(m);document.removeEventListener("click",cl);}});},0);
+  });
+}
 function bindLoginBtn(){
   var btn=$("hdr-login-btn");if(!btn)return;
   btn.addEventListener("click",function(){
@@ -4040,6 +4061,7 @@ window._onMetaLoaded = function(){
 
 renderSeasonSel();
 bindLoginBtn();
+bindMoreMenu();
 renderUsersBtn();
 route(S.view || "agenda");
 
@@ -4050,7 +4072,9 @@ function syncTopbarSpacer(){
   if(!main)return;
   if(document.body.classList.contains("gate-active")){main.style.paddingTop="";main.style.paddingBottom="";return;}
   if(tb){var h=tb.offsetHeight;if(h>0)main.style.paddingTop=(h+16)+"px";}
-  if(ft){var fh=ft.offsetHeight;if(fh>0)main.style.paddingBottom=(fh+24)+"px";}
+  var nv=document.querySelector(".nav"),nvFixed=nv&&getComputedStyle(nv).position==="fixed";
+  var fh=nvFixed?nv.offsetHeight:(ft?ft.offsetHeight:0);
+  if(fh>0)main.style.paddingBottom=(fh+24)+"px";
 }
 window.addEventListener("resize",syncTopbarSpacer);
 if(window.ResizeObserver){var _tbEl=document.querySelector(".app-topbar");if(_tbEl)new ResizeObserver(function(){syncTopbarSpacer();}).observe(_tbEl);}

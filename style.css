@@ -867,3 +867,33 @@ body.dark .agenda-upcoming-hdr{background:#15181d}
   body{-webkit-text-size-adjust:100%}
 }
 .nb-new .nl{color:#fff}
+
+/* ── Agenda: buscador plegable ── */
+.ag-search{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);margin-bottom:14px;box-shadow:var(--shadow-sm)}
+.ag-search>summary{list-style:none;cursor:pointer;padding:12px 14px;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:space-between}
+.ag-search>summary::-webkit-details-marker{display:none}
+.ag-search>summary::after{content:"▾";color:var(--text-muted);transition:transform var(--t)}
+.ag-search[open]>summary::after{transform:rotate(180deg)}
+.ag-search .agenda-upcoming{margin:0 10px 10px!important;box-shadow:none}
+
+/* ── Menú ⋯ (móvil) ── */
+.hdr-more-btn{display:none}
+.hdr-more-menu{position:fixed;top:calc(58px + env(safe-area-inset-top));right:10px;z-index:300;background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.18);min-width:210px;padding:6px;display:flex;flex-direction:column}
+.hdr-more-menu button{background:none;border:none;text-align:left;padding:12px 14px;font-size:15px;color:var(--text);border-radius:8px;cursor:pointer;font-family:inherit}
+.hdr-more-menu button:active{background:var(--border)}
+
+@media(max-width:639px){
+  /* Cabecera limpia: modo oscuro, usuarios y sesión dentro de ⋯ */
+  .hdr-more-btn{display:flex;font-size:18px;font-weight:700}
+  #darkBtn,#hdr-users-slot,#hdr-login-btn,#hdr-2fa-btn{display:none!important}
+  /* Barra inferior de pestañas (tipo app) */
+  .app-footer{display:none!important}
+  .nav{position:fixed;left:0;right:0;bottom:0;z-index:150;background:var(--surface);border-top:1px solid var(--border);border-bottom:none;padding:6px 6px calc(6px + env(safe-area-inset-bottom));gap:2px;box-shadow:0 -2px 10px rgba(0,0,0,.08);overflow:visible}
+  .nav .nb{flex:1 1 0;min-width:0;flex-direction:column;justify-content:center;gap:3px;border:none;border-radius:12px;background:none;box-shadow:none;padding:6px 2px;color:var(--text-muted)}
+  .nav .nb .ni{display:inline-block;font-size:20px;width:auto;height:auto;color:inherit}
+  .nav .nb .nl{font-size:11px;color:var(--text-muted)}
+  .nav .nb.active{background:rgba(37,99,235,.10)}
+  .nav .nb.active .ni,.nav .nb.active .nl{color:var(--navy);font-weight:700}
+  .nav .nb-new .ni,.nav .nb-new .nl{color:var(--navy)}
+  .toast{bottom:calc(84px + env(safe-area-inset-bottom))}
+}

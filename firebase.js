@@ -90,7 +90,7 @@ var _saveErrT=null,_saveShowT=null;
 function _saveBar(){
   var b=document.getElementById("save-status");
   if(!b){b=document.createElement("div");b.id="save-status";
-    b.style.cssText="position:fixed;left:50%;bottom:72px;transform:translateX(-50%);z-index:9999;padding:8px 14px;border-radius:10px;font-size:13px;font-weight:600;color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.25);display:none;max-width:90vw;text-align:center";
+    b.style.cssText="position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:9999;padding:8px 14px;border-radius:10px;font-size:13px;font-weight:600;color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.25);display:none;max-width:90vw;text-align:center";
     document.body.appendChild(b);}
   return b;
 }
